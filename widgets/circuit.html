@@ -1,0 +1,95 @@
+<!-- 组件：电路回路动画 · 用于 0.3 节 -->
+<div class="wgt wgt-circuit" id="wg-circuit">
+  <div class="wgt-head"><span>⚡ 交互演示：闭合回路，灯才会亮</span><span class="wgt-badge">点按钮切换 HIGH / LOW</span></div>
+  <div class="wgt-body">
+    <svg viewBox="0 0 620 300" style="width:100%;height:auto;display:block" id="wg-circuit-svg">
+      <!-- 芯片方块 -->
+      <rect x="30" y="70" width="150" height="160" rx="10" fill="#1e2a33" stroke="#0b6e4f" stroke-width="2"/>
+      <text x="105" y="100" text-anchor="middle" fill="#8fd6bd" font-size="14" font-weight="bold">ESP32 芯片</text>
+      <!-- GPIO2 引脚 -->
+      <rect x="180" y="110" width="34" height="26" rx="4" fill="#4a5b66"/>
+      <text x="197" y="128" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">IO2</text>
+      <!-- GND 引脚 -->
+      <rect x="180" y="190" width="34" height="26" rx="4" fill="#4a5b66"/>
+      <text x="197" y="208" text-anchor="middle" fill="#fff" font-size="12" font-weight="bold">GND</text>
+      <!-- 芯片内部开关（HIGH 时闭合） -->
+      <g id="wg-circuit-switch">
+        <line x1="105" y1="155" x2="105" y2="185" stroke="#8fd6bd" stroke-width="2"/>
+        <circle cx="105" cy="155" r="4" fill="#8fd6bd"/>
+        <circle cx="105" cy="185" r="4" fill="#8fd6bd"/>
+        <line id="wg-switch-arm" x1="105" y1="155" x2="105" y2="185" stroke="#ffb84d" stroke-width="4" stroke-linecap="round"/>
+        <text x="130" y="175" fill="#8fd6bd" font-size="11">内部开关</text>
+      </g>
+      <!-- 导线路径：IO2 → 电阻 → LED → GND（顺时针外环） -->
+      <path id="wg-path" d="M 214 123 L 340 123 L 470 123 L 520 123 L 520 203 L 470 203 L 214 203"
+            fill="none" stroke="#c8cdd2" stroke-width="4" stroke-linecap="round"/>
+      <!-- 流动的电子（HIGH 时显示） -->
+      <g id="wg-flow" opacity="0">
+        <circle r="5" fill="#ffb84d">
+          <animateMotion dur="1.6s" repeatCount="indefinite" path="M 214 123 L 340 123 L 470 123 L 520 123 L 520 203 L 470 203 L 214 203"/>
+        </circle>
+        <circle r="5" fill="#ffb84d">
+          <animateMotion dur="1.6s" begin="-0.53s" repeatCount="indefinite" path="M 214 123 L 340 123 L 470 123 L 520 123 L 520 203 L 470 203 L 214 203"/>
+        </circle>
+        <circle r="5" fill="#ffb84d">
+          <animateMotion dur="1.6s" begin="-1.06s" repeatCount="indefinite" path="M 214 123 L 340 123 L 470 123 L 520 123 L 520 203 L 470 203 L 214 203"/>
+        </circle>
+      </g>
+      <!-- 电阻（锯齿） -->
+      <polyline points="340,123 352,110 368,136 384,110 400,136 416,110 428,123"
+                fill="none" stroke="#5a6b78" stroke-width="4" stroke-linejoin="round"/>
+      <text x="384" y="98" text-anchor="middle" fill="#5a6b78" font-size="12">限流电阻 220Ω</text>
+      <!-- LED（三角形+竖线） -->
+      <polygon points="470,110 470,136 494,123" fill="#d9dee2" stroke="#5a6b78" stroke-width="2" id="wg-led-tri"/>
+      <line x1="494" y1="110" x2="494" y2="136" stroke="#5a6b78" stroke-width="4" id="wg-led-bar"/>
+      <circle id="wg-led-glow" cx="482" cy="123" r="30" fill="#ffd24d" opacity="0"/>
+      <text x="482" y="160" text-anchor="middle" fill="#5a6b78" font-size="12">LED</text>
+      <!-- 电压标注 -->
+      <text id="wg-v-label" x="260" y="112" fill="#c0392b" font-size="12" font-weight="bold">3.3V</text>
+      <!-- 状态读数 -->
+      <text id="wg-readout" x="310" y="265" text-anchor="middle" fill="#1a1a1a" font-size="15" font-weight="bold"></text>
+      <text id="wg-readout2" x="310" y="288" text-anchor="middle" fill="#6b6b6b" font-size="13"></text>
+    </svg>
+    <div style="display:flex;gap:10px;justify-content:center;margin-top:8px;flex-wrap:wrap">
+      <button id="wg-btn-high" class="active">digitalWrite(2, HIGH)</button>
+      <button id="wg-btn-low">digitalWrite(2, LOW)</button>
+    </div>
+    <p class="wgt-hint" style="text-align:center">切换按钮，观察：开关闭合 → 电流流动（金色圆点）→ LED 发光。代码改变的只是开关状态，亮灯的是物理回路。</p>
+  </div>
+</div>
+<style>
+#wg-circuit #wg-switch-arm { transform-origin: 105px 155px; transition: transform .25s; }
+#wg-circuit.off #wg-switch-arm { transform: rotate(-38deg); }
+#wg-circuit .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-circuit');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const flow = document.getElementById('wg-flow');
+  const glow = document.getElementById('wg-led-glow');
+  const tri = document.getElementById('wg-led-tri');
+  const bar = document.getElementById('wg-led-bar');
+  const r1 = document.getElementById('wg-readout');
+  const r2 = document.getElementById('wg-readout2');
+  const v = document.getElementById('wg-v-label');
+  const bH = document.getElementById('wg-btn-high');
+  const bL = document.getElementById('wg-btn-low');
+  function set(high) {
+    root.classList.toggle('off', !high);
+    flow.setAttribute('opacity', high ? '1' : '0');
+    glow.setAttribute('opacity', high ? '0.55' : '0');
+    tri.setAttribute('fill', high ? '#ffd24d' : '#d9dee2');
+    bar.setAttribute('stroke', high ? '#e6a700' : '#5a6b78');
+    v.textContent = high ? '3.3V（高电平）' : '0V（低电平）';
+    v.setAttribute('fill', high ? '#c0392b' : '#6b6b6b');
+    r1.textContent = high ? '回路导通 · 电流 ≈ 6mA · 灯亮 🟢' : '回路断开 · 电流 = 0 · 灯灭 ⚫';
+    r2.textContent = high ? 'GPIO2 输出 3.3V，与 GND 形成压差' : 'GPIO2 输出 0V，两端无压差，水不流动';
+    bH.classList.toggle('active', high);
+    bL.classList.toggle('active', !high);
+  }
+  bH.onclick = () => set(true);
+  bL.onclick = () => set(false);
+  set(true);
+})();
+</script>

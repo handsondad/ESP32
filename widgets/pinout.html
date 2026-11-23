@@ -1,0 +1,170 @@
+<!-- 组件：30 引脚交互引脚图 · 用于 1.1 节 -->
+<div class="wgt wgt-pinout" id="wg-pinout">
+  <div class="wgt-head"><span>🎛️ 交互引脚图：ESP32 DevKit V1（30 针）</span><span class="wgt-badge">悬停 / 点击引脚查看详情</span></div>
+  <div class="wgt-body">
+    <div class="wg-po-wrap">
+      <svg viewBox="0 0 560 660" style="width:100%;max-width:560px;height:auto;display:block;margin:0 auto" id="wg-po-svg">
+        <!-- 板子本体 -->
+        <rect x="90" y="20" width="380" height="620" rx="14" fill="#0f3d2e" stroke="#0a2c21" stroke-width="3"/>
+        <!-- ESP32 模块屏蔽罩 -->
+        <rect x="185" y="60" width="190" height="150" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="2"/>
+        <text x="280" y="125" text-anchor="middle" fill="#4a5057" font-size="15" font-weight="bold">ESP32-WROOM-32</text>
+        <text x="280" y="150" text-anchor="middle" fill="#6b7280" font-size="11">Wi-Fi · Bluetooth · 双核 240MHz</text>
+        <!-- USB 口 -->
+        <rect x="245" y="600" width="70" height="45" rx="5" fill="#b8bcc2" stroke="#8a9099" stroke-width="2"/>
+        <text x="280" y="628" text-anchor="middle" fill="#4a5057" font-size="11" font-weight="bold">USB</text>
+        <!-- BOOT 键 -->
+        <rect x="140" y="560" width="52" height="26" rx="4" fill="#d9dee2" stroke="#9aa0a6"/>
+        <text x="166" y="577" text-anchor="middle" fill="#4a5057" font-size="10" font-weight="bold">BOOT</text>
+        <!-- EN 复位键 -->
+        <rect x="368" y="560" width="52" height="26" rx="4" fill="#d9dee2" stroke="#9aa0a6"/>
+        <text x="394" y="577" text-anchor="middle" fill="#4a5057" font-size="10" font-weight="bold">EN/RST</text>
+        <!-- 板载 LED 标注 -->
+        <circle cx="368" cy="245" r="7" fill="#ffd24d" stroke="#e6a700" stroke-width="2"/>
+        <text x="384" y="249" fill="#ffd24d" font-size="11" font-weight="bold">板载 LED → IO2</text>
+        <!-- 引脚由 JS 动态生成 -->
+        <g id="wg-po-pins"></g>
+        <!-- 提示详情区 -->
+        <g id="wg-po-tip" opacity="0">
+          <rect id="wg-po-tipbg" x="110" y="240" width="340" height="180" rx="10" fill="#12262e" stroke="#ffb84d" stroke-width="2"/>
+          <text id="wg-po-tiptitle" x="280" y="272" text-anchor="middle" fill="#ffb84d" font-size="17" font-weight="bold"></text>
+          <foreignObject id="wg-po-tipbody" x="120" y="284" width="320" height="128">
+            <div xmlns="http://www.w3.org/1999/xhtml" id="wg-po-tiphtml" style="color:#d7e3e8;font-size:12.5px;line-height:1.55;padding:0 6px"></div>
+          </foreignObject>
+        </g>
+      </svg>
+    </div>
+    <div class="wg-po-legend">
+      <span><i class="dot dot-ok"></i>普通 GPIO</span>
+      <span><i class="dot dot-warn"></i>strapping 启动配置脚</span>
+      <span><i class="dot dot-danger"></i>仅输入 / 特殊用途</span>
+      <span><i class="dot dot-power"></i>电源</span>
+    </div>
+    <p class="wgt-hint" style="text-align:center">第 1 课只需要认识 <b>IO2（板载 LED）</b>、<b>GND</b>、<b>3V3</b> 三个引脚。橙色脚是"启动时被采样"的 strapping 脚——第 6 课会专门清算它们的脾气。</p>
+  </div>
+</div>
+<style>
+.wg-po-legend { display: flex; gap: 16px; justify-content: center; flex-wrap: wrap; font-size: .82em; color: #6b6b6b; margin-top: 10px; }
+.wg-po-legend .dot { display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 5px; vertical-align: -1px; }
+.dot-ok { background: #3fa67a; } .dot-warn { background: #ffb84d; } .dot-danger { background: #e74c3c; } .dot-power { background: #7c8cff; }
+.wg-po-pin { cursor: pointer; }
+.wg-po-pin:hover .wg-po-pad { stroke: #ffb84d; stroke-width: 3; }
+.wgt-pinout .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-pinout');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+
+  // 左列 1-15（顶→底），右列 16-30（顶→底）——三源交叉验证 + 官方引脚图仲裁
+  const LEFT = [
+    { n: 1,  name: '3V3',   type: 'power',  desc: '3.3V 电源输出（由板载稳压器供给）。可给传感器供电，<b>总电流别超过 500mA</b>。' },
+    { n: 2,  name: 'EN',    type: 'danger', desc: '复位脚，接板载 RST 按键。拉低即复位，平时需保持高电平。' },
+    { n: 3,  name: 'VP/36', type: 'danger', desc: 'GPIO36（SENSOR_VP）。<b>仅输入</b>，无内部上下拉，可接模拟传感器。' },
+    { n: 4,  name: 'VN/39', type: 'danger', desc: 'GPIO39（SENSOR_VN）。<b>仅输入</b>，无内部上下拉，可接模拟传感器。' },
+    { n: 5,  name: 'IO34',  type: 'danger', desc: 'GPIO34。<b>仅输入</b>——不能 digitalWrite！且无内部上下拉，第 1 课的"坑位预埋"就是它。' },
+    { n: 6,  name: 'IO35',  type: 'danger', desc: 'GPIO35。<b>仅输入</b>，无内部上下拉。' },
+    { n: 7,  name: 'IO32',  type: 'ok', desc: '普通 GPIO，可输入输出，支持 ADC1 与触摸。' },
+    { n: 8,  name: 'IO33',  type: 'ok', desc: '普通 GPIO，可输入输出，支持 ADC1 与触摸。' },
+    { n: 9,  name: 'IO25',  type: 'ok', desc: '普通 GPIO，支持 DAC1 输出（12 位模拟输出）。' },
+    { n: 10, name: 'IO26',  type: 'ok', desc: '普通 GPIO，支持 DAC2 输出（12 位模拟输出）。' },
+    { n: 11, name: 'IO27',  type: 'ok', desc: '普通 GPIO，可输入输出，支持 ADC2 与触摸。' },
+    { n: 12, name: 'IO14',  type: 'warn', desc: 'GPIO14，strapping 脚。启动时若被拉高，会影响 Flash 时钟；正常应用中当普通 GPIO 没问题。' },
+    { n: 13, name: 'IO12',  type: 'warn', desc: '⚠️ GPIO12（MTDI）：strapping 脚，<b>启动时必须为 LOW</b>。接了上拉电阻的外设可能导致板子无法启动（1.8V Flash 选择）。' },
+    { n: 14, name: 'GND',   type: 'power', desc: '地。所有电路的回流终点，LED 回路的另一端就接这里。' },
+    { n: 15, name: 'IO13',  type: 'ok', desc: '普通 GPIO，板载 LED 有些变体接这里（本板是 IO2）。' }
+  ];
+  const RIGHT = [
+    { n: 16, name: 'VIN',   type: 'power', desc: '5V 输入（接 USB 或外部 5V 电源），经板载稳压器降到 3.3V。<b>别和 3V3 接混</b>。' },
+    { n: 17, name: 'GND',   type: 'power', desc: '地。' },
+    { n: 18, name: 'IO23',  type: 'ok', desc: '普通 GPIO，SPI 默认 MOSI。' },
+    { n: 19, name: 'IO22',  type: 'ok', desc: '普通 GPIO，SPI 默认 SCL（I2C 时钟常用）。' },
+    { n: 20, name: 'TX0/1', type: 'danger', desc: 'GPIO1，UART0 发送（串口监视器打印走这里）。<b>别接外设</b>，会干扰烧录和日志。' },
+    { n: 21, name: 'RX0/3', type: 'danger', desc: 'GPIO3，UART0 接收。<b>别接外设</b>，同上。' },
+    { n: 22, name: 'IO21',  type: 'ok', desc: '普通 GPIO，I2C 默认 SDA（第 8 课传感器主角）。' },
+    { n: 23, name: 'IO19',  type: 'ok', desc: '普通 GPIO，SPI 默认 MISO。' },
+    { n: 24, name: 'IO18',  type: 'ok', desc: '普通 GPIO，SPI 默认 SCK。' },
+    { n: 25, name: 'IO5',   type: 'warn', desc: 'GPIO5，strapping 脚（启动时决定 SDIO 从机模式）。当普通 GPIO 用没问题。' },
+    { n: 26, name: 'TX2/17', type: 'ok', desc: 'GPIO17，UART2 发送。做串口通信可用。' },
+    { n: 27, name: 'RX2/16', type: 'ok', desc: 'GPIO16，UART2 接收。做串口通信可用。' },
+    { n: 28, name: 'IO4',   type: 'ok', desc: '普通 GPIO，支持 ADC2 与触摸。' },
+    { n: 29, name: 'IO2',   type: 'warn', desc: '⭐ GPIO2：<b>板载蓝色 LED</b>，第 1 课主角！同时是 strapping 脚——启动时若被拉高可能进下载模式。板上有 10kΩ 下拉护着，放心用。' },
+    { n: 30, name: 'IO15',  type: 'warn', desc: 'GPIO15，strapping 脚（启动时控制日志打印）。当普通 GPIO 用没问题。' }
+  ];
+  const COLORS = { ok: '#3fa67a', warn: '#ffb84d', danger: '#e74c3c', power: '#7c8cff' };
+
+  const g = document.getElementById('wg-po-pins');
+  const tip = document.getElementById('wg-po-tip');
+  const tipTitle = document.getElementById('wg-po-tiptitle');
+  const tipHtml = document.getElementById('wg-po-tiphtml');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  function makePin(p, side) {
+    const x = side === 'L' ? 90 : 470;       // 板边
+    const padX = side === 'L' ? 100 : 434;
+    const y = 45 + (p.n - (side === 'L' ? 1 : 16)) * 41 + 10;
+    const grp = document.createElementNS(NS, 'g');
+    grp.setAttribute('class', 'wg-po-pin');
+    // 针脚（伸出板外）
+    const pin = document.createElementNS(NS, 'rect');
+    pin.setAttribute('x', side === 'L' ? 62 : 470);
+    pin.setAttribute('y', y - 5);
+    pin.setAttribute('width', 28);
+    pin.setAttribute('height', 10);
+    pin.setAttribute('rx', 2);
+    pin.setAttribute('fill', '#c9ccd1');
+    grp.appendChild(pin);
+    // 焊盘
+    const pad = document.createElementNS(NS, 'rect');
+    pad.setAttribute('x', padX);
+    pad.setAttribute('y', y - 12);
+    pad.setAttribute('width', 36);
+    pad.setAttribute('height', 24);
+    pad.setAttribute('rx', 5);
+    pad.setAttribute('fill', COLORS[p.type]);
+    pad.setAttribute('class', 'wg-po-pad');
+    pad.setAttribute('stroke', '#0a2c21');
+    pad.setAttribute('stroke-width', '1.5');
+    grp.appendChild(pad);
+    // 编号
+    const num = document.createElementNS(NS, 'text');
+    num.setAttribute('x', side === 'L' ? 76 : 484);
+    num.setAttribute('y', y + 4);
+    num.setAttribute('text-anchor', side === 'L' ? 'start' : 'end');
+    num.setAttribute('fill', '#8fa3a8');
+    num.setAttribute('font-size', '10');
+    num.textContent = p.n;
+    grp.appendChild(num);
+    // 名称
+    const label = document.createElementNS(NS, 'text');
+    label.setAttribute('x', side === 'L' ? padX + 18 : padX + 18);
+    label.setAttribute('y', y + 4);
+    label.setAttribute('text-anchor', 'middle');
+    label.setAttribute('fill', '#ffffff');
+    label.setAttribute('font-size', '12');
+    label.setAttribute('font-weight', 'bold');
+    label.textContent = p.name;
+    grp.appendChild(label);
+    // 交互
+    grp.addEventListener('mouseenter', () => show(p));
+    grp.addEventListener('click', () => show(p));
+    g.appendChild(grp);
+  }
+
+  function show(p) {
+    tipTitle.textContent = `#${p.n}  ${p.name}`;
+    const badge = { ok: '普通 GPIO', warn: '⚠️ strapping 启动配置脚', danger: '🚫 特殊用途', power: '🔋 电源' }[p.type];
+    tipHtml.innerHTML = `<div style="color:${COLORS[p.type]};font-weight:bold;margin-bottom:4px">${badge}</div>${p.desc}`;
+    tip.setAttribute('opacity', '1');
+    // 简单防越界
+    const bg = document.getElementById('wg-po-tipbg');
+    bg.setAttribute('stroke', COLORS[p.type]);
+  }
+
+  LEFT.forEach(p => makePin(p, 'L'));
+  RIGHT.forEach(p => makePin(p, 'R'));
+
+  // 默认展示主角 IO2
+  show(LEFT[0] && { n: 29, name: 'IO2', type: 'warn', desc: '⭐ GPIO2：<b>板载蓝色 LED</b>，第 1 课主角！同时是 strapping 脚——启动时若被拉高可能进下载模式。板上有 10kΩ 下拉护着，放心用。' });
+})();
+</script>

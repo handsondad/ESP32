@@ -1,0 +1,86 @@
+<!-- 组件：欧姆定律计算器 · 用于 0.2 节 -->
+<div class="wgt wgt-ohm" id="wg-ohm">
+  <div class="wgt-head"><span>🔢 交互演示：欧姆定律实验台</span><span class="wgt-badge">拖动滑杆看电流变化</span></div>
+  <div class="wgt-body">
+    <div class="wg-ohm-grid">
+      <div class="wg-ohm-controls">
+        <label>电压 V = <b id="wg-ohm-v">3.3</b> V
+          <input type="range" id="wg-ohm-vin" min="0" max="5" step="0.1" value="3.3">
+        </label>
+        <label>电阻 R = <b id="wg-ohm-r">220</b> Ω
+          <input type="range" id="wg-ohm-rin" min="10" max="1000" step="10" value="220">
+        </label>
+        <div class="wg-ohm-formula">I = V ÷ R = <b id="wg-ohm-i">15.0</b> mA</div>
+        <div id="wg-ohm-warn" class="wg-ohm-warn">✅ 安全区：LED 正常工作（≤20mA），ESP32 引脚也在安全范围内</div>
+      </div>
+      <div class="wg-ohm-visual">
+        <div id="wg-ohm-led" class="wg-ohm-led"></div>
+        <div class="wg-ohm-ledlabel">LED 亮度随电流变化</div>
+      </div>
+    </div>
+    <p class="wgt-hint">试试把电阻拉到最小（10Ω）：电流冲破 200mA，LED 和引脚瞬间烧毁——这就是"忘串电阻"的下场。第 2 课你将亲手算出正确的阻值。</p>
+  </div>
+</div>
+<style>
+.wg-ohm-grid { display: grid; grid-template-columns: 1fr 180px; gap: 18px; align-items: center; }
+.wg-ohm-controls label { display: block; font-size: .95em; margin-bottom: 14px; color: #333; }
+.wg-ohm-controls input[type=range] { width: 100%; margin-top: 6px; accent-color: #0b6e4f; }
+.wg-ohm-controls b { color: #0b6e4f; font-size: 1.1em; }
+.wg-ohm-formula { background: #f4f2ee; border-radius: 8px; padding: .6em .8em; font-family: Consolas, monospace; font-size: 1.05em; text-align: center; }
+.wg-ohm-formula b { color: #c0392b; font-size: 1.2em; }
+.wg-ohm-warn { margin-top: 10px; font-size: .86em; border-radius: 8px; padding: .55em .7em; line-height: 1.5; }
+.wg-ohm-visual { text-align: center; }
+.wg-ohm-led { width: 90px; height: 90px; border-radius: 50%; margin: 0 auto; background: #e8e4dc; border: 4px solid #c8c2b6; transition: all .15s; }
+.wg-ohm-ledlabel { font-size: .8em; color: #6b6b6b; margin-top: 8px; }
+.wgt-ohm .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 560px) { .wg-ohm-grid { grid-template-columns: 1fr; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-ohm');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const vin = document.getElementById('wg-ohm-vin');
+  const rin = document.getElementById('wg-ohm-rin');
+  const lv = document.getElementById('wg-ohm-v');
+  const lr = document.getElementById('wg-ohm-r');
+  const li = document.getElementById('wg-ohm-i');
+  const warn = document.getElementById('wg-ohm-warn');
+  const led = document.getElementById('wg-ohm-led');
+  function update() {
+    const V = parseFloat(vin.value), R = parseFloat(rin.value);
+    const I = V / R * 1000; // mA
+    lv.textContent = V.toFixed(1);
+    lr.textContent = R;
+    li.textContent = I.toFixed(1);
+    // LED 亮度：20mA 满亮
+    const bright = Math.min(I / 20, 1);
+    if (I < 0.5) {
+      led.style.background = '#e8e4dc'; led.style.boxShadow = 'none'; led.style.borderColor = '#c8c2b6';
+    } else if (I <= 20) {
+      const g = Math.round(180 + 60 * bright);
+      led.style.background = `radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)`;
+      led.style.boxShadow = `0 0 ${8 + 34 * bright}px rgba(255,210,77,${0.35 + 0.6 * bright})`;
+      led.style.borderColor = '#e6a700';
+    } else {
+      led.style.background = 'radial-gradient(circle at 35% 35%, #ffd0d0, #e74c3c 60%, #922b21)';
+      led.style.boxShadow = '0 0 30px rgba(231,76,60,.8)';
+      led.style.borderColor = '#922b21';
+    }
+    // 警告分级
+    if (I <= 20) {
+      warn.className = 'wg-ohm-warn';
+      warn.style.background = '#e6f3ee'; warn.style.color = '#0b6e4f';
+      warn.textContent = '✅ 安全区：LED 正常工作（≤20mA），ESP32 引脚也在安全范围内';
+    } else if (I <= 40) {
+      warn.className = 'wg-ohm-warn';
+      warn.style.background = '#fff6e0'; warn.style.color = '#9a6b00';
+      warn.textContent = '⚠️ 超亮但危险：超过 LED 额定 20mA，长期会光衰烧毁；已逼近 ESP32 引脚 40mA 绝对上限';
+    } else {
+      warn.className = 'wg-ohm-warn';
+      warn.style.background = '#fdecea'; warn.style.color = '#c0392b';
+      warn.textContent = '🔥 烧毁！电流远超 ESP32 引脚 40mA 极限——芯片引脚和 LED 都可能永久损坏';
+    }
+  }
+  vin.oninput = update; rin.oninput = update; update();
+})();
+</script>

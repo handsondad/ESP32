@@ -1,0 +1,97 @@
+<!-- 组件：LED 闪烁时序模拟 · 用于 3.2 节 delay 拆解 -->
+<div class="wgt wgt-blink" id="wg-blink">
+  <div class="wgt-head"><span>📈 交互演示：delay 决定时序</span><span class="wgt-badge">拖动滑杆改变亮灭时长</span></div>
+  <div class="wgt-body">
+    <div style="display:flex;gap:24px;align-items:center;flex-wrap:wrap;justify-content:center">
+      <div id="wg-blink-led" class="wg-blink-led"></div>
+      <div style="flex:1;min-width:260px">
+        <label style="font-size:.95em;color:#333">亮/灭时长 = <b id="wg-blink-ms">1000</b> ms（代码里的 delay(1000)）
+          <input type="range" id="wg-blink-slider" min="50" max="2000" step="50" value="1000">
+        </label>
+        <div class="wg-blink-stats">
+          周期 <b id="wg-blink-period">2.0</b>s · 频率 <b id="wg-blink-freq">0.5</b> Hz
+        </div>
+      </div>
+    </div>
+    <!-- 时序波形 -->
+    <svg viewBox="0 0 620 130" style="width:100%;height:auto;display:block;margin-top:14px" id="wg-blink-svg">
+      <line x1="30" y1="30" x2="600" y2="30" stroke="#d5d9dd"/>
+      <line x1="30" y1="90" x2="600" y2="90" stroke="#d5d9dd"/>
+      <text x="24" y="34" text-anchor="end" fill="#6b6b6b" font-size="11">HIGH</text>
+      <text x="24" y="94" text-anchor="end" fill="#6b6b6b" font-size="11">LOW</text>
+      <line x1="30" y1="10" x2="30" y2="112" stroke="#9aa0a6"/>
+      <text x="315" y="126" text-anchor="middle" fill="#9aa0a6" font-size="11">时间 →</text>
+      <path id="wg-blink-wave" fill="none" stroke="#0b6e4f" stroke-width="3"/>
+      <!-- 移动的时间游标 -->
+      <line id="wg-blink-cursor" x1="30" y1="8" x2="30" y2="114" stroke="#c0392b" stroke-width="2" opacity=".85"/>
+    </svg>
+    <p class="wgt-hint" style="text-align:center">波形就是 GPIO2 上真实的电压：高电平灯亮、低电平灯灭。<b>注意</b>：程序执行到 <code>delay()</code> 时会原地罚站——这段时间里 ESP32 什么都干不了。第 3 课我们把 delay 扔掉，第 10 课你会明白为什么。</p>
+  </div>
+</div>
+<style>
+.wg-blink-led { width: 84px; height: 84px; border-radius: 50%; background: #e8e4dc; border: 4px solid #c8c2b6; transition: background .08s, box-shadow .08s; flex-shrink: 0; }
+.wg-blink-led.on { background: radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700); box-shadow: 0 0 34px rgba(255,210,77,.85); border-color: #e6a700; }
+#wg-blink-slider { width: 100%; margin-top: 6px; accent-color: #0b6e4f; }
+#wg-blink-slider + .wg-blink-stats, .wg-blink-stats { font-size: .88em; color: #6b6b6b; margin-top: 6px; }
+.wg-blink-stats b { color: #0b6e4f; }
+.wgt-blink .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-blink');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const slider = document.getElementById('wg-blink-slider');
+  const msLabel = document.getElementById('wg-blink-ms');
+  const periodLabel = document.getElementById('wg-blink-period');
+  const freqLabel = document.getElementById('wg-blink-freq');
+  const led = document.getElementById('wg-blink-led');
+  const wave = document.getElementById('wg-blink-wave');
+  const cursor = document.getElementById('wg-blink-cursor');
+  let delayMs = 1000;
+  let start = performance.now();
+
+  function drawWave() {
+    // 固定画 3 个周期，缩放显示
+    const x0 = 30, x1 = 600, yH = 30, yL = 90;
+    const cycles = 3, seg = (x1 - x0) / (cycles * 2);
+    let d = `M ${x0} ${yH}`;
+    for (let i = 0; i < cycles * 2; i++) {
+      const x = x0 + seg * (i + 1);
+      d += ` L ${x} ${i % 2 === 0 ? yH : yL}`.replace(`L ${x} ${yH}`, i % 2 === 1 ? `L ${x} ${yL}` : `L ${x} ${yH}`);
+      // 手动构造：先保持，再跳变
+    }
+    // 更清晰的构造
+    d = `M ${x0} ${yL} L ${x0} ${yH}`;
+    for (let i = 0; i < cycles; i++) {
+      const xa = x0 + (seg * 2) * i;          // 高电平开始
+      const xb = xa + seg;                     // 高电平结束
+      const xc = xb + seg;                     // 低电平结束
+      d += ` L ${xb} ${yH} L ${xb} ${yL} L ${xc} ${yL}`;
+      if (i < cycles - 1) d += ` L ${xc} ${yH}`;
+    }
+    wave.setAttribute('d', d);
+  }
+
+  function tick(now) {
+    const t = (now - start) / (delayMs * 2);   // 完整周期
+    const frac = t % 1;
+    const x = 30 + (600 - 30) * frac;
+    cursor.setAttribute('x1', x); cursor.setAttribute('x2', x);
+    const high = frac < 0.5;
+    led.classList.toggle('on', high);
+    requestAnimationFrame(tick);
+  }
+
+  function update() {
+    delayMs = parseInt(slider.value, 10);
+    msLabel.textContent = delayMs;
+    periodLabel.textContent = (delayMs * 2 / 1000).toFixed(1);
+    freqLabel.textContent = (1000 / (delayMs * 2)).toFixed(2);
+    start = performance.now();   // 重置相位，避免跳变错位
+  }
+  slider.oninput = update;
+  update();
+  drawWave();
+  requestAnimationFrame(tick);
+})();
+</script>
