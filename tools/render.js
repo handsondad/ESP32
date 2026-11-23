@@ -149,6 +149,7 @@ function render() {
 </style>
 </head>
 <body><div class="wrap">
+<img src="assets/cover.svg" alt="ESP32 从零到专家 · 封面" style="width:100%;border-radius:12px;border:1px solid var(--border);display:block">
 <h1>ESP32 从零到专家 · 实战教程</h1>
 <p>阶段一 · 破冰与建立信心 —— 从点亮一盏灯开始。点击进入各课：</p>
 <div class="nav">

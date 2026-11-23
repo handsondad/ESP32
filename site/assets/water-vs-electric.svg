@@ -1,0 +1,128 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1100 620" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="wbg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#fbfcfb"/>
+      <stop offset="1" stop-color="#f0f5f2"/>
+    </linearGradient>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#6ec3f2"/>
+      <stop offset="1" stop-color="#2e8fd0"/>
+    </linearGradient>
+    <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#c0392b"/>
+    </marker>
+    <marker id="earrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#e67e22"/>
+    </marker>
+  </defs>
+
+  <rect width="1100" height="620" fill="url(#wbg)"/>
+  <text x="550" y="46" fill="#1a1a1a" font-size="30" font-weight="bold" text-anchor="middle">水管比喻：电压 · 电流 · 电阻</text>
+  <text x="550" y="78" fill="#6b6b6b" font-size="17" text-anchor="middle">把电子想成水，把导线想成水管——三行看懂欧姆定律的三个角色</text>
+
+  <!-- ===== 行 1：电压 ===== -->
+  <g transform="translate(0 108)">
+    <rect x="30" y="0" width="1040" height="150" rx="14" fill="#ffffff" stroke="#dfe6e2" stroke-width="2"/>
+    <!-- 标签 -->
+    <rect x="50" y="52" width="150" height="46" rx="10" fill="#e8f4ee"/>
+    <text x="125" y="72" fill="#0b6e4f" font-size="19" font-weight="bold" text-anchor="middle">电压 V</text>
+    <text x="125" y="94" fill="#4a6b5e" font-size="14" text-anchor="middle">水压</text>
+    <!-- 水塔 -->
+    <g transform="translate(260 18)">
+      <rect x="0" y="0" width="120" height="112" rx="6" fill="#eef3f6" stroke="#9fb6c4" stroke-width="3"/>
+      <rect x="4" y="34" width="112" height="74" rx="4" fill="url(#water)"/>
+      <g fill="#ffffff" opacity="0.7">
+        <circle cx="30" cy="60" r="4"><animate attributeName="cy" values="60;100" dur="1.8s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.7;0" dur="1.8s" repeatCount="indefinite"/></circle>
+        <circle cx="70" cy="50" r="3"><animate attributeName="cy" values="50;100" dur="2.2s" repeatCount="indefinite"/><animate attributeName="opacity" values="0.7;0" dur="2.2s" repeatCount="indefinite"/></circle>
+      </g>
+      <!-- 水位高度箭头 -->
+      <line x1="-22" y1="34" x2="-22" y2="108" stroke="#c0392b" stroke-width="3" marker-end="url(#arrow)" marker-start="url(#arrow)"/>
+      <text x="-32" y="76" fill="#c0392b" font-size="15" font-weight="bold" text-anchor="end">水位差</text>
+    </g>
+    <!-- 等号 -->
+    <text x="470" y="82" fill="#9aa0a6" font-size="34" font-weight="bold" text-anchor="middle">=</text>
+    <!-- 电路 -->
+    <g transform="translate(530 30)">
+      <rect x="0" y="0" width="150" height="92" rx="8" fill="#f8f9fa" stroke="#9fb6c4" stroke-width="3"/>
+      <!-- 电池符号 -->
+      <line x1="75" y1="20" x2="75" y2="42" stroke="#c0392b" stroke-width="5"/>
+      <line x1="55" y1="31" x2="95" y2="31" stroke="#7f8c8d" stroke-width="3"/>
+      <line x1="63" y1="50" x2="87" y2="50" stroke="#7f8c8d" stroke-width="3"/>
+      <line x1="75" y1="58" x2="75" y2="72" stroke="#c0392b" stroke-width="5"/>
+      <text x="75" y="87" fill="#c0392b" font-size="13" font-weight="bold" text-anchor="middle">3.3V</text>
+      <text x="16" y="30" fill="#c0392b" font-size="14" font-weight="bold">+</text>
+      <text x="16" y="70" fill="#7f8c8d" font-size="14" font-weight="bold">−</text>
+    </g>
+    <!-- 解释 -->
+    <text x="730" y="60" fill="#1a1a1a" font-size="18">推动水流的</text>
+    <text x="730" y="88" fill="#c0392b" font-size="21" font-weight="bold">"压力差"</text>
+    <text x="730" y="118" fill="#6b6b6b" font-size="15">没有压力差，水就不会流动</text>
+  </g>
+
+  <!-- ===== 行 2：电流 ===== -->
+  <g transform="translate(0 278)">
+    <rect x="30" y="0" width="1040" height="150" rx="14" fill="#ffffff" stroke="#dfe6e2" stroke-width="2"/>
+    <rect x="50" y="52" width="150" height="46" rx="10" fill="#fdf1e3"/>
+    <text x="125" y="72" fill="#d97706" font-size="19" font-weight="bold" text-anchor="middle">电流 I</text>
+    <text x="125" y="94" fill="#a0651f" font-size="14" text-anchor="middle">水流量</text>
+    <!-- 水管 + 流动的水 -->
+    <g transform="translate(250 45)">
+      <rect x="0" y="0" width="220" height="60" rx="12" fill="#eef3f6" stroke="#9fb6c4" stroke-width="3"/>
+      <rect x="4" y="4" width="212" height="52" rx="9" fill="url(#water)" opacity="0.85"/>
+      <!-- 流动水珠 -->
+      <g fill="#ffffff">
+        <circle cx="20" cy="30" r="6" opacity="0.9"><animate attributeName="cx" values="20;200" dur="1.4s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.9;0.9;0" dur="1.4s" repeatCount="indefinite"/></circle>
+        <circle cx="20" cy="30" r="6" opacity="0.9"><animate attributeName="cx" values="20;200" dur="1.4s" begin="-0.47s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.9;0.9;0" dur="1.4s" begin="-0.47s" repeatCount="indefinite"/></circle>
+        <circle cx="20" cy="30" r="6" opacity="0.9"><animate attributeName="cx" values="20;200" dur="1.4s" begin="-0.93s" repeatCount="indefinite"/><animate attributeName="opacity" values="0;0.9;0.9;0" dur="1.4s" begin="-0.93s" repeatCount="indefinite"/></circle>
+      </g>
+      <!-- 流向箭头 -->
+      <line x1="60" y1="76" x2="180" y2="76" stroke="#e67e22" stroke-width="4" marker-end="url(#earrow)"/>
+      <text x="120" y="98" fill="#e67e22" font-size="14" font-weight="bold" text-anchor="middle">每秒流过多少水</text>
+    </g>
+    <text x="530" y="82" fill="#9aa0a6" font-size="34" font-weight="bold" text-anchor="middle">=</text>
+    <!-- 电路导线 -->
+    <g transform="translate(590 32)">
+      <path d="M0 46 H60 M140 46 H200" stroke="#e67e22" stroke-width="5" fill="none"/>
+      <rect x="60" y="26" width="80" height="40" rx="6" fill="#fff4e5" stroke="#e67e22" stroke-width="3"/>
+      <text x="100" y="52" fill="#d97706" font-size="16" font-weight="bold" text-anchor="middle">负载</text>
+      <!-- 流动电子 -->
+      <g fill="#e67e22">
+        <circle cx="10" cy="46" r="6"><animate attributeName="cx" values="10;190" dur="1.4s" repeatCount="indefinite"/></circle>
+        <circle cx="10" cy="46" r="6"><animate attributeName="cx" values="10;190" dur="1.4s" begin="-0.47s" repeatCount="indefinite"/></circle>
+        <circle cx="10" cy="46" r="6"><animate attributeName="cx" values="10;190" dur="1.4s" begin="-0.93s" repeatCount="indefinite"/></circle>
+      </g>
+    </g>
+    <text x="830" y="60" fill="#1a1a1a" font-size="18">实际流动的</text>
+    <text x="830" y="88" fill="#d97706" font-size="21" font-weight="bold">电荷多少</text>
+    <text x="830" y="118" fill="#6b6b6b" font-size="15">灯的亮度、马达的力气都看它</text>
+  </g>
+
+  <!-- ===== 行 3：电阻 ===== -->
+  <g transform="translate(0 448)">
+    <rect x="30" y="0" width="1040" height="150" rx="14" fill="#ffffff" stroke="#dfe6e2" stroke-width="2"/>
+    <rect x="50" y="52" width="150" height="46" rx="10" fill="#f3eefb"/>
+    <text x="125" y="72" fill="#7c5cbf" font-size="19" font-weight="bold" text-anchor="middle">电阻 R</text>
+    <text x="125" y="94" fill="#5d4a91" font-size="14" text-anchor="middle">窄口 / 阀门</text>
+    <!-- 收窄的水管 -->
+    <g transform="translate(250 45)">
+      <path d="M0 0 H90 L120 18 H150 L180 0 H220 V60 H180 L150 42 H120 L90 60 H0 Z" fill="url(#water)" stroke="#9fb6c4" stroke-width="3"/>
+      <g fill="#ffffff">
+        <circle cx="25" cy="30" r="5" opacity="0.9"><animate attributeName="cx" values="25;95" dur="1.6s" repeatCount="indefinite"/><animate attributeName="r" values="5;3" dur="1.6s" repeatCount="indefinite"/></circle>
+        <circle cx="25" cy="30" r="5" opacity="0.9"><animate attributeName="cx" values="25;95" dur="1.6s" begin="-0.8s" repeatCount="indefinite"/><animate attributeName="r" values="5;3" dur="1.6s" begin="-0.8s" repeatCount="indefinite"/></circle>
+      </g>
+      <line x1="135" y1="-14" x2="135" y2="4" stroke="#7c5cbf" stroke-width="3"/>
+      <text x="135" y="-22" fill="#7c5cbf" font-size="15" font-weight="bold" text-anchor="middle">掐住水流</text>
+    </g>
+    <text x="530" y="82" fill="#9aa0a6" font-size="34" font-weight="bold" text-anchor="middle">=</text>
+    <!-- 电阻锯齿 -->
+    <g transform="translate(590 40)">
+      <line x1="0" y1="36" x2="40" y2="36" stroke="#7c5cbf" stroke-width="5"/>
+      <polyline points="40,36 55,14 75,58 95,14 115,58 135,14 150,36" fill="none" stroke="#7c5cbf" stroke-width="5" stroke-linejoin="round"/>
+      <line x1="150" y1="36" x2="190" y2="36" stroke="#7c5cbf" stroke-width="5"/>
+      <text x="95" y="84" fill="#7c5cbf" font-size="15" font-weight="bold" text-anchor="middle">220Ω 限流电阻</text>
+    </g>
+    <text x="830" y="60" fill="#1a1a1a" font-size="18">阻碍电流的</text>
+    <text x="830" y="88" fill="#7c5cbf" font-size="21" font-weight="bold">"阀门"</text>
+    <text x="830" y="118" fill="#6b6b6b" font-size="15">故意加它，是为了掐住电流保护元件</text>
+  </g>
+</svg>

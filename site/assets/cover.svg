@@ -1,0 +1,94 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 630" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#0d2b23"/>
+      <stop offset="0.55" stop-color="#123a30"/>
+      <stop offset="1" stop-color="#0b211b"/>
+    </linearGradient>
+    <linearGradient id="gold" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#ffd24d"/>
+      <stop offset="1" stop-color="#ffb84d"/>
+    </linearGradient>
+    <radialGradient id="ledGlow" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#7ec8ff" stop-opacity="0.95"/>
+      <stop offset="0.4" stop-color="#4aa3ff" stop-opacity="0.45"/>
+      <stop offset="1" stop-color="#4aa3ff" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+      <feDropShadow dx="0" dy="6" stdDeviation="10" flood-color="#000" flood-opacity="0.45"/>
+    </filter>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)"/>
+
+  <!-- 背景电路走线装饰 -->
+  <g stroke="#1e5a49" stroke-width="2" fill="none" opacity="0.55">
+    <path d="M0 90 H180 L230 140 H420"/>
+    <path d="M0 540 H140 L190 490 H360"/>
+    <path d="M1200 120 H1060 L1010 170 H900"/>
+    <path d="M1200 560 H1080 L1030 510 H960"/>
+    <circle cx="420" cy="140" r="5" fill="#2f7f66" stroke="none"/>
+    <circle cx="360" cy="490" r="5" fill="#2f7f66" stroke="none"/>
+    <circle cx="900" cy="170" r="5" fill="#2f7f66" stroke="none"/>
+    <circle cx="960" cy="510" r="5" fill="#2f7f66" stroke="none"/>
+  </g>
+
+  <!-- 标题区 -->
+  <g>
+    <text x="80" y="205" fill="#8fd6bd" font-size="30" letter-spacing="6">图文 + 交互动画 · 从零基础到专家</text>
+    <text x="76" y="300" fill="#ffffff" font-size="86" font-weight="bold">ESP32</text>
+    <text x="76" y="392" fill="url(#gold)" font-size="72" font-weight="bold">从点亮一盏灯开始</text>
+    <text x="80" y="455" fill="#c7d6d0" font-size="30">15 课进阶 · 每课可交互 · 每步可验收</text>
+    <!-- 阶段标签 -->
+    <g font-size="22" font-weight="bold">
+      <rect x="80" y="500" width="150" height="46" rx="23" fill="#0b6e4f"/>
+      <text x="155" y="531" fill="#eafff7" text-anchor="middle">破冰</text>
+      <rect x="246" y="500" width="150" height="46" rx="23" fill="#14795c"/>
+      <text x="321" y="531" fill="#eafff7" text-anchor="middle">输入输出</text>
+      <rect x="412" y="500" width="150" height="46" rx="23" fill="#1a8a6a"/>
+      <text x="487" y="531" fill="#eafff7" text-anchor="middle">通信</text>
+      <rect x="578" y="500" width="150" height="46" rx="23" fill="#22a07c"/>
+      <text x="653" y="531" fill="#06231a" text-anchor="middle">无线物联</text>
+      <rect x="744" y="500" width="150" height="46" rx="23" fill="#2fbb90"/>
+      <text x="819" y="531" fill="#06231a" text-anchor="middle">进阶专家</text>
+    </g>
+  </g>
+
+  <!-- 右侧 ESP32 板子插画 -->
+  <g transform="translate(940 315) rotate(-8)" filter="url(#soft)">
+    <!-- 板身 -->
+    <rect x="-130" y="-230" width="260" height="460" rx="16" fill="#0f3d2e" stroke="#0a2c21" stroke-width="4"/>
+    <!-- 引脚排 -->
+    <g fill="#c9ccd1">
+      <rect x="-152" y="-200" width="34" height="12" rx="3"/><rect x="-152" y="-172" width="34" height="12" rx="3"/>
+      <rect x="-152" y="-144" width="34" height="12" rx="3"/><rect x="-152" y="-116" width="34" height="12" rx="3"/>
+      <rect x="-152" y="-88" width="34" height="12" rx="3"/><rect x="-152" y="-60" width="34" height="12" rx="3"/>
+      <rect x="-152" y="-32" width="34" height="12" rx="3"/><rect x="-152" y="-4" width="34" height="12" rx="3"/>
+      <rect x="-152" y="24" width="34" height="12" rx="3"/><rect x="-152" y="52" width="34" height="12" rx="3"/>
+      <rect x="-152" y="80" width="34" height="12" rx="3"/><rect x="-152" y="108" width="34" height="12" rx="3"/>
+      <rect x="118" y="-200" width="34" height="12" rx="3"/><rect x="118" y="-172" width="34" height="12" rx="3"/>
+      <rect x="118" y="-144" width="34" height="12" rx="3"/><rect x="118" y="-116" width="34" height="12" rx="3"/>
+      <rect x="118" y="-88" width="34" height="12" rx="3"/><rect x="118" y="-60" width="34" height="12" rx="3"/>
+      <rect x="118" y="-32" width="34" height="12" rx="3"/><rect x="118" y="-4" width="34" height="12" rx="3"/>
+      <rect x="118" y="24" width="34" height="12" rx="3"/><rect x="118" y="52" width="34" height="12" rx="3"/>
+      <rect x="118" y="80" width="34" height="12" rx="3"/><rect x="118" y="108" width="34" height="12" rx="3"/>
+    </g>
+    <!-- ESP32 屏蔽罩 -->
+    <rect x="-85" y="-195" width="170" height="130" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="0" y="-145" fill="#4a5057" font-size="24" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="0" y="-115" fill="#6b7280" font-size="15" text-anchor="middle">WROOM-32</text>
+    <!-- USB 口 -->
+    <rect x="-35" y="205" width="70" height="34" rx="5" fill="#b8bcc2" stroke="#8a9099" stroke-width="3"/>
+    <!-- BOOT / EN 键 -->
+    <rect x="-100" y="120" width="46" height="24" rx="4" fill="#d9dee2" stroke="#9aa0a6" stroke-width="2"/>
+    <rect x="54" y="120" width="46" height="24" rx="4" fill="#d9dee2" stroke="#9aa0a6" stroke-width="2"/>
+    <!-- 板载 LED（发光） -->
+    <circle cx="70" cy="-30" r="46" fill="url(#ledGlow)">
+      <animate attributeName="opacity" values="1;1;0.15;0.15;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+    <rect x="58" y="-42" width="24" height="24" rx="4" fill="#7ec8ff" stroke="#4aa3ff" stroke-width="3">
+      <animate attributeName="fill" values="#7ec8ff;#7ec8ff;#3a4a55;#3a4a55;#7ec8ff" dur="2s" repeatCount="indefinite"/>
+    </rect>
+    <text x="70" y="14" fill="#8fd6bd" font-size="14" text-anchor="middle">LED</text>
+  </g>
+</svg>
