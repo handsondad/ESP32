@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 2 课：数字信号与基本电路——按键点灯</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 2 课：数字信号与基本电路——按键点灯</h1>
+<blockquote>
+<p><strong>阶段一 · 破冰与建立信心</strong> ｜ 难度：★★☆☆☆ ｜ 预计用时：45–60 分钟（接线 20 分钟 + 写代码 20 分钟）</p>
+<p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板 ×1、LED ×1（或用板载 LED）、220Ω 电阻 ×1、轻触按钮 ×1、杜邦线若干
+<strong>无硬件替代</strong>：文末附 Wokwi 在线模拟器方案，只有浏览器也能学完本课</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson02-hero.svg" alt="第 2 课效果预告：按下按钮点亮外接 LED"></p>
+<blockquote>
+<p>你将做出：<strong>按一下按钮，面包板上的红色 LED 亮起；再按一下，它熄灭。</strong> 一颗按钮，完整走通&quot;输入 → 决策 → 输出&quot;的控制闭环——这是所有智能设备的最小骨架。</p>
+</blockquote>
+<p>上一课你让灯&quot;自己闪&quot;，这一课你让灯&quot;听你的话&quot;。从这里开始，芯片不再是单向播放的录音机，而是会回应外界的控制器。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 分清<strong>数字输出</strong>与<strong>数字输入</strong>两种信号方向，理解&quot;电平只有 0 和 1&quot;</li>
+<li>✅ 看懂面包板的内部连通规则，搭出人生第一个外接电路</li>
+<li>✅ 亲手算出限流电阻的取值（回收第 1 课的 130Ω 悬案）</li>
+<li>✅ 理解<strong>上拉电阻</strong>与 <code>INPUT_PULLUP</code>，用按钮控制 LED</li>
+<li>✅ 目睹<strong>按键抖动</strong>现场——埋下本系列最大的坑之一（第 10 课回收）</li>
+</ol>
+<hr>
+<h2>🔁 开课先破案：130Ω 悬案与标准答案</h2>
+<p>第 1 课的课后挑战你算出来了吗？先对答案：</p>
+<blockquote>
+<p><strong>题目回顾</strong>：红色 LED 导通时两端约 2V，想把电流控制在 10mA，电阻分掉 3.3V − 2V = 1.3V，由 <code>R = V ÷ I = 1.3V ÷ 0.01A = 130Ω</code>。</p>
+</blockquote>
+<p>理论值 130Ω 没错。<strong>但你去商店买电阻，会发现根本没有 130Ω 这个规格</strong>——这就是理论与工程的第一道裂缝。</p>
+<p>电阻是<strong>标准化批量生产</strong>的，行业通用 <strong>E12 系列</strong>（误差 ±10%），阻值只有一串固定档位：</p>
+<pre><code>10  12  15  18  22  27  33  39  47  56  68  82  （×10ⁿ，循环往复）
+ …  120  150  220  330  470  680  1k  1k2  1k5  2k2 …
+</code></pre>
+<p><strong>标准答案</strong>：130Ω 不在档位里，取<strong>最接近的 120Ω 或 150Ω</strong> 都行（电流分别是 10.8mA 和 8.7mA，都在安全区）。而实际工程里，新手最常备、几乎万能的选择是 <strong>220Ω</strong>——电流约 5.9mA，LED 依然足够亮，却给芯片引脚留了充足余量。</p>
+<blockquote>
+<p>💡 <strong>工程思维第一课</strong>：设计值算出来是&quot;理想&quot;，落地时永远要在标准件里<strong>就近取档</strong>。误差 ±10% 完全无妨——电路不怕差这十几欧姆，怕的是压根没有这档货。</p>
+</blockquote>
+<p>📌 欧姆定律再确认（第 1 课交互实验台里玩过）：</p>
+<pre><code>              V                  3.3V − 2V        1.3V
+     I = ─────────     →    I = ──────────  =  ──────── ≈ 10mA
+             R                      R             220Ω ≈ 5.9mA
+</code></pre>
+<hr>
+<h2>📡 新知识一：数字信号——输出是&quot;发号施令&quot;，输入是&quot;侧耳倾听&quot;</h2>
+<p>第 1 课的 <code>digitalWrite</code> 是<strong>输出</strong>：芯片主动把引脚置为 3.3V（HIGH）或 0V（LOW），去驱动灯。这一课的另一半世界是<strong>输入</strong>：芯片读取引脚上的电压，判断外面接的是高还是低。</p>
+<table>
+<thead>
+<tr>
+<th>方向</th>
+<th>Arduino 写法</th>
+<th>白话</th>
+<th>本课实例</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>数字输出</strong></td>
+<td><code>pinMode(4, OUTPUT)</code> + <code>digitalWrite()</code></td>
+<td>&quot;我往外供电/断电&quot;</td>
+<td>LED 亮灭</td>
+</tr>
+<tr>
+<td><strong>数字输入</strong></td>
+<td><code>pinMode(23, INPUT_PULLUP)</code> + <code>digitalRead()</code></td>
+<td>&quot;我读外面是 1 还是 0&quot;</td>
+<td>按钮状态</td>
+</tr>
+</tbody></table>
+<p>关键认知：<strong>数字输入只有两种读数——HIGH 和 LOW</strong>。它读的不是&quot;外面有多少伏&quot;，而是&quot;电压站在 3.3V 这边，还是 0V 这边&quot;（阈值大约 1.65V，低于判低、高于判高，详见第 6 课）。</p>
+<p>那问题来了：按钮松开时，引脚悬在半空，读出来是什么？</p>
+<h3>上拉电阻：给悬空的引脚一个&quot;默认答案&quot;</h3>
+<p>按钮只是一根能按下去的金属片，它只有两种状态：<strong>接通</strong>或<strong>断开</strong>。松开时引脚与任何地方都不相连——这叫<strong>浮空（floating）</strong>，电平飘忽不定，<code>digitalRead</code> 会读出随机的 0 和 1，程序直接发疯。</p>
+<p>解决办法：用一颗电阻把引脚<strong>默认&quot;拉&quot;到确定电平</strong>。拉到 3.3V 的叫<strong>上拉（pull-up）</strong>，拉到 0V 的叫<strong>下拉（pull-down）</strong>：</p>
+<pre><code>        3.3V                        3.3V
+         │                           │
+        [R] 上拉电阻 10kΩ           [R] 10kΩ
+         │                           │
+         ├──── 引脚                  ├──── 引脚
+         │                           │
+        [按钮]                      [按钮]
+         │                           │
+        GND                         GND
+
+   按钮松开 → 引脚被电阻拽到 3.3V → 读到 HIGH
+   按钮按下 → 引脚直通 GND → 读到 LOW      （按下 = LOW，反直觉但记住它）
+</code></pre>
+<p>好消息：<strong>ESP32 每个普通 GPIO 内部都内置了这颗上拉电阻</strong>，一行代码 <code>INPUT_PULLUP</code> 就能启用，外部一颗电阻都不用接。这就是本课按钮<strong>只需要两根线</strong>（一根接引脚、一根接 GND）的秘诀。</p>
+<blockquote>
+<p>⚠️ <strong>为什么按钮另一端接 GND 而不是 3.3V？</strong> 配合上拉，&quot;按下&quot;会把电平<strong>拽低</strong>，读到 LOW。约定俗成：<strong>LOW = 被按下</strong>。第 6 课讲引脚陷阱时你会发现，有些&quot;仅输入&quot;引脚（GPIO34/35/36/39）连内置上拉都没有——第 1 课挑战里你把 LED 改到 34 亮不了，那颗雷的完整拆解也在第 6 课。</p>
+</blockquote>
+<hr>
+<h2>🍞 新知识二：面包板——看不见的铜条</h2>
+<p>面包板不是&quot;插着好玩的板子&quot;，它的塑料壳下面藏着一排排<strong>铜条</strong>。规则只有一条：</p>
+<blockquote>
+<p><strong>同一组 5 个孔，内部用铜条连通；中间沟槽隔开左右两侧；板边的电源轨每 5 孔一组纵向连通（常有断点，用万用表确认）。</strong></p>
+</blockquote>
+<pre><code>   A  B  C  D  E     │     F  G  H  I  J
+   ○  ○  ○  ○  ○     │     ○  ○  ○  ○  ○   ← 同一横排的 5 个孔连通
+   ○  ○  ○  ○  ○     │     ○  ○  ○  ○  ○
+   ○  ○  ○  ○  ○     │     ○  ○  ○  ○  ○   ← 沟槽两侧互不相通
+   ────────────── 沟槽（DIP 芯片跨坐在这里）──────────────
+</code></pre>
+<p><strong>两个新手必犯错误：</strong></p>
+<ol>
+<li><strong>把按钮的两脚插进同一组 5 孔</strong>——内部早就短接了，按不按都一样，灯永远没反应。按钮的两脚必须<strong>跨在不同组</strong>（轻触按钮 4 脚，对角两脚内部已通，插的时候让两组脚分别落在沟槽两侧最稳妥）。</li>
+<li><strong>LED 两脚插同一组</strong>——同理直接短路，灯不亮还容易让芯片引脚过流。</li>
+</ol>
+<p><!-- 组件：面包板内部连通交互图 · 用于第 2 课面包板规则 -->
+<div class="wgt wgt-bb" id="wg-bb">
+  <div class="wgt-head"><span>🔌 交互演示：面包板里看不见的铜条</span><span class="wgt-badge">点任意孔位，看谁和它连通</span></div>
+  <div class="wgt-body">
+    <svg viewBox="0 0 640 330" style="width:100%;height:auto;display:block" id="wg-bb-svg">
+      <!-- 板身 -->
+      <rect x="20" y="20" width="600" height="290" rx="12" fill="#f2f0ec" stroke="#c8c2b6" stroke-width="3"/>
+      <!-- 中央沟槽 -->
+      <rect x="40" y="158" width="560" height="14" rx="7" fill="#ddd8cf" stroke="#c8c2b6" stroke-width="2"/>
+      <text x="320" y="169" text-anchor="middle" fill="#8a8378" font-size="11">沟槽（两侧不相通）</text>
+      <!-- 列标 -->
+      <g fill="#8a8378" font-size="12" font-weight="bold" text-anchor="middle">
+        <text x="70" y="42">A</text><text x="140" y="42">B</text><text x="210" y="42">C</text>
+        <text x="280" y="42">D</text><text x="350" y="42">E</text>
+        <text x="430" y="42">F</text><text x="500" y="42">G</text><text x="570" y="42">H</text>
+      </g>
+      <!-- 孔位由 JS 生成 -->
+      <g id="wg-bb-holes"></g>
+      <!-- 连通高亮框 -->
+      <g id="wg-bb-links" opacity="0">
+        <rect id="wg-bb-linkbox" rx="8" fill="rgba(11,110,79,.10)" stroke="#0b6e4f" stroke-width="3" stroke-dasharray="7 5"/>
+      </g>
+      <!-- 读数 -->
+      <text id="wg-bb-readout" x="320" y="303" text-anchor="middle" fill="#1a1a1a" font-size="13.5" font-weight="bold">点一个孔试试——同一列、沟槽同一侧的孔连通</text>
+    </svg>
+    <p class="wgt-hint" style="text-align:center">虚线框内的孔 = 一根看不见的铜条，插进去的元件脚彼此导通；<b>跨过沟槽就不通了</b>（真实板每组 5 孔，图中简化为 3 孔）。所以 LED 两脚必须分属不同组、按钮两脚必须跨组——插同一组 = 内部短路，按了也白按。</p>
+  </div>
+</div>
+<style>
+.wgt-bb .wg-bb-hole { cursor: pointer; }
+.wgt-bb .wg-bb-hole:hover circle { stroke: #ffb84d; stroke-width: 3; }
+.wgt-bb .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-bb');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const NS = 'http://www.w3.org/2000/svg';
+  const gHoles = document.getElementById('wg-bb-holes');
+  const links = document.getElementById('wg-bb-links');
+  const linkbox = document.getElementById('wg-bb-linkbox');
+  const readout = document.getElementById('wg-bb-readout');
+
+  const colsL = [70, 140, 210, 280, 350];   // A-E
+  const colsR = [430, 500, 570];            // F-H
+  const rowsTop = [65, 95, 125];            // 沟槽上方
+  const rowsBot = [200, 230, 260];          // 沟槽下方
+  const holes = []; // {group, x, y}，group 形如 "L4T"：左区第4列(0基) 上半
+
+  function makeHole(x, y, group) {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'wg-bb-hole');
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y);
+    c.setAttribute('r', 9);
+    c.setAttribute('fill', '#fff');
+    c.setAttribute('stroke', '#a9a294');
+    c.setAttribute('stroke-width', 2);
+    g.appendChild(c);
+    g.addEventListener('click', () => select(group));
+    gHoles.appendChild(g);
+    holes.push({ group, x, y, c });
+  }
+
+  // 每列上下各一组（组内连通，组间被沟槽隔断）
+  colsL.forEach((x, ci) => {
+    rowsTop.forEach(y => makeHole(x, y, 'L' + ci + 'T'));
+    rowsBot.forEach(y => makeHole(x, y, 'L' + ci + 'B'));
+  });
+  colsR.forEach((x, ci) => {
+    rowsTop.forEach(y => makeHole(x, y, 'R' + ci + 'T'));
+    rowsBot.forEach(y => makeHole(x, y, 'R' + ci + 'B'));
+  });
+
+  function select(group) {
+    const same = holes.filter(h => h.group === group);
+    // 高亮同组
+    holes.forEach(h => {
+      const on = h.group === group;
+      h.c.setAttribute('fill', on ? '#0b6e4f' : '#fff');
+      h.c.setAttribute('stroke', on ? '#0b6e4f' : '#a9a294');
+    });
+    // 虚线框包住同组
+    const xs = same.map(h => h.x), ys = same.map(h => h.y);
+    const minX = Math.min(...xs) - 17, maxX = Math.max(...xs) + 17;
+    const minY = Math.min(...ys) - 17, maxY = Math.max(...ys) + 17;
+    linkbox.setAttribute('x', minX); linkbox.setAttribute('y', minY);
+    linkbox.setAttribute('width', maxX - minX); linkbox.setAttribute('height', maxY - minY);
+    links.setAttribute('opacity', '1');
+    // 列名 + 半区
+    const side = group[0] === 'L' ? 'ABCDEFGHI'[+group[1]] : 'FGH'[+group[1]];
+    const half = group[2] === 'T' ? '上半（沟槽上方）' : '下半（沟槽下方）';
+    readout.textContent = `${side} 列 ${half}：这 3 孔连通 ✅ —— 同列对面（隔沟槽）和旁边列都不通 ❌`;
+  }
+
+  select('L4T'); // 默认演示 E 列上半
+})();
+</script>
+</p>
+<hr>
+<h2>🔌 动手接线（断电状态下进行！）</h2>
+<p>按下面的接线表连接（第 1 课三原则第 2 条：<strong>先断电接线，再通电</strong>）：</p>
+<table>
+<thead>
+<tr>
+<th>从</th>
+<th>到</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ESP32 <strong>GND</strong></td>
+<td>面包板负极轨（任意）</td>
+<td>建立公共地</td>
+</tr>
+<tr>
+<td>ESP32 <strong>GPIO4</strong></td>
+<td>电阻一端</td>
+<td>电阻串在回路里（第 1 课学的：忘串电阻 = 烧 LED）</td>
+</tr>
+<tr>
+<td>电阻另一端</td>
+<td>LED <strong>长脚（阳极 A）</strong></td>
+<td>LED 极性：长脚正、短脚负</td>
+</tr>
+<tr>
+<td>LED <strong>短脚（阴极 C）</strong></td>
+<td>面包板负极轨</td>
+<td>回到 GND，回路闭合</td>
+</tr>
+<tr>
+<td>ESP32 <strong>GPIO23</strong></td>
+<td>按钮脚 A（跨沟槽的一侧）</td>
+<td>输入引脚，内部上拉</td>
+</tr>
+<tr>
+<td>按钮脚 B（另一侧）</td>
+<td>面包板负极轨</td>
+<td>按下时把引脚拽到 GND</td>
+</tr>
+</tbody></table>
+<p><img src="assets/lesson02-wiring.svg" alt="第 2 课接线图：GPIO4 经电阻驱动 LED，GPIO23 读取按钮"></p>
+<blockquote>
+<p>🧭 <strong>接线口诀</strong>：LED 跟着电阻走（串联回路），按钮一头引脚一头地（配合上拉）。</p>
+<p><strong>Wokwi 无硬件方案</strong>：新建 ESP32 DevKit 项目 → 添加 <code>LED</code>、<code>Resistor</code>（220Ω）、<code>Pushbutton</code> → 按上表接线（Wokwi 按钮选 <code>GND</code> 和 <code>GPIO23</code> 两脚）→ 代码完全相同，点 Start 即可。</p>
+</blockquote>
+<hr>
+<h2>💡 完整代码（直接复制）</h2>
+<pre><code class="language-cpp">// ============================================
+// 第 2 课：按钮点灯 —— 输入 → 决策 → 输出
+// ============================================
+const int LED_PIN = 4;      // 外接 LED（经 220Ω 电阻）
+const int BTN_PIN = 23;     // 按钮，配合内部上拉
+
+bool ledOn = false;         // 记住灯的当前状态（灭 = false）
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);        // LED：输出方向
+  pinMode(BTN_PIN, INPUT_PULLUP);  // 按钮：输入方向 + 启用内部上拉
+  Serial.begin(115200);
+}
+
+void loop() {
+  if (digitalRead(BTN_PIN) == LOW) {   // LOW = 按钮被按下（上拉的约定）
+    ledOn = !ledOn;                     // 翻转状态：亮变灭、灭变亮
+    digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+    Serial.println(ledOn ? &quot;LED ON&quot; : &quot;LED OFF&quot;);
+
+    delay(300);                          // 防抖 + 等你松手（这行是雷！）
+    while (digitalRead(BTN_PIN) == LOW); // 等待松开，防止按住不放狂跳
+  }
+}
+</code></pre>
+<h3>逐段拆解（每个词都给你讲人话）</h3>
+<p><strong><code>const int LED_PIN = 4;</code> / <code>const int BTN_PIN = 23;</code></strong>
+两个引脚各起名字。接线变了只改这两行——第 1 课养成的习惯，本课立刻兑现。</p>
+<p><strong><code>bool ledOn = false;</code></strong>
+<code>bool</code> 只有两个值：<code>true</code> / <code>false</code>。灯的状态本质就是 1 bit 信息，用它记住&quot;现在是亮是灭&quot;。<strong>状态存在变量里，而不是去猜硬件现在的样子</strong>——这是控制类程序的核心思维。</p>
+<p><strong><code>pinMode(BTN_PIN, INPUT_PULLUP)</code></strong>
+三个词拆开：<code>INPUT</code> 声明方向是读入；<code>PULLUP</code> 启用内部上拉电阻，给引脚一个&quot;松开时默认读 HIGH&quot;的锚点。没有它，浮空引脚会读出随机数。</p>
+<p><strong><code>digitalRead(BTN_PIN) == LOW</code></strong>
+读引脚电平。因为上拉 + 按钮接 GND 的组合，<strong>按下 = LOW</strong>。第一次写&quot;反直觉&quot;的判断条件，先背下来，第 6 课你会看到完整的电平真相。</p>
+<p><strong><code>ledOn = !ledOn;</code></strong>
+<code>!</code> 是取反：<code>true</code> 变 <code>false</code>，<code>false</code> 变 <code>true</code>。一个字符实现&quot;切换&quot;——每按一次翻一档，这就是 toggle 开关的全部秘密。</p>
+<p><strong><code>digitalWrite(LED_PIN, ledOn ? HIGH : LOW);</code></strong>
+<code>? :</code> 是三元运算符：<code>ledOn</code> 为 true 就给 HIGH，否则给 LOW。等价于写两行 if-else，但更紧凑。</p>
+<p><strong><code>delay(300);</code> + <code>while (digitalRead(BTN_PIN) == LOW);</code></strong>
+按下后先等 300 毫秒（跳过按键触点抖动的混乱期），再原地等待直到你松手。<strong>这两行让程序&quot;停下来等&quot;——第 1 课你已经知道 <code>delay</code> 是原地罚站，本课它罚得更久</strong>。先能用，第 3 课我们把 <code>delay</code> 扔掉，第 10 课你会明白为什么必须扔。</p>
+<h3>🎭 埋雷现场：按键抖动（本课最重要的观察作业）</h3>
+<p>轻触按钮的金属弹片在按下的瞬间不会&quot;啪&quot;地干脆接触，而是<strong>高频弹跳几毫秒才稳定</strong>——像皮球落地前的连续小弹跳。这会导致一次按下被读成<strong>多次</strong>：</p>
+<p><!-- 组件：按键抖动示波器 · 用于第 2 课埋雷现场 -->
+<div class="wgt wgt-bounce" id="wg-bounce">
+  <div class="wgt-head"><span>🎭 交互演示：按键抖动现场（Button Bounce）</span><span class="wgt-badge">按住下面的按钮试试</span></div>
+  <div class="wgt-body">
+    <svg viewBox="0 0 620 240" style="width:100%;height:auto;display:block" id="wg-bounce-svg">
+      <!-- 波形区坐标：x 30-560, HIGH y=50, LOW y=150 -->
+      <line x1="30" y1="50" x2="590" y2="50" stroke="#e5e2dc"/>
+      <line x1="30" y1="150" x2="590" y2="150" stroke="#e5e2dc"/>
+      <text x="24" y="54" text-anchor="end" fill="#6b6b6b" font-size="12">HIGH</text>
+      <text x="24" y="154" text-anchor="end" fill="#6b6b6b" font-size="12">LOW</text>
+      <text x="30" y="34" fill="#9aa0a6" font-size="11">GPIO23 实测电平</text>
+      <!-- 理想波形（灰色虚线参考） -->
+      <path id="wg-bounce-ideal" d="" fill="none" stroke="#c8cdd2" stroke-width="2" stroke-dasharray="6 5"/>
+      <!-- 实测波形（含抖动） -->
+      <path id="wg-bounce-wave" d="M 30 50" fill="none" stroke="#0b6e4f" stroke-width="3"/>
+      <!-- 按下沿标记 -->
+      <g id="wg-bounce-marks"></g>
+      <!-- 计数 -->
+      <text id="wg-bounce-count" x="310" y="205" text-anchor="middle" fill="#c0392b" font-size="16" font-weight="bold">程序读到的下降沿：0 次</text>
+      <text id="wg-bounce-note" x="310" y="230" text-anchor="middle" fill="#6b6b6b" font-size="13">你按下的物理动作：1 次</text>
+    </svg>
+    <!-- 虚拟按钮 -->
+    <div style="text-align:center;margin-top:6px">
+      <button id="wg-bounce-btn" style="font-size:1.05em;padding:.7em 2.4em;border-radius:50px;background:#2b2b2b;color:#fff;border:none;cursor:pointer;box-shadow:0 4px 0 #111;transition:.08s">按 住 我</button>
+      <div style="font-size:.82em;color:#6b6b6b;margin-top:8px">模拟真实轻触按钮：触点在 5–10ms 内高频弹跳</div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">按一次，实测波形在稳定前<b>来回横跳好几次</b>——每次横跳都被 <code>digitalRead</code> 当成一次新按下。本课代码用 <code>delay(300)</code> 硬压住它；第 10 课我们用 <code>millis()</code> 优雅根治。现在，把"按一次跳多次"的现象记进笔记本！</p>
+  </div>
+</div>
+<style>
+.wgt-bounce .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+#wg-bounce-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #111; }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-bounce');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const wave = document.getElementById('wg-bounce-wave');
+  const ideal = document.getElementById('wg-bounce-ideal');
+  const marks = document.getElementById('wg-bounce-marks');
+  const countEl = document.getElementById('wg-bounce-count');
+  const noteEl = document.getElementById('wg-bounce-note');
+  const btn = document.getElementById('wg-bounce-btn');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const X0 = 30, X1 = 560, YH = 50, YL = 150;
+  let busy = false;
+
+  // 生成一段"含抖动"的下降沿序列：稳定 LOW → 抖动几下 → 稳定
+  function buildBounce() {
+    const pts = [[X0, YH]];          // 起始高
+    const pressX = X0 + 150;          // 物理按下时刻
+    pts.push([pressX, YH]);
+    // 抖动区：5-8 次快速跳变，幅度递减
+    let x = pressX;
+    const jumps = 5 + Math.floor(Math.random() * 4);
+    let level = YL;                   // 先跳到低
+    for (let i = 0; i < jumps; i++) {
+      x += 8 + Math.random() * 14;
+      pts.push([x, level]);
+      level = (level === YL) ? YH : YL;   // 交替
+      // 最后强制稳定到 LOW
+      if (i === jumps - 1) { x += 10 + Math.random() * 12; pts.push([x, YL]); }
+    }
+    const settleX = x + 20;
+    pts.push([settleX, YL]);
+    pts.push([X1, YL]);
+    // 统计下降沿（HIGH→LOW 次数）
+    let falls = 0;
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i - 1][1] === YH && pts[i][1] === YL) falls++;
+    }
+    return { pts, falls, pressX };
+  }
+
+  function toPath(pts) {
+    return 'M ' + pts.map(p => `${p[0].toFixed(1)} ${p[1]}`).join(' L ');
+  }
+
+  function runPress() {
+    if (busy) return; busy = true;
+    btn.textContent = '按下中…';
+    const { pts, falls, pressX } = buildBounce();
+    // 理想波形：只跳一次
+    ideal.setAttribute('d', `M ${X0} ${YH} L ${pressX} ${YH} L ${pressX + 30} ${YL} L ${X1} ${YL}`);
+    // 实测波形动画生长
+    wave.setAttribute('d', toPath([pts[0]]));
+    marks.innerHTML = '';
+    const total = toPath(pts);
+    const len = wave.getTotalLength ? 0 : 0; // 路径未就绪，用逐步追加点模拟
+    let i = 1;
+    const timer = setInterval(() => {
+      if (i >= pts.length) {
+        clearInterval(timer);
+        // 标注每个下降沿
+        for (let k = 1; k < pts.length; k++) {
+          if (pts[k - 1][1] === YH && pts[k][1] === YL) {
+            const c = document.createElementNS(NS, 'circle');
+            c.setAttribute('cx', pts[k][0]); c.setAttribute('cy', YL);
+            c.setAttribute('r', 6);
+            c.setAttribute('fill', '#e74c3c');
+            c.setAttribute('opacity', '0');
+            const an = document.createElementNS(NS, 'animate');
+            an.setAttribute('attributeName', 'opacity'); an.setAttribute('values', '0;1');
+            an.setAttribute('dur', '.3s'); an.setAttribute('fill', 'freeze');
+            c.appendChild(an);
+            marks.appendChild(c);
+          }
+        }
+        countEl.textContent = `程序读到的下降沿：${falls} 次`;
+        noteEl.textContent = falls > 1
+          ? `你按下的物理动作：1 次 → 程序以为你按了 ${falls} 次！这就是按键抖动`
+          : '这次抖动很轻，程序只读到 1 次——抖动是概率性的，别侥幸';
+        btn.textContent = '再按一次';
+        busy = false;
+      } else {
+        wave.setAttribute('d', toPath(pts.slice(0, i + 1)));
+        i++;
+      }
+    }, 55);
+  }
+
+  btn.addEventListener('click', runPress);
+  // 初始静态画面
+  ideal.setAttribute('d', `M ${X0} ${YH} L 180 ${YH} L 210 ${YL} L ${X1} ${YL}`);
+  wave.setAttribute('d', `M ${X0} ${YH}`);
+})();
+</script>
+</p>
+<p>上面的代码靠 <code>delay(300)</code> 粗暴压住了抖动。<strong>记住这个&quot;靠停顿换稳定&quot;的笨办法</strong>——它是第 3 课（扔掉 delay）和第 10 课（millis 彻底告别阻塞）两颗伏笔的引线。你现在体会到的&quot;程序为了等按钮不得不罚站&quot;，就是嵌入式工程师几百年来（夸张）最头疼的问题。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 面包板上 LED 与电阻串联，接线后先用万用表/目测核对极性，通电灯不常亮（常亮 = 接线错了，先断电！）</li>
+<li><input disabled="" type="checkbox"> 上传代码无报错</li>
+<li><input disabled="" type="checkbox"> 按一下按钮 → LED 亮，串口打印 <code>LED ON</code></li>
+<li><input disabled="" type="checkbox"> 再按一下 → LED 灭，串口打印 <code>LED OFF</code></li>
+<li><input disabled="" type="checkbox"> 按住不放 → 灯不会疯狂乱跳（等松手逻辑生效）</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①数字信号为什么只有 0 和 1 ②按钮为什么要上拉 ③电阻为什么要 220Ω 而不是 0Ω</li>
+<li><input disabled="" type="checkbox"> 观察并记录：快速轻点按钮时，偶尔会出现&quot;按一次灯跳两下&quot;吗？（抖动漏网现象，记下来，第 10 课回收）</li>
+</ul>
+<p><strong>全部打勾 → 你已经掌握了嵌入式最重要的控制范式：读输入 → 改状态 → 驱动输出。进入第 3 课。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>换引脚</strong>：把 LED 换到 GPIO25、按钮换到 GPIO19，改两行常量让程序照常工作。体会&quot;代码与接线解耦&quot;。</li>
+<li><strong>拆雷实验（重点）</strong>：把 <code>delay(300)</code> 改成 <code>delay(5)</code>，快速连按 20 次，数一数灯&quot;多跳了几次&quot;。把现象记在笔记本上——这就是按键抖动的真面目，第 10 课我们用 <code>millis()</code> 优雅解决它。</li>
+<li><strong>反接挑战（选做）</strong>：把 <code>INPUT_PULLUP</code> 改成普通 <code>INPUT</code>（去掉上拉），不改接线上传代码。按按钮时读数是什么？灯还听话吗？现象记下来——第 6 课讲浮空引脚时揭晓。</li>
+<li><strong>电阻验算（选做）</strong>：手边如果有万用表，量一下 LED 亮起时电阻两端的压差，除以 220，验证电流是不是 6mA 左右。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>灯常亮，按钮完全没反应</td>
+<td>LED 或按钮两脚插进了<strong>同一组 5 孔</strong>（内部短接）</td>
+<td>断电，按接线图重新插：LED 两脚分属电阻组和 GND 组，按钮两脚跨组</td>
+</tr>
+<tr>
+<td>按了灯不亮，但串口有打印</td>
+<td>① LED 极性反了 ② 电阻虚插 ③ LED 引脚号与代码不符</td>
+<td>长脚应朝电阻方向；重新压实电阻；核对 <code>LED_PIN</code></td>
+</tr>
+<tr>
+<td>不按按钮，串口随机刷 <code>LED ON/OFF</code></td>
+<td>引脚浮空——<code>INPUT_PULLUP</code> 没生效或按钮没接 GND</td>
+<td>确认代码是 <code>INPUT_PULLUP</code>；按钮另一端必须接 GND 而不是悬空</td>
+</tr>
+<tr>
+<td>按一次灯跳好几下（连按却&quot;自作主张&quot;）</td>
+<td><strong>按键抖动</strong>（本课埋的雷，属正常物理现象）</td>
+<td><code>delay(300)</code> 应已压住；若仍出现检查是否把 delay 改小了——记下现象，第 10 课根治</td>
+</tr>
+<tr>
+<td>按住灯亮，松手立刻灭</td>
+<td>接成了&quot;点动&quot;：按钮串在 LED 回路里了</td>
+<td>按钮必须独立接 GPIO23，别串进 LED 回路；LED 只受 GPIO4 控制</td>
+</tr>
+<tr>
+<td><code>error: &#39;INPUT_PULLUP&#39; was not declared</code></td>
+<td>板子型号选错，用了非 ESP32 核心</td>
+<td>工具 → 开发板确认为 <code>ESP32 Dev Module</code></td>
+</tr>
+<tr>
+<td>编译报引脚冲突 / 行为诡异</td>
+<td>用了 GPIO34/35/36/39 接 LED</td>
+<td>这些是<strong>仅输入</strong>脚，<code>digitalWrite</code> 无效——第 1 课埋的雷，第 6 课拆解；LED 换到 4/16/17/25 等普通脚</td>
+</tr>
+<tr>
+<td>上传成功但完全没反应</td>
+<td>程序在跑但你看的是没接线的板载灯</td>
+<td>本课主角是<strong>面包板上的外接 LED</strong>，板载灯（GPIO2）不归本课代码管</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>按钮能点了，但灯只有&quot;全亮&quot;和&quot;全灭&quot;两档——<strong>能不能让它半亮、让亮度连续变化？</strong> <strong>第 3 课：PWM 与呼吸灯</strong>——你会学到芯片&quot;用开关骗过眼睛&quot;的绝技（快速亮灭 = 看起来半亮），让 LED 呼吸般渐明渐暗。更重要的是，本课用来防抖的 <code>delay</code> 将被你亲手扔掉——因为呼吸需要平滑过渡，而 <code>delay</code> 会让呼吸变成抽搐。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

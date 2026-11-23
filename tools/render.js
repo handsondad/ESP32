@@ -153,7 +153,7 @@ function render() {
 <h1>ESP32 从零到专家 · 实战教程</h1>
 <p>阶段一 · 破冰与建立信心 —— 从点亮一盏灯开始。点击进入各课：</p>
 <div class="nav">
-${pages.map(p => `<a href="${p.outName}">${p.title}<span class="tag">第 1 课</span></a>`).join('\n')}
+${pages.map(p => `<a href="${p.outName}">${p.title}<span class="tag">${'第 ' + parseInt(p.outName, 10) + ' 课'}</span></a>`).join('\n')}
 </div>
 <hr>
 <p><em>其余各课持续更新中……</em></p>

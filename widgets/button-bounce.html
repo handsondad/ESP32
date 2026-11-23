@@ -1,0 +1,128 @@
+<!-- 组件：按键抖动示波器 · 用于第 2 课埋雷现场 -->
+<div class="wgt wgt-bounce" id="wg-bounce">
+  <div class="wgt-head"><span>🎭 交互演示：按键抖动现场（Button Bounce）</span><span class="wgt-badge">按住下面的按钮试试</span></div>
+  <div class="wgt-body">
+    <svg viewBox="0 0 620 240" style="width:100%;height:auto;display:block" id="wg-bounce-svg">
+      <!-- 波形区坐标：x 30-560, HIGH y=50, LOW y=150 -->
+      <line x1="30" y1="50" x2="590" y2="50" stroke="#e5e2dc"/>
+      <line x1="30" y1="150" x2="590" y2="150" stroke="#e5e2dc"/>
+      <text x="24" y="54" text-anchor="end" fill="#6b6b6b" font-size="12">HIGH</text>
+      <text x="24" y="154" text-anchor="end" fill="#6b6b6b" font-size="12">LOW</text>
+      <text x="30" y="34" fill="#9aa0a6" font-size="11">GPIO23 实测电平</text>
+      <!-- 理想波形（灰色虚线参考） -->
+      <path id="wg-bounce-ideal" d="" fill="none" stroke="#c8cdd2" stroke-width="2" stroke-dasharray="6 5"/>
+      <!-- 实测波形（含抖动） -->
+      <path id="wg-bounce-wave" d="M 30 50" fill="none" stroke="#0b6e4f" stroke-width="3"/>
+      <!-- 按下沿标记 -->
+      <g id="wg-bounce-marks"></g>
+      <!-- 计数 -->
+      <text id="wg-bounce-count" x="310" y="205" text-anchor="middle" fill="#c0392b" font-size="16" font-weight="bold">程序读到的下降沿：0 次</text>
+      <text id="wg-bounce-note" x="310" y="230" text-anchor="middle" fill="#6b6b6b" font-size="13">你按下的物理动作：1 次</text>
+    </svg>
+    <!-- 虚拟按钮 -->
+    <div style="text-align:center;margin-top:6px">
+      <button id="wg-bounce-btn" style="font-size:1.05em;padding:.7em 2.4em;border-radius:50px;background:#2b2b2b;color:#fff;border:none;cursor:pointer;box-shadow:0 4px 0 #111;transition:.08s">按 住 我</button>
+      <div style="font-size:.82em;color:#6b6b6b;margin-top:8px">模拟真实轻触按钮：触点在 5–10ms 内高频弹跳</div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">按一次，实测波形在稳定前<b>来回横跳好几次</b>——每次横跳都被 <code>digitalRead</code> 当成一次新按下。本课代码用 <code>delay(300)</code> 硬压住它；第 10 课我们用 <code>millis()</code> 优雅根治。现在，把"按一次跳多次"的现象记进笔记本！</p>
+  </div>
+</div>
+<style>
+.wgt-bounce .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+#wg-bounce-btn:active { transform: translateY(4px); box-shadow: 0 0 0 #111; }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-bounce');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const wave = document.getElementById('wg-bounce-wave');
+  const ideal = document.getElementById('wg-bounce-ideal');
+  const marks = document.getElementById('wg-bounce-marks');
+  const countEl = document.getElementById('wg-bounce-count');
+  const noteEl = document.getElementById('wg-bounce-note');
+  const btn = document.getElementById('wg-bounce-btn');
+  const NS = 'http://www.w3.org/2000/svg';
+
+  const X0 = 30, X1 = 560, YH = 50, YL = 150;
+  let busy = false;
+
+  // 生成一段"含抖动"的下降沿序列：稳定 LOW → 抖动几下 → 稳定
+  function buildBounce() {
+    const pts = [[X0, YH]];          // 起始高
+    const pressX = X0 + 150;          // 物理按下时刻
+    pts.push([pressX, YH]);
+    // 抖动区：5-8 次快速跳变，幅度递减
+    let x = pressX;
+    const jumps = 5 + Math.floor(Math.random() * 4);
+    let level = YL;                   // 先跳到低
+    for (let i = 0; i < jumps; i++) {
+      x += 8 + Math.random() * 14;
+      pts.push([x, level]);
+      level = (level === YL) ? YH : YL;   // 交替
+      // 最后强制稳定到 LOW
+      if (i === jumps - 1) { x += 10 + Math.random() * 12; pts.push([x, YL]); }
+    }
+    const settleX = x + 20;
+    pts.push([settleX, YL]);
+    pts.push([X1, YL]);
+    // 统计下降沿（HIGH→LOW 次数）
+    let falls = 0;
+    for (let i = 1; i < pts.length; i++) {
+      if (pts[i - 1][1] === YH && pts[i][1] === YL) falls++;
+    }
+    return { pts, falls, pressX };
+  }
+
+  function toPath(pts) {
+    return 'M ' + pts.map(p => `${p[0].toFixed(1)} ${p[1]}`).join(' L ');
+  }
+
+  function runPress() {
+    if (busy) return; busy = true;
+    btn.textContent = '按下中…';
+    const { pts, falls, pressX } = buildBounce();
+    // 理想波形：只跳一次
+    ideal.setAttribute('d', `M ${X0} ${YH} L ${pressX} ${YH} L ${pressX + 30} ${YL} L ${X1} ${YL}`);
+    // 实测波形动画生长
+    wave.setAttribute('d', toPath([pts[0]]));
+    marks.innerHTML = '';
+    const total = toPath(pts);
+    const len = wave.getTotalLength ? 0 : 0; // 路径未就绪，用逐步追加点模拟
+    let i = 1;
+    const timer = setInterval(() => {
+      if (i >= pts.length) {
+        clearInterval(timer);
+        // 标注每个下降沿
+        for (let k = 1; k < pts.length; k++) {
+          if (pts[k - 1][1] === YH && pts[k][1] === YL) {
+            const c = document.createElementNS(NS, 'circle');
+            c.setAttribute('cx', pts[k][0]); c.setAttribute('cy', YL);
+            c.setAttribute('r', 6);
+            c.setAttribute('fill', '#e74c3c');
+            c.setAttribute('opacity', '0');
+            const an = document.createElementNS(NS, 'animate');
+            an.setAttribute('attributeName', 'opacity'); an.setAttribute('values', '0;1');
+            an.setAttribute('dur', '.3s'); an.setAttribute('fill', 'freeze');
+            c.appendChild(an);
+            marks.appendChild(c);
+          }
+        }
+        countEl.textContent = `程序读到的下降沿：${falls} 次`;
+        noteEl.textContent = falls > 1
+          ? `你按下的物理动作：1 次 → 程序以为你按了 ${falls} 次！这就是按键抖动`
+          : '这次抖动很轻，程序只读到 1 次——抖动是概率性的，别侥幸';
+        btn.textContent = '再按一次';
+        busy = false;
+      } else {
+        wave.setAttribute('d', toPath(pts.slice(0, i + 1)));
+        i++;
+      }
+    }, 55);
+  }
+
+  btn.addEventListener('click', runPress);
+  // 初始静态画面
+  ideal.setAttribute('d', `M ${X0} ${YH} L 180 ${YH} L 210 ${YL} L ${X1} ${YL}`);
+  wave.setAttribute('d', `M ${X0} ${YH}`);
+})();
+</script>

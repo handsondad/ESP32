@@ -1,0 +1,98 @@
+<!-- 组件：面包板内部连通交互图 · 用于第 2 课面包板规则 -->
+<div class="wgt wgt-bb" id="wg-bb">
+  <div class="wgt-head"><span>🔌 交互演示：面包板里看不见的铜条</span><span class="wgt-badge">点任意孔位，看谁和它连通</span></div>
+  <div class="wgt-body">
+    <svg viewBox="0 0 640 330" style="width:100%;height:auto;display:block" id="wg-bb-svg">
+      <!-- 板身 -->
+      <rect x="20" y="20" width="600" height="290" rx="12" fill="#f2f0ec" stroke="#c8c2b6" stroke-width="3"/>
+      <!-- 中央沟槽 -->
+      <rect x="40" y="158" width="560" height="14" rx="7" fill="#ddd8cf" stroke="#c8c2b6" stroke-width="2"/>
+      <text x="320" y="169" text-anchor="middle" fill="#8a8378" font-size="11">沟槽（两侧不相通）</text>
+      <!-- 列标 -->
+      <g fill="#8a8378" font-size="12" font-weight="bold" text-anchor="middle">
+        <text x="70" y="42">A</text><text x="140" y="42">B</text><text x="210" y="42">C</text>
+        <text x="280" y="42">D</text><text x="350" y="42">E</text>
+        <text x="430" y="42">F</text><text x="500" y="42">G</text><text x="570" y="42">H</text>
+      </g>
+      <!-- 孔位由 JS 生成 -->
+      <g id="wg-bb-holes"></g>
+      <!-- 连通高亮框 -->
+      <g id="wg-bb-links" opacity="0">
+        <rect id="wg-bb-linkbox" rx="8" fill="rgba(11,110,79,.10)" stroke="#0b6e4f" stroke-width="3" stroke-dasharray="7 5"/>
+      </g>
+      <!-- 读数 -->
+      <text id="wg-bb-readout" x="320" y="303" text-anchor="middle" fill="#1a1a1a" font-size="13.5" font-weight="bold">点一个孔试试——同一列、沟槽同一侧的孔连通</text>
+    </svg>
+    <p class="wgt-hint" style="text-align:center">虚线框内的孔 = 一根看不见的铜条，插进去的元件脚彼此导通；<b>跨过沟槽就不通了</b>（真实板每组 5 孔，图中简化为 3 孔）。所以 LED 两脚必须分属不同组、按钮两脚必须跨组——插同一组 = 内部短路，按了也白按。</p>
+  </div>
+</div>
+<style>
+.wgt-bb .wg-bb-hole { cursor: pointer; }
+.wgt-bb .wg-bb-hole:hover circle { stroke: #ffb84d; stroke-width: 3; }
+.wgt-bb .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-bb');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const NS = 'http://www.w3.org/2000/svg';
+  const gHoles = document.getElementById('wg-bb-holes');
+  const links = document.getElementById('wg-bb-links');
+  const linkbox = document.getElementById('wg-bb-linkbox');
+  const readout = document.getElementById('wg-bb-readout');
+
+  const colsL = [70, 140, 210, 280, 350];   // A-E
+  const colsR = [430, 500, 570];            // F-H
+  const rowsTop = [65, 95, 125];            // 沟槽上方
+  const rowsBot = [200, 230, 260];          // 沟槽下方
+  const holes = []; // {group, x, y}，group 形如 "L4T"：左区第4列(0基) 上半
+
+  function makeHole(x, y, group) {
+    const g = document.createElementNS(NS, 'g');
+    g.setAttribute('class', 'wg-bb-hole');
+    const c = document.createElementNS(NS, 'circle');
+    c.setAttribute('cx', x); c.setAttribute('cy', y);
+    c.setAttribute('r', 9);
+    c.setAttribute('fill', '#fff');
+    c.setAttribute('stroke', '#a9a294');
+    c.setAttribute('stroke-width', 2);
+    g.appendChild(c);
+    g.addEventListener('click', () => select(group));
+    gHoles.appendChild(g);
+    holes.push({ group, x, y, c });
+  }
+
+  // 每列上下各一组（组内连通，组间被沟槽隔断）
+  colsL.forEach((x, ci) => {
+    rowsTop.forEach(y => makeHole(x, y, 'L' + ci + 'T'));
+    rowsBot.forEach(y => makeHole(x, y, 'L' + ci + 'B'));
+  });
+  colsR.forEach((x, ci) => {
+    rowsTop.forEach(y => makeHole(x, y, 'R' + ci + 'T'));
+    rowsBot.forEach(y => makeHole(x, y, 'R' + ci + 'B'));
+  });
+
+  function select(group) {
+    const same = holes.filter(h => h.group === group);
+    // 高亮同组
+    holes.forEach(h => {
+      const on = h.group === group;
+      h.c.setAttribute('fill', on ? '#0b6e4f' : '#fff');
+      h.c.setAttribute('stroke', on ? '#0b6e4f' : '#a9a294');
+    });
+    // 虚线框包住同组
+    const xs = same.map(h => h.x), ys = same.map(h => h.y);
+    const minX = Math.min(...xs) - 17, maxX = Math.max(...xs) + 17;
+    const minY = Math.min(...ys) - 17, maxY = Math.max(...ys) + 17;
+    linkbox.setAttribute('x', minX); linkbox.setAttribute('y', minY);
+    linkbox.setAttribute('width', maxX - minX); linkbox.setAttribute('height', maxY - minY);
+    links.setAttribute('opacity', '1');
+    // 列名 + 半区
+    const side = group[0] === 'L' ? 'ABCDEFGHI'[+group[1]] : 'FGH'[+group[1]];
+    const half = group[2] === 'T' ? '上半（沟槽上方）' : '下半（沟槽下方）';
+    readout.textContent = `${side} 列 ${half}：这 3 孔连通 ✅ —— 同列对面（隔沟槽）和旁边列都不通 ❌`;
+  }
+
+  select('L4T'); // 默认演示 E 列上半
+})();
+</script>
