@@ -1,0 +1,112 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg7" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7faf8"/>
+      <stop offset="1" stop-color="#e8f1ec"/>
+    </linearGradient>
+    <filter id="ds7" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0b3d30" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="440" fill="url(#bg7)"/>
+
+  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">I2C：两根线的会议总线——点名（地址），应答（ACK），发言（数据）</text>
+
+  <!-- ===== 左：ESP32 主机 ===== -->
+  <g transform="translate(75 130)" filter="url(#ds7)">
+    <rect width="200" height="230" rx="13" fill="#0f3d2e" stroke="#0a2c21" stroke-width="4"/>
+    <rect x="30" y="24" width="140" height="84" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="100" y="60" fill="#4a5057" font-size="18" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="100" y="86" fill="#6b7280" font-size="12" text-anchor="middle">Wire.begin(21,22)</text>
+    <text x="16" y="148" fill="#e67e22" font-size="15" font-weight="bold">SDA  GPIO21</text>
+    <text x="16" y="182" fill="#2980b9" font-size="15" font-weight="bold">SCL  GPIO22</text>
+    <text x="16" y="214" fill="#7f8c8d" font-size="15" font-weight="bold">GND</text>
+    <!-- 主机气泡 -->
+    <g transform="translate(105 -34)">
+      <rect x="0" y="-2" width="230" height="34" rx="17" fill="#fff" stroke="#0b6e4f" stroke-width="2"/>
+      <text x="115" y="20" fill="#0b6e4f" font-size="14" font-weight="bold" text-anchor="middle">"0x3C 的，你注意听！"</text>
+      <animate attributeName="opacity" values="0;1;1;0" dur="3s" repeatCount="indefinite"/>
+    </g>
+  </g>
+
+  <!-- ===== 上拉电阻与母线 ===== -->
+  <g>
+    <line x1="275" y1="118" x2="1145" y2="118" stroke="#c0392b" stroke-width="3"/>
+    <text x="275" y="110" fill="#c0392b" font-size="13" font-weight="bold">3.3V</text>
+    <g stroke="#8a8378" stroke-width="2" fill="none">
+      <path d="M470 118 l6 -8 l12 16 l12 -16 l12 16 l12 -16 l6 8"/>
+      <path d="M940 118 l6 -8 l12 16 l12 -16 l12 16 l12 -16 l6 8"/>
+    </g>
+    <text x="494" y="144" fill="#8a8378" font-size="11" text-anchor="middle">上拉</text>
+    <text x="964" y="144" fill="#8a8378" font-size="11" text-anchor="middle">上拉</text>
+    <!-- SDA 母线 -->
+    <line x1="275" y1="205" x2="1145" y2="205" stroke="#e67e22" stroke-width="5"/>
+    <text x="1152" y="210" fill="#e67e22" font-size="14" font-weight="bold">SDA</text>
+    <!-- SCL 母线 -->
+    <line x1="275" y1="240" x2="1145" y2="240" stroke="#2980b9" stroke-width="5"/>
+    <text x="1152" y="245" fill="#2980b9" font-size="14" font-weight="bold">SCL</text>
+    <!-- 上拉连线 -->
+    <line x1="494" y1="126" x2="494" y2="205" stroke="#c0392b" stroke-width="2" stroke-dasharray="4 4"/>
+    <line x1="964" y1="126" x2="964" y2="205" stroke="#c0392b" stroke-width="2" stroke-dasharray="4 4"/>
+    <!-- 主机接入 -->
+    <line x1="275" y1="270" x2="275" y2="205" stroke="#0f3d2e" stroke-width="4"/>
+    <line x1="275" y1="270" x2="275" y2="240" stroke="#0f3d2e" stroke-width="4"/>
+  </g>
+
+  <!-- ===== 三个从机（并联挂总线） ===== -->
+  <!-- OLED 0x3C 应答中 -->
+  <g transform="translate(360 268)">
+    <rect width="170" height="104" rx="10" fill="#fff" stroke="#0b6e4f" stroke-width="4"/>
+    <!-- 小屏 -->
+    <rect x="18" y="14" width="134" height="52" rx="5" fill="#0d1821"/>
+    <text x="85" y="36" fill="#8fd6bd" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">Hello</text>
+    <text x="85" y="56" fill="#8fd6bd" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">ESP32!</text>
+    <text x="85" y="88" fill="#0b6e4f" font-size="15" font-weight="bold" text-anchor="middle">OLED · 0x3C</text>
+    <!-- ACK 气泡 -->
+    <g transform="translate(120 -30)">
+      <rect x="0" y="0" width="86" height="28" rx="14" fill="#0b6e4f"/>
+      <text x="43" y="19" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">ACK! ✓</text>
+      <animate attributeName="opacity" values="0;0;1;1" dur="3s" repeatCount="indefinite"/>
+    </g>
+    <line x1="60" y1="0" x2="60" y2="-24" stroke="#0b6e4f" stroke-width="3"/>
+  </g>
+  <!-- MPU6050 0x68 旁听 -->
+  <g transform="translate(640 268)">
+    <rect width="170" height="104" rx="10" fill="#fff" stroke="#b8c4bd" stroke-width="3"/>
+    <text x="85" y="46" fill="#6b6b6b" font-size="16" font-weight="bold" text-anchor="middle">MPU6050</text>
+    <text x="85" y="74" fill="#9aa0a6" font-size="14" text-anchor="middle">0x68 · 旁听中</text>
+    <text x="85" y="94" fill="#b0a48c" font-size="11" text-anchor="middle">（地址没点到我）</text>
+    <line x1="85" y1="0" x2="85" y2="-24" stroke="#b8c4bd" stroke-width="3"/>
+  </g>
+  <!-- BMP280 0x76 旁听 -->
+  <g transform="translate(920 268)">
+    <rect width="170" height="104" rx="10" fill="#fff" stroke="#b8c4bd" stroke-width="3"/>
+    <text x="85" y="46" fill="#6b6b6b" font-size="16" font-weight="bold" text-anchor="middle">BMP280</text>
+    <text x="85" y="74" fill="#9aa0a6" font-size="14" text-anchor="middle">0x76 · 旁听中</text>
+    <text x="85" y="94" fill="#b0a48c" font-size="11" text-anchor="middle">（第 8 课主角）</text>
+    <line x1="85" y1="0" x2="85" y2="-24" stroke="#b8c4bd" stroke-width="3"/>
+  </g>
+
+  <!-- 从机到母线的连线 -->
+  <g stroke="#e67e22" stroke-width="3">
+    <line x1="445" y1="268" x2="445" y2="205"/>
+    <line x1="725" y1="268" x2="725" y2="205"/>
+    <line x1="1005" y1="268" x2="1005" y2="205"/>
+  </g>
+  <g stroke="#2980b9" stroke-width="3">
+    <line x1="410" y1="268" x2="410" y2="240"/>
+    <line x1="690" y1="268" x2="690" y2="240"/>
+    <line x1="970" y1="268" x2="970" y2="240"/>
+  </g>
+
+  <!-- 总线上跑的数据帧 -->
+  <rect x="275" y="198" width="26" height="14" rx="3" fill="#e67e22">
+    <animate attributeName="x" values="275;1110" dur="1.4s" repeatCount="indefinite"/>
+  </rect>
+  <rect x="1110" y="233" width="26" height="14" rx="3" fill="#2980b9">
+    <animate attributeName="x" values="1110;275" dur="1.4s" begin="0.7s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- 底部标语 -->
+  <text x="600" y="424" fill="#0b6e4f" font-size="17" font-weight="bold" text-anchor="middle">两根线挂三个设备：地址区分谁说话，ACK 确认谁在听——I2C 排错第一招就是扫描地址</text>
+</svg>
