@@ -1,0 +1,105 @@
+<!-- 组件：TinyML 推理流水线 · 用于第 15 课 -->
+<div class="wgt wgt-ai" id="wg-ai">
+  <div class="wgt-head"><span>🤖 交互演示：TinyML 五步流水线</span><span class="wgt-badge">点每一步看它做什么</span></div>
+  <div class="wgt-body">
+    <div class="wg-ai-steps">
+      <button class="wg-ai-step active" data-k="0"><b>① 采集</b><span>板子录样本</span></button>
+      <button class="wg-ai-step" data-k="1"><b>② 训练</b><span>PC/云上学</span></button>
+      <button class="wg-ai-step" data-k="2"><b>③ 转换</b><span>.h5 → .tflite</span></button>
+      <button class="wg-ai-step" data-k="3"><b>④ 量化</b><span>float32 → int8</span></button>
+      <button class="wg-ai-step" data-k="4"><b>⑤ 部署</b><span>板上推理</span></button>
+    </div>
+
+    <!-- 流水线图 -->
+    <svg viewBox="0 0 640 150" style="width:100%;height:auto;display:block;margin-top:10px" id="wg-ai-svg">
+      <!-- 数据流向 -->
+      <line x1="40" y1="75" x2="600" y2="75" stroke="#e5e2dc" stroke-width="4"/>
+      <rect id="wg-ai-flow" x="40" y="68" width="36" height="14" rx="4" fill="#0b6e4f" opacity="0"/>
+      <!-- 五个节点 -->
+      <g class="wg-ai-node" data-k="0">
+        <circle cx="70" cy="75" r="30" fill="#e6f3ee" stroke="#0b6e4f" stroke-width="3"/>
+        <text x="70" y="82" font-size="24" text-anchor="middle">🎤</text>
+        <text x="70" y="130" font-size="12" text-anchor="middle" fill="#0b6e4f" font-weight="bold">采集</text>
+      </g>
+      <g class="wg-ai-node" data-k="1">
+        <circle cx="210" cy="75" r="30" fill="#f4f7f5" stroke="#9aa0a6" stroke-width="3"/>
+        <text x="210" y="82" font-size="24" text-anchor="middle">💻</text>
+        <text x="210" y="130" font-size="12" text-anchor="middle" fill="#6b6b6b">训练</text>
+      </g>
+      <g class="wg-ai-node" data-k="2">
+        <circle cx="350" cy="75" r="30" fill="#f4f7f5" stroke="#9aa0a6" stroke-width="3"/>
+        <text x="350" y="82" font-size="24" text-anchor="middle">🔄</text>
+        <text x="350" y="130" font-size="12" text-anchor="middle" fill="#6b6b6b">转换</text>
+      </g>
+      <g class="wg-ai-node" data-k="3">
+        <circle cx="490" cy="75" r="30" fill="#f4f7f5" stroke="#9aa0a6" stroke-width="3"/>
+        <text x="490" y="82" font-size="24" text-anchor="middle">🗜️</text>
+        <text x="490" y="130" font-size="12" text-anchor="middle" fill="#6b6b6b">量化</text>
+      </g>
+      <g class="wg-ai-node" data-k="4">
+        <circle cx="600" cy="75" r="30" fill="#f4f7f5" stroke="#9aa0a6" stroke-width="3"/>
+        <text x="600" y="82" font-size="24" text-anchor="middle">⚡</text>
+        <text x="600" y="130" font-size="12" text-anchor="middle" fill="#6b6b6b">部署</text>
+      </g>
+      <!-- 分界线：训练在云，推理在端 -->
+      <line x1="420" y1="16" x2="420" y2="60" stroke="#c0392b" stroke-width="2" stroke-dasharray="6 4"/>
+      <text x="330" y="26" font-size="12" fill="#2980b9" text-anchor="middle" font-weight="bold">← 训练在 PC/云</text>
+      <text x="520" y="26" font-size="12" fill="#c0392b" text-anchor="middle" font-weight="bold">推理在 ESP32 →</text>
+    </svg>
+
+    <!-- 详情卡 -->
+    <div class="wg-ai-card" id="wg-ai-card">
+      <div class="wg-ai-title">① 采集数据</div>
+      <div class="wg-ai-desc">ESP32 录 1000 个「叮」和「咚」样本存进 Flash。<b>用到：L4 ADC 采样 + L3 millis 定时采样节奏</b>。数据质量决定模型上限——垃圾进，垃圾出。</div>
+      <div class="wg-ai-lesson">课程能力：L4 · L3</div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">五步里<b>没有一步是「全新的」</b>——全是 14 课管道的重新组装。AI 不是新科目，是把你已有的管道接上新水源。</p>
+  </div>
+</div>
+<style>
+.wg-ai-steps { display: flex; gap: 6px; flex-wrap: wrap; }
+.wg-ai-step { flex: 1; min-width: 96px; font-family: inherit; background: #fff; border: 2px solid var(--border); border-radius: 8px; padding: .45em .4em; cursor: pointer; transition: .2s; text-align: center; }
+.wg-ai-step b { display: block; font-size: .84em; color: #333; }
+.wg-ai-step span { display: block; font-size: .7em; color: #999; margin-top: 2px; }
+.wg-ai-step.active { border-color: #0b6e4f; background: #e6f3ee; }
+.wg-ai-step.active b { color: #0b6e4f; }
+.wg-ai-node circle { transition: all .25s; }
+.wg-ai-node.lit circle { stroke: #0b6e4f; fill: #e6f3ee; }
+.wg-ai-card { margin-top: 10px; background: #fff; border: 1px solid var(--border); border-left: 4px solid #0b6e4f; border-radius: 0 8px 8px 0; padding: .65em .9em; }
+.wg-ai-title { font-weight: bold; font-size: .92em; color: #0b6e4f; margin-bottom: .25em; }
+.wg-ai-desc { font-size: .85em; line-height: 1.65; color: #444; }
+.wg-ai-lesson { margin-top: .4em; font-size: .76em; color: #fff; background: #0b6e4f; display: inline-block; padding: .15em .6em; border-radius: 999px; }
+.wgt-ai .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-ai');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const steps = Array.from(root.querySelectorAll('.wg-ai-step'));
+  const nodes = Array.from(root.querySelectorAll('.wg-ai-node'));
+  const card = document.getElementById('wg-ai-card');
+  const flow = document.getElementById('wg-ai-flow');
+
+  const DATA = [
+    { t: '① 采集数据', d: 'ESP32 录 1000 个「叮」和「咚」样本存进 Flash。<b>用到：L4 ADC 采样 + L3 millis 定时采样节奏</b>。数据质量决定模型上限——垃圾进，垃圾出。', l: '课程能力：L4 · L3' },
+    { t: '② 训练模型', d: '在 PC 或云上用 TensorFlow/Keras 教它分类——<b>训练绝不在 ESP32 上</b>（算力差 1000 倍）。就像手机人脸识别：训练是谷歌在数据中心做的，手机只执行。', l: '课程能力：概念课（PC 端）' },
+    { t: '③ 转换格式', d: '.h5 模型转成 <code>.tflite</code>——TensorFlow Lite Micro（跑在 MCU 上的精简版解释器）的输入格式。<b>大框架的模型，MCU 吃不动，要换小锅</b>。', l: '课程能力：L14 IDF 工具链思维' },
+    { t: '④ 量化压缩', d: '参数从 32 位浮点压成 8 位整数：<b>体积 ÷4、速度 ×3、精度只掉 1~2%</b>。没有量化，几百 KB 的模型进不了 ESP32 的 520KB SRAM——<b>MCU AI 的命门</b>。', l: '课程能力：L6内存/资源权衡' },
+    { t: '⑤ 部署推理', d: '模型烧进 Flash，固件里 <code>xTaskCreate</code> 起一个任务读麦克风、跑推理、做判断——<b>20KB 的模型听懂了「你好小智」</b>。L14 的 FreeRTOS 任务在这里等你。', l: '课程能力：L14 · L10 · L12' }
+  ];
+
+  function select(i) {
+    steps.forEach((s, j) => s.classList.toggle('active', j === i));
+    nodes.forEach((n, j) => n.classList.toggle('lit', j === i));
+    const d = DATA[i];
+    card.innerHTML = `<div class="wg-ai-title">${d.t}</div><div class="wg-ai-desc">${d.d}</div><div class="wg-ai-lesson">${d.l}</div>`;
+    // 流动动画
+    flow.setAttribute('opacity', '1');
+    flow.setAttribute('x', 40 + i * 110);
+    setTimeout(() => flow.setAttribute('opacity', '0'), 500);
+  }
+
+  steps.forEach((s, i) => s.onclick = () => select(i));
+  nodes.forEach((n, i) => { n.style.cursor = 'pointer'; n.onclick = () => select(i); });
+})();
+</script>

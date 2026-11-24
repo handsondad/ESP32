@@ -1,0 +1,99 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg15" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7faf8"/>
+      <stop offset="1" stop-color="#e8f1ec"/>
+    </linearGradient>
+    <filter id="ds15" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0b3d30" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="440" fill="url(#bg15)"/>
+
+  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">毕业模块：AI 与嵌入式的三条交汇路线</text>
+
+  <!-- ===== 路线①：用 AI 写代码 ===== -->
+  <g transform="translate(55 80)">
+    <rect width="320" height="230" rx="14" fill="#fff" stroke="#2980b9" stroke-width="4"/>
+    <rect width="320" height="46" rx="14" fill="#2980b9"/>
+    <rect y="30" width="320" height="16" fill="#2980b9"/>
+    <text x="160" y="30" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">① 用 AI 写代码</text>
+    <!-- 对话气泡 -->
+    <rect x="20" y="64" width="210" height="42" rx="10" fill="#eaf4fb" stroke="#aed6f1"/>
+    <text x="30" y="84" fill="#123a5c" font-size="12">「ESP32 I2C 扫不到 0x3C，</text>
+    <text x="30" y="100" fill="#123a5c" font-size="12">接线 21/22，怎么排查？」</text>
+    <rect x="90" y="116" width="210" height="42" rx="10" fill="#e6f3ee" stroke="#3fa67a"/>
+    <text x="100" y="136" fill="#0b6e4f" font-size="12">「先跑 I2C scanner，确认</text>
+    <text x="100" y="152" fill="#0b6e4f" font-size="12">地址存在，再查上拉电阻…」</text>
+    <text x="160" y="188" fill="#6b6b6b" font-size="12.5" text-anchor="middle">工具：ChatGPT / Copilot</text>
+    <text x="160" y="212" fill="#2980b9" font-size="13.5" font-weight="bold" text-anchor="middle">✅ 你已在本教程亲身实践</text>
+  </g>
+
+  <!-- ===== 路线②：边缘 AI（主角） ===== -->
+  <g transform="translate(440 66)" filter="url(#ds15)">
+    <rect width="320" height="258" rx="14" fill="#fff" stroke="#0b6e4f" stroke-width="5"/>
+    <rect width="320" height="46" rx="14" fill="#0b6e4f"/>
+    <rect y="30" width="320" height="16" fill="#0b6e4f"/>
+    <text x="160" y="30" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">② 边缘 AI（本课主角）</text>
+    <!-- ESP32 + 模型 -->
+    <rect x="24" y="62" width="120" height="76" rx="8" fill="#0f3d2e"/>
+    <text x="84" y="92" fill="#8fd6bd" font-size="15" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="84" y="116" fill="#5f7484" font-size="11" text-anchor="middle">520KB RAM</text>
+    <rect x="176" y="62" width="120" height="76" rx="8" fill="#e6f3ee" stroke="#3fa67a" stroke-width="2"/>
+    <text x="236" y="88" fill="#0b6e4f" font-size="13" font-weight="bold" text-anchor="middle">20KB 模型</text>
+    <text x="236" y="110" fill="#3fa67a" font-size="12" text-anchor="middle" font-family="Consolas, monospace">int8 量化</text>
+    <text x="236" y="128" fill="#6b6b6b" font-size="10.5" text-anchor="middle">float32 → int8 ÷4</text>
+    <!-- 三个优点 -->
+    <g font-size="13">
+      <text x="24" y="168" fill="#0b6e4f" font-weight="bold">🔒 隐私：数据不出房间</text>
+      <text x="24" y="196" fill="#0b6e4f" font-weight="bold">⚡ 延迟：本地 &lt;100ms</text>
+      <text x="24" y="224" fill="#0b6e4f" font-weight="bold">📡 可用：断网照常工作</text>
+    </g>
+    <text x="296" y="248" fill="#9aa0a6" font-size="11.5" text-anchor="end">唤醒词 · 手势 · 异常检测</text>
+  </g>
+
+  <!-- ===== 路线③：云 AI ===== -->
+  <g transform="translate(825 80)">
+    <rect width="320" height="230" rx="14" fill="#fff" stroke="#8e44ad" stroke-width="4"/>
+    <rect width="320" height="46" rx="14" fill="#8e44ad"/>
+    <rect y="30" width="320" height="16" fill="#8e44ad"/>
+    <text x="160" y="30" fill="#fff" font-size="16" font-weight="bold" text-anchor="middle">③ 云 AI</text>
+    <!-- 云 -->
+    <path d="M70 108 Q 70 76, 108 78 Q 126 58, 158 74 Q 196 68, 200 100 Q 232 110, 220 140 Q 212 170, 172 166 Q 138 186, 104 168 Q 66 172, 60 140 Q 44 122, 70 108 Z"
+          fill="#f4ecf9" stroke="#8e44ad" stroke-width="3"/>
+    <text x="142" y="112" fill="#8e44ad" font-size="14" font-weight="bold" text-anchor="middle">大模型</text>
+    <text x="142" y="136" fill="#6b6b6b" font-size="12" text-anchor="middle">MB 级 · 要网 · 要钱</text>
+    <!-- ESP32 ↔ 云 -->
+    <rect x="24" y="176" width="90" height="36" rx="8" fill="#0f3d2e"/>
+    <text x="69" y="199" fill="#8fd6bd" font-size="13" font-weight="bold" text-anchor="middle">ESP32</text>
+    <path d="M118 194 L196 158" stroke="#8e44ad" stroke-width="3" stroke-dasharray="7 5"/>
+    <text x="160" y="216" fill="#8e44ad" font-size="12" font-weight="bold" text-anchor="middle">音频上云 · 回答传回</text>
+    <text x="250" y="194" fill="#9aa0a6" font-size="11.5" text-anchor="middle">用到 L11 Wi-Fi</text>
+    <text x="250" y="212" fill="#9aa0a6" font-size="11.5" text-anchor="middle">+ L12 MQTT</text>
+  </g>
+
+  <!-- ===== 下方：五步流水线 ===== -->
+  <g transform="translate(55 344)">
+    <rect width="1090" height="60" rx="10" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+    <text x="16" y="25" fill="#0b6e4f" font-size="14.5" font-weight="bold">TinyML 五步：</text>
+    <g font-size="13" font-weight="bold">
+      <text x="130" y="25" fill="#0b6e4f">① 采集</text>
+      <text x="130" y="46" fill="#6b6b6b" font-weight="normal" font-size="12">L4 ADC + L3 节奏</text>
+      <text x="270" y="25" fill="#0b6e4f">→ ② 训练</text>
+      <text x="270" y="46" fill="#6b6b6b" font-weight="normal" font-size="12">PC/云端</text>
+      <text x="410" y="25" fill="#0b6e4f">→ ③ 转换</text>
+      <text x="410" y="46" fill="#6b6b6b" font-weight="normal" font-size="12">.h5 → .tflite</text>
+      <text x="560" y="25" fill="#0b6e4f">→ ④ 量化</text>
+      <text x="560" y="46" fill="#6b6b6b" font-weight="normal" font-size="12">÷4 体积 · 掉 1~2% 精度</text>
+      <text x="740" y="25" fill="#0b6e4f">→ ⑤ 部署</text>
+      <text x="740" y="46" fill="#6b6b6b" font-weight="normal" font-size="12">L14 任务跑推理</text>
+    </g>
+    <text x="1074" y="40" fill="#c0392b" font-size="13" font-weight="bold" text-anchor="end">没有一步是全新的 ✓</text>
+  </g>
+
+  <!-- 毕业徽章 -->
+  <g transform="translate(455 424)">
+    <rect width="290" height="0" fill="none"/>
+  </g>
+  <text x="600" y="430" fill="#0b6e4f" font-size="16" font-weight="bold" text-anchor="middle">15 课 · 5 阶段 · 14 条伏笔全部回收——从点亮一盏灯，到设计一台会自己思考的机器</text>
+</svg>
