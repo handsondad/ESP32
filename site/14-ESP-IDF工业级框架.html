@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 14 课：ESP-IDF——官方工业级框架</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 14 课：ESP-IDF——官方工业级框架</h1>
+<blockquote>
+<p><strong>阶段五 · 进阶专家</strong> ｜ 难度：★★★★★ ｜ 预计用时：60–75 分钟（本课理论密度最高）</p>
+<p><strong>本课材料</strong>：完成第 13 课的电脑（PlatformIO 已装，它原生支持 ESP-IDF 框架）
+<strong>无硬件替代</strong>：ESP-IDF 有官方模拟器（QEMU），但本课重点是&quot;看懂两种世界观&quot;，代码对照为主</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson14-hero.svg" alt="第 14 课效果预告：Arduino 与 ESP-IDF 双框架对照"></p>
+<blockquote>
+<p><strong>同一颗 LED、同一个闪灯程序，用两种框架各写一遍</strong>——左边是你写了一个学期的 Arduino，右边是 Espressif 官方的 ESP-IDF。<strong>代码量差 3 倍，但你突然&quot;看见&quot;了 Arduino 帮你藏起来的一切。</strong></p>
+</blockquote>
+<p>第 1 课的原话到期了：</p>
+<pre><code>第 1 课：……官方工业级框架 ESP-IDF 是第 14 课的主角。先别贪多。
+</code></pre>
+<p><strong>兑现时刻（第二个）。</strong> 这一课不追求&quot;学会 IDF&quot;（那是几十小时的事），而是<strong>掀开盖子看清楚</strong>：Arduino 到底替你做了什么、IDF 的世界观长什么样、<strong>什么项目该留在 Arduino、什么必须上 IDF</strong>——做出正确选型判断，你就具备了架构师的第一块能力。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 理解分层：<strong>ESP-IDF 是地基，Arduino-ESP32 只是 IDF 上的一个&quot;库&quot;</strong></li>
+<li>✅ 读懂 IDF 代码：<code>gpio_config</code> / <code>ESP_ERROR_CHECK</code> / Kconfig 配置菜单</li>
+<li>✅ 理解 <strong>FreeRTOS 任务（Task）</strong>——<code>loop()</code> 消失了，多任务变成&quot;真的多任务&quot;</li>
+<li>✅ 亲手跑通一个 IDF 版闪灯，与 Arduino 版逐行对照</li>
+<li>✅ <strong>回收 L1 伏笔</strong>：建立&quot;Arduino 快速验证 / IDF 产品量产&quot;的选型准则</li>
+</ol>
+<hr>
+<h2>🔁 开课先接棒：你一直站在别人的肩膀上</h2>
+<p>先揭示一个多数人学完一整套教程都不知道的事实：</p>
+<pre><code>┌─────────────────────────────────────────────┐
+│  你写的代码（digitalWrite / delay / Wire…）   │  ← Arduino 框架层
+├─────────────────────────────────────────────┤
+│  ESP-IDF：驱动、TCP/IP、Wi-Fi、蓝牙、FreeRTOS │  ← 真正干活的官方 SDK
+├─────────────────────────────────────────────┤
+│  ROM / 硬件寄存器（GPIO、SPI、ADC 的物理开关）  │  ← 芯片本身
+└─────────────────────────────────────────────┘
+</code></pre>
+<blockquote>
+<p><strong>Arduino-ESP32 本身就是一个&quot;跑在 ESP-IDF 上的库&quot;</strong>——你调用的 <code>digitalWrite</code>，内部最终变成 IDF 的 <code>gpio_set_level()</code>，再变成寄存器上的一位。</p>
+<p><strong>所以&quot;学 Arduino&quot;和&quot;学 IDF&quot;不是二选一</strong>：你已经会用上层，这一课往下挖一层。<strong>这也解释了为什么 Arduino 能这么快</strong>——它把 IDF 几百页的文档藏进十几个函数。</p>
+</blockquote>
+<p><strong>为什么官方还要搞两层？</strong> Arduino 面向<strong>创客与快速验证</strong>（10 分钟出原型）；IDF 面向<strong>产品量产</strong>（要功耗控制、要任务优先级、要安全启动、要 OTA 升级、要 10 年维护）。<strong>同一家官方，两种交付物</strong>——你现在要懂它们各自的边界。</p>
+<hr>
+<h2>📡 新知识一：IDF 的代码长什么样</h2>
+<p>同一个闪灯，IDF 版（C 语言，PlatformIO 的 <code>framework = espidf</code>）：</p>
+<pre><code class="language-c">#include &quot;driver/gpio.h&quot;
+#include &quot;freertos/FreeRTOS.h&quot;
+#include &quot;freertos/task.h&quot;
+
+#define LED_GPIO GPIO_NUM_4
+
+void app_main(void) {                    // ← IDF 的&quot;入口&quot;，不是 setup()
+    // ① 一次性配置：结构体把话说清楚
+    gpio_config_t io_cfg = {
+        .pin_bit_mask = 1ULL &lt;&lt; LED_GPIO, // 要配置哪些脚（位掩码）
+        .mode         = GPIO_MODE_OUTPUT, // 输出模式
+        .pull_up_en   = GPIO_PULLUP_DISABLE,
+        .pull_down_en = GPIO_PULLDOWN_DISABLE,
+        .intr_type    = GPIO_INTR_DISABLE,
+    };
+    ESP_ERROR_CHECK(gpio_config(&amp;io_cfg)); // ② 检查返回值！出错直接停
+
+    while (1) {                          // ③ 没有 loop()，自己写死循环
+        gpio_set_level(LED_GPIO, 1);
+        vTaskDelay(pdMS_TO_TICKS(500));   // ④ FreeRTOS 的延时（让出 CPU！）
+        gpio_set_level(LED_GPIO, 0);
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+</code></pre>
+<p><strong>和 Arduino 版逐行对照，五个关键差异</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>Arduino</th>
+<th>ESP-IDF</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td><code>setup()/loop()</code> 自动被调用</td>
+<td><strong><code>app_main()</code></strong>，框架不接管你的循环</td>
+<td><strong>谁掌控流程</strong>：Arduino 接管，IDF 交给你</td>
+</tr>
+<tr>
+<td>2</td>
+<td><code>pinMode(4, OUTPUT)</code> 一句话</td>
+<td><code>gpio_config_t</code> <strong>结构体 + <code>gpio_config()</code></strong></td>
+<td>IDF 把所有选项摆在台面上——<strong>没有隐式默认</strong></td>
+</tr>
+<tr>
+<td>3</td>
+<td>出错通常忽略/打印</td>
+<td><strong><code>ESP_ERROR_CHECK()</code> 宏强制检查</strong></td>
+<td>工业级：<strong>每个返回值都要负责</strong></td>
+</tr>
+<tr>
+<td>4</td>
+<td><code>delay(500)</code> 纯等待</td>
+<td><strong><code>vTaskDelay(500)</code> 让出 CPU</strong></td>
+<td>关键差异，下节展开</td>
+</tr>
+<tr>
+<td>5</td>
+<td>引脚号写 <code>4</code></td>
+<td><strong><code>GPIO_NUM_4</code></strong> 枚举</td>
+<td>类型安全，防止把 999 传进去</td>
+</tr>
+</tbody></table>
+<p><strong>核心气质差异一句话</strong>：<strong>Arduino 帮你做决定（快），IDF 要求你做所有决定（准）</strong>。写 Arduino 是&quot;点菜&quot;，写 IDF 是&quot;进后厨&quot;。</p>
+<hr>
+<h2>📡 新知识二：FreeRTOS——<code>loop()</code> 消失之后，多任务怎么办</h2>
+<p>这是本课<strong>最重要的一课知识</strong>，也是 IDF 的灵魂：</p>
+<blockquote>
+<p><strong>ESP-IDF 内置 FreeRTOS（实时操作系统）——&quot;多任务&quot;从&quot;你在 loop 里轮流照顾&quot;变成&quot;操作系统真的并行调度&quot;。</strong></p>
+</blockquote>
+<p>回看你一路走来的多任务演进，正好是四级台阶：</p>
+<pre><code>L3  millis 计时        —— 一个 loop 里&quot;到点干活&quot;（协作式）
+L10 三任务非阻塞        —— 一个 loop 里三条时间线（协作式，全靠你不偷懒）
+L13 拆模块             —— 结构上分开了，执行还是一个人轮流
+L14 FreeRTOS 任务      —— 每个任务一个独立栈，CPU 真·切换（抢占式）
+</code></pre>
+<pre><code class="language-c">// 任务 A：闪灯（独立执行流）
+void task_led(void *arg) {
+    while (1) {
+        gpio_set_level(LED_GPIO, !gpio_get_level(LED_GPIO));
+        vTaskDelay(pdMS_TO_TICKS(500));
+    }
+}
+
+// 任务 B：读传感器（独立执行流）
+void task_sensor(void *arg) {
+    while (1) {
+        float t = bmp_read_temp();
+        publish_mqtt(t);              // 网络慢？没关系，不挡别人
+        vTaskDelay(pdMS_TO_TICKS(5000));
+    }
+}
+
+void app_main(void) {
+    xTaskCreate(task_led,   &quot;led&quot;,   2048, NULL, 1, NULL);  // 优先级 1
+    xTaskCreate(task_sensor,&quot;sensor&quot;,4096, NULL, 2, NULL);  // 优先级 2
+    // app_main 结束也没关系，任务继续跑
+}
+</code></pre>
+<p><strong><code>vTaskDelay</code> vs <code>delay</code> 的天壤之别</strong>（把第 3 课的知识推到极致）：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>Arduino <code>delay()</code></th>
+<th>FreeRTOS <code>vTaskDelay()</code></th>
+</tr>
+</thead>
+<tbody><tr>
+<td>效果</td>
+<td><strong>整个 loop 冻结</strong>（全局罚站）</td>
+<td><strong>只有当前任务睡</strong>，其他任务照常跑</td>
+</tr>
+<tr>
+<td>谁在跑</td>
+<td>单任务轮流</td>
+<td><strong>操作系统按优先级调度</strong></td>
+</tr>
+<tr>
+<td>抢占</td>
+<td>不可能（全靠你让）</td>
+<td><strong>高优先级任务可打断低优先级</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>💡 <strong>注意一个精妙的巧合</strong>：IDF 里&quot;任务睡 500ms&quot;也要写延时——<strong>但它是&quot;我睡，你们继续&quot;</strong>。所以第 3 课教你的&quot;millis 非阻塞&quot;在 IDF 里依然有价值（同任务内的精细节奏），而<strong>跨任务的等待，直接用 <code>vTaskDelay</code> 睡掉更干净</strong>。<strong>两套哲学不矛盾：单任务内省着用，任务间大方睡。</strong></p>
+</blockquote>
+<p><strong>什么时候必须上 FreeRTOS/IDF？</strong> 当你的&quot;loop 轮流照顾&quot;开始<strong>顾此失彼</strong>时：Wi-Fi 重连 + MQTT + 传感器采样 + 屏幕刷新 + 按键 + OTA 检查——<strong>6 条时间线手写 if 已经难以保证实时性</strong>，就该升级了。<strong>第 10~12 课你手写的三任务结构，就是 IDF 任务的&quot;穷人版&quot;</strong>——理解了它，学 <code>xTaskCreate</code> 只是换语法。</p>
+<hr>
+<h2>📡 新知识三：IDF 工程的另外两件套</h2>
+<p><strong>① <code>sdkconfig</code>——图形化配置菜单</strong>
+IDF 的很多能力（不开蓝牙省 300KB、调任务看门狗超时、开 802.11n…）用 <strong><code>idf.py menuconfig</code></strong> 的蓝底菜单勾选——<strong>相当于把 Arduino&quot;工具→菜单&quot;里没有的几百个选项全部开放</strong>。PlatformIO 里对应 <code>sdkconfig.defaults</code> 文件。<strong>&quot;可裁剪&quot;是工业级的标志</strong>：产品不需要的功能，从固件里彻底裁掉，省 Flash 省电。</p>
+<p><strong>② 分区表与 OTA</strong>
+IDF 工程会生成<strong>分区表（Partition Table）</strong>：Flash 被划分成 app0 / app1 / nvs / spiffs 等区域——<strong>app0/app1 双槽正是 OTA（空中升级）的基础</strong>：新固件写进备份槽，校验通过再切换。<strong>&quot;产品要能远程升级&quot;这一条，就足以让量产项目选择 IDF</strong>（Arduino 也能做 OTA 但要自己拼）。</p>
+<blockquote>
+<p>📌 <strong>选型准则（本课毕业金句，背下来）</strong>：</p>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>选择</th>
+<th>理由</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>学习、验证想法、创客作品</td>
+<td><strong>Arduino</strong>（你已会）</td>
+<td>最快出原型，生态库多</td>
+</tr>
+<tr>
+<td>3~6 个月的产品、团队协作</td>
+<td><strong>Arduino + PlatformIO</strong>（L13）</td>
+<td>工程化够用</td>
+</tr>
+<tr>
+<td>量产、低功耗、OTA、要维护 5 年+</td>
+<td><strong>ESP-IDF</strong></td>
+<td>官方一手支持、可裁剪、实时性有保障</td>
+</tr>
+<tr>
+<td>要用 Arduino 又要 IDF 能力</td>
+<td><strong>混合</strong>：IDF 工程里调 Arduino 库（<code>#include &lt;Arduino.h&gt;</code> 可用）</td>
+<td>官方支持的&quot;逃生舱&quot;</td>
+</tr>
+</tbody></table>
+</blockquote>
+<hr>
+<h2>🛠️ 动手：在 PlatformIO 里跑 IDF 版闪灯</h2>
+<p>第 13 课的工程改一个词就能切框架——<strong>这就是 L13 说的&quot;双环境&quot;</strong>：</p>
+<pre><code class="language-ini">[env:esp32dev-idf]
+platform   = espressif32
+board      = esp32dev
+framework  = espidf                 ; ← 只改这里！arduino → espidf
+monitor_speed = 115200
+</code></pre>
+<p><code>src/main.c</code> 放上面新知识一的代码（<strong>注意：IDF 默认用 <code>.c</code>，C 语言</strong>），<code>pio run -t upload</code>——<strong>第一次构建会下载 IDF 工具链（约 2GB，耐心）</strong>。灯按 500ms 闪起来的那一刻，<strong>你已经用两种框架点亮过同一颗 LED 了</strong>。</p>
+<blockquote>
+<p>💡 <strong>对照实验（本课的仪式感）</strong>：把 <code>[env]</code> 切回 <code>arduino</code>，同一份代码编译会报错——<strong>两种世界观语法不兼容，但硬件是同一块</strong>。理解这一点，你就能看懂招聘要求里&quot;熟悉 Arduino/ESP-IDF 任意其一&quot;的真正含义：<strong>框架是工具，底层能力是通用的</strong>。</p>
+</blockquote>
+<p><!-- 组件：Arduino vs ESP-IDF 分层对照 · 用于第 14 课 -->
+<div class="wgt wgt-arch" id="wg-arch">
+  <div class="wgt-head"><span>🏗️ 交互对照：同一颗 LED，两种世界观</span><span class="wgt-badge">点代码切换框架 / 点层级看调用链</span></div>
+  <div class="wgt-body">
+    <!-- 框架切换 -->
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+      <button id="wg-arch-ard" class="active">📒 Arduino 版</button>
+      <button id="wg-arch-idf">⚙️ ESP-IDF 版</button>
+    </div>
+
+    <!-- 代码区 -->
+    <div class="wg-arch-code">
+      <pre id="wg-arch-ard-code"><span class="cmt">// Arduino：5 行核心，框架全包了</span>
+<span class="k">void</span> setup() {
+  pinMode(<span class="n">4</span>, OUTPUT);          <span class="cmt">// 配置 = 一句话</span>
+}
+<span class="k">void</span> loop() {
+  digitalWrite(<span class="n">4</span>, HIGH);        <span class="cmt">// 出错？不存在的，它替你吞了</span>
+  delay(<span class="n">500</span>);                  <span class="cmt">// 全局罚站式等待</span>
+  digitalWrite(<span class="n">4</span>, LOW);
+  delay(<span class="n">500</span>);
+}</pre>
+      <pre id="wg-arch-idf-code" style="display:none"><span class="cmt">// ESP-IDF：每个决定都要你来做</span>
+<span class="k">void</span> app_main(<span class="k">void</span>) {
+  gpio_config_t cfg = {          <span class="cmt">// 配置 = 结构体摊开全部选项</span>
+    .pin_bit_mask = <span class="n">1ULL</span> &lt;&lt; <span class="n">4</span>,
+    .mode         = GPIO_MODE_OUTPUT,
+  };
+  ESP_ERROR_CHECK(gpio_config(&amp;cfg)); <span class="cmt">// 出错？立即停机报告！</span>
+  <span class="k">while</span>(<span class="n">1</span>) {
+    gpio_set_level(GPIO_NUM_4, <span class="n">1</span>);
+    vTaskDelay(pdMS_TO_TICKS(<span class="n">500</span>)); <span class="cmt">// 只睡本任务，别人照跑</span>
+    gpio_set_level(GPIO_NUM_4, <span class="n">0</span>);
+    vTaskDelay(pdMS_TO_TICKS(<span class="n">500</span>));
+  }
+}</pre>
+    </div>
+
+    <!-- 分层结构（可点击） -->
+    <div class="wg-arch-layers">
+      <div class="wg-arch-layer" data-l="0">
+        <b>你写的代码</b><span id="wg-arch-l0">digitalWrite / delay / Wire</span>
+      </div>
+      <div class="wg-arch-arrow">↓ 最终变成</div>
+      <div class="wg-arch-layer mid" data-l="1">
+        <b>Arduino-ESP32 框架</b><span>（其实也是 IDF 上的一个库！）</span>
+      </div>
+      <div class="wg-arch-arrow">↓ 内部调用</div>
+      <div class="wg-arch-layer idf" data-l="2">
+        <b>ESP-IDF 官方 SDK</b><span>gpio_set_level / FreeRTOS / TCP-IP / Wi-Fi 驱动</span>
+      </div>
+      <div class="wg-arch-arrow">↓ 操作</div>
+      <div class="wg-arch-layer hw" data-l="3">
+        <b>硬件寄存器</b><span>GPIO_OUT_W1TS 寄存器的某一位 = 1</span>
+      </div>
+    </div>
+    <div class="wg-arch-note" id="wg-arch-note">
+      点击任意一层，看它在调用链里的角色。<b>关键事实：Arduino 框架本身就是架在 IDF 上的库</b>——所以"学 IDF"是往下挖一层，不是推倒重来。
+    </div>
+    <p class="wgt-hint" style="text-align:center">四层台阶 = 你的学习轨迹：L3 学了<b>上层怎么用</b>，本课看懂<b>下层怎么接</b>——两层都见过，招聘要求里"熟悉任一框架"你都能答。</p>
+  </div>
+</div>
+<style>
+#wg-arch-ard, #wg-arch-idf { font-family: inherit; font-size: .88em; padding: .5em 1.2em; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
+#wg-arch-ard.active { background: #00979d; border-color: #00979d; color: #fff; }
+#wg-arch-idf.active { background: #1a1a2e; border-color: #1a1a2e; color: #fff; }
+.wg-arch-code { background: #1a1a2e; border-radius: 10px; padding: .8em 1em; min-height: 200px; }
+.wg-arch-code pre { margin: 0; font-family: Consolas, monospace; font-size: .8em; line-height: 1.75; color: #e8e8f0; }
+.wg-arch-code .k { color: #d7bde2; }
+.wg-arch-code .n { color: #f5b041; }
+.wg-arch-code .cmt { color: #6b7a8d; }
+.wg-arch-layers { margin-top: 12px; display: flex; flex-direction: column; gap: 3px; }
+.wg-arch-layer { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: .5em .8em; border-radius: 8px; cursor: pointer; transition: all .2s; border: 2px solid var(--border); background: #fff; }
+.wg-arch-layer:hover, .wg-arch-layer.lit { border-color: #0b6e4f; background: #e6f3ee; }
+.wg-arch-layer b { font-size: .88em; color: #333; white-space: nowrap; }
+.wg-arch-layer span { font-size: .78em; color: #8a8f93; font-family: Consolas, monospace; text-align: right; }
+.wg-arch-layer.mid b { color: #00979d; }
+.wg-arch-layer.idf b { color: #1a1a2e; }
+.wg-arch-layer.hw b { color: #c0392b; }
+.wg-arch-arrow { text-align: center; font-size: .72em; color: #9aa0a6; }
+.wg-arch-note { margin-top: 10px; font-size: .85em; line-height: 1.65; color: #444; background: #fffdf5; border-left: 4px solid #e0b84b; padding: .55em .8em; border-radius: 0 6px 6px 0; }
+.wgt-arch .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-arch');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const bArd = document.getElementById('wg-arch-ard');
+  const bIdf = document.getElementById('wg-arch-idf');
+  const cArd = document.getElementById('wg-arch-ard-code');
+  const cIdf = document.getElementById('wg-arch-idf-code');
+  const note = document.getElementById('wg-arch-note');
+  const layers = Array.from(root.querySelectorAll('.wg-arch-layer'));
+  const l0 = document.getElementById('wg-arch-l0');
+
+  const DEFAULT = '点击任意一层，看它在调用链里的角色。<b>关键事实：Arduino 框架本身就是架在 IDF 上的库</b>——所以"学 IDF"是往下挖一层，不是推倒重来。';
+  const NOTES = [
+    '<b>① 你的代码层</b>：Arduino 视角是 <code>digitalWrite(4,HIGH)</code>，IDF 视角是 <code>gpio_set_level()</code>——<b>同一块硬件，两种方言</b>。',
+    '<b>② Arduino 框架层</b>：它做的事 = 简化参数 + 吞掉错误 + 提供 delay。<b>它本身就是一个跑在 IDF 上的库</b>——你学的一切没有白费。',
+    '<b>③ ESP-IDF 层</b>：官方 SDK 真正干活——驱动、TCP/IP、Wi-Fi、<b>FreeRTOS 调度</b>。Arduino 的 delay 内部也最终走到这层，只是它替你把选择做完了。',
+    '<b>④ 硬件寄存器层</b>：所有代码的终点——往 GPIO 寄存器的某一位写 1，引脚输出 3.3V。<b>第 1 课讲的"GPIO 输出"，物理真相就是这一位</b>。'
+  ];
+
+  bArd.onclick = () => {
+    bArd.classList.add('active'); bIdf.classList.remove('active');
+    cArd.style.display = ''; cIdf.style.display = 'none';
+    l0.textContent = 'digitalWrite / delay / Wire';
+  };
+  bIdf.onclick = () => {
+    bIdf.classList.add('active'); bArd.classList.remove('active');
+    cIdf.style.display = ''; cArd.style.display = 'none';
+    l0.textContent = 'gpio_config / vTaskDelay / ESP_ERROR_CHECK';
+  };
+
+  layers.forEach((ly, i) => {
+    ly.onclick = () => {
+      layers.forEach(x => x.classList.remove('lit'));
+      ly.classList.add('lit');
+      note.innerHTML = NOTES[i];
+    };
+  });
+})();
+</script>
+</p>
+<p>上图是两种框架&quot;闪灯&quot;的逐行对照与分层结构图——<strong>点按钮切换视角</strong>，看 <code>digitalWrite</code> 是如何一步步落到 <code>gpio_set_level</code> 再到寄存器的。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 能画出三层结构：Arduino 框架 → ESP-IDF SDK → 硬件寄存器</li>
+<li><input disabled="" type="checkbox"> 能读懂 IDF 闪灯代码的五处关键差异（结构体配置/ESP_ERROR_CHECK/app_main/vTaskDelay/GPIO 枚举）</li>
+<li><input disabled="" type="checkbox"> 能解释 <code>vTaskDelay</code> 和 <code>delay</code> 的本质区别（单任务睡 vs 全局罚站）</li>
+<li><input disabled="" type="checkbox"> 在 PlatformIO 里用 <code>framework = espidf</code> 构建成功（或至少看懂了步骤与工具链下载的必然性）</li>
+<li><input disabled="" type="checkbox"> 能说出 FreeRTOS 任务与&quot;millis 轮流照顾&quot;的差别（抢占 vs 协作）</li>
+<li><input disabled="" type="checkbox"> 背下<strong>选型准则表</strong>：什么项目留 Arduino、什么上 IDF</li>
+<li><input disabled="" type="checkbox"> 能向外行解释一句话：<strong>&quot;Arduino 是 IDF 上的一个库，学 IDF 是往下挖一层，不是推倒重来&quot;</strong></li>
+<li><input disabled="" type="checkbox"> <strong>回收 L1 伏笔确认</strong>：第 1 课&quot;PlatformIO 第 12 课后介绍、ESP-IDF 第 14 课&quot;——两句承诺均已兑现 ✅</li>
+</ul>
+<p><strong>全部打勾 → 你打通了从创客到工程师的最后一层认知。最后一课，看看 AI 如何改变嵌入式的开发方式。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>双任务对照（Wokwi/真机）</strong>：把闪灯 + 每 5 秒串口打印分别写成两个 <code>xTaskCreate</code> 任务，观察它们<strong>独立运行</strong>——和 L10 手写三任务结构对比，写 100 字感想。</li>
+<li><strong>menuconfig 探险（选做）</strong>：<code>pio run -t menuconfig</code> 打开配置菜单，找到 FreeRTOS 的 tick rate 与看门狗选项——<strong>感受&quot;几百个开关全部向你开放&quot;的工业级配置面</strong>。</li>
+<li><strong>混合框架（进阶）</strong>：IDF 工程里 <code>#include &lt;Arduino.h&gt;</code> 然后调 <code>digitalWrite</code>——官方支持的混用方式，<strong>理解&quot;逃生舱&quot;怎么用</strong>。</li>
+<li><strong>功耗思考（选做）</strong>：查 IDF 的 <code>esp_light_sleep_start()</code>——为什么 IDF 才能做&quot;纽扣电池跑一年&quot;的传感器？（Arduino 的 delay 做不到深度睡眠管理）</li>
+<li><strong>选型答辩（重点）</strong>：给这三个项目写选型判断并说明理由：①周末自动浇花玩具 ②卖 5000 台的门锁 ③公司产品原型 demo——<strong>用本课的准则表作答</strong>，这就是架构师的日常。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>首次构建下载 2GB+ 卡住</td>
+<td>IDF 工具链首次下载（正常）</td>
+<td>等待；配置镜像加速</td>
+</tr>
+<tr>
+<td><code>app_main</code> 没被调用</td>
+<td>文件不是 <code>main.c</code> / 放错目录</td>
+<td>确认 <code>src/main.c</code>；入口名必须是 <code>app_main</code></td>
+</tr>
+<tr>
+<td><code>undefined reference to gpio_config</code></td>
+<td>没声明组件依赖</td>
+<td><code>idf.py</code> 工程需在 <code>CMakeLists.txt</code>/<code>Kconfig</code> 声明 driver 组件；PIO 检查 <code>sdkconfig</code></td>
+</tr>
+<tr>
+<td><code>ESP_ERROR_CHECK</code> 停机打印断言</td>
+<td><strong>真的出错了</strong>（配置非法）</td>
+<td>看它打印的错误码与文件行号——<strong>这是特性不是 bug</strong></td>
+</tr>
+<tr>
+<td>`.ino 文件在 espidf 下编译失败**</td>
+<td>框架切换后语言/入口都不兼容</td>
+<td>IDF 用 <code>.c</code> + <code>app_main</code>；或切回 <code>arduino</code> 环境</td>
+</tr>
+<tr>
+<td><code>vTaskDelay</code> 不生效/任务不跑</td>
+<td>没进 FreeRTOS 调度（写在了启动早期）</td>
+<td>放在 <code>app_main</code> 里 <code>app_main</code> 本身是任务，可直接用</td>
+</tr>
+<tr>
+<td>任务栈溢出（Stack overflow）</td>
+<td><code>xTaskCreate</code> 栈给太小（默认常不够）</td>
+<td>从 4096 起步；printf/浮点运算要更多</td>
+</tr>
+<tr>
+<td>找不到 <code>sdkconfig</code>/分区表</td>
+<td>工程不是完整 IDF 结构</td>
+<td>用 <code>pio init</code> 生成 IDF 骨架，或参考模板</td>
+</tr>
+<tr>
+<td>Arduino 库在 espidf 下用不了</td>
+<td>库依赖 Arduino 框架</td>
+<td>加 <code>#include &lt;Arduino.h&gt;</code> 混用，或该库只在 arduino 环境用</td>
+</tr>
+<tr>
+<td>构建成功但烧录后无日志</td>
+<td>监视器波特率/引脚（USB-JTAG）差异</td>
+<td><code>monitor_speed=115200</code>；部分板用 USB-Serial/JTAG 口</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>两层地基都看过了——最后一课，把目光投向正在改变一切的变量：<strong>AI</strong>。<strong>第 15 课（毕业模块）：AI 专题</strong>——从&quot;用 AI 写代码&quot;（本教程你已经在用的对话式开发），到&quot;让 AI 跑在板子上&quot;（边缘 AI / TinyML：语音唤醒、手势识别、异常检测的概念与路线图）。你会得到一份<strong>毕业后的进阶地图</strong>：学什么、做什么项目、往哪个方向深入——<strong>14 课点的 15 个灯，最后一课把火交到你手里</strong>。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

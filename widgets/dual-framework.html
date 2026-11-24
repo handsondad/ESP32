@@ -1,0 +1,123 @@
+<!-- 组件：Arduino vs ESP-IDF 分层对照 · 用于第 14 课 -->
+<div class="wgt wgt-arch" id="wg-arch">
+  <div class="wgt-head"><span>🏗️ 交互对照：同一颗 LED，两种世界观</span><span class="wgt-badge">点代码切换框架 / 点层级看调用链</span></div>
+  <div class="wgt-body">
+    <!-- 框架切换 -->
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+      <button id="wg-arch-ard" class="active">📒 Arduino 版</button>
+      <button id="wg-arch-idf">⚙️ ESP-IDF 版</button>
+    </div>
+
+    <!-- 代码区 -->
+    <div class="wg-arch-code">
+      <pre id="wg-arch-ard-code"><span class="cmt">// Arduino：5 行核心，框架全包了</span>
+<span class="k">void</span> setup() {
+  pinMode(<span class="n">4</span>, OUTPUT);          <span class="cmt">// 配置 = 一句话</span>
+}
+<span class="k">void</span> loop() {
+  digitalWrite(<span class="n">4</span>, HIGH);        <span class="cmt">// 出错？不存在的，它替你吞了</span>
+  delay(<span class="n">500</span>);                  <span class="cmt">// 全局罚站式等待</span>
+  digitalWrite(<span class="n">4</span>, LOW);
+  delay(<span class="n">500</span>);
+}</pre>
+      <pre id="wg-arch-idf-code" style="display:none"><span class="cmt">// ESP-IDF：每个决定都要你来做</span>
+<span class="k">void</span> app_main(<span class="k">void</span>) {
+  gpio_config_t cfg = {          <span class="cmt">// 配置 = 结构体摊开全部选项</span>
+    .pin_bit_mask = <span class="n">1ULL</span> &lt;&lt; <span class="n">4</span>,
+    .mode         = GPIO_MODE_OUTPUT,
+  };
+  ESP_ERROR_CHECK(gpio_config(&amp;cfg)); <span class="cmt">// 出错？立即停机报告！</span>
+  <span class="k">while</span>(<span class="n">1</span>) {
+    gpio_set_level(GPIO_NUM_4, <span class="n">1</span>);
+    vTaskDelay(pdMS_TO_TICKS(<span class="n">500</span>)); <span class="cmt">// 只睡本任务，别人照跑</span>
+    gpio_set_level(GPIO_NUM_4, <span class="n">0</span>);
+    vTaskDelay(pdMS_TO_TICKS(<span class="n">500</span>));
+  }
+}</pre>
+    </div>
+
+    <!-- 分层结构（可点击） -->
+    <div class="wg-arch-layers">
+      <div class="wg-arch-layer" data-l="0">
+        <b>你写的代码</b><span id="wg-arch-l0">digitalWrite / delay / Wire</span>
+      </div>
+      <div class="wg-arch-arrow">↓ 最终变成</div>
+      <div class="wg-arch-layer mid" data-l="1">
+        <b>Arduino-ESP32 框架</b><span>（其实也是 IDF 上的一个库！）</span>
+      </div>
+      <div class="wg-arch-arrow">↓ 内部调用</div>
+      <div class="wg-arch-layer idf" data-l="2">
+        <b>ESP-IDF 官方 SDK</b><span>gpio_set_level / FreeRTOS / TCP-IP / Wi-Fi 驱动</span>
+      </div>
+      <div class="wg-arch-arrow">↓ 操作</div>
+      <div class="wg-arch-layer hw" data-l="3">
+        <b>硬件寄存器</b><span>GPIO_OUT_W1TS 寄存器的某一位 = 1</span>
+      </div>
+    </div>
+    <div class="wg-arch-note" id="wg-arch-note">
+      点击任意一层，看它在调用链里的角色。<b>关键事实：Arduino 框架本身就是架在 IDF 上的库</b>——所以"学 IDF"是往下挖一层，不是推倒重来。
+    </div>
+    <p class="wgt-hint" style="text-align:center">四层台阶 = 你的学习轨迹：L3 学了<b>上层怎么用</b>，本课看懂<b>下层怎么接</b>——两层都见过，招聘要求里"熟悉任一框架"你都能答。</p>
+  </div>
+</div>
+<style>
+#wg-arch-ard, #wg-arch-idf { font-family: inherit; font-size: .88em; padding: .5em 1.2em; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
+#wg-arch-ard.active { background: #00979d; border-color: #00979d; color: #fff; }
+#wg-arch-idf.active { background: #1a1a2e; border-color: #1a1a2e; color: #fff; }
+.wg-arch-code { background: #1a1a2e; border-radius: 10px; padding: .8em 1em; min-height: 200px; }
+.wg-arch-code pre { margin: 0; font-family: Consolas, monospace; font-size: .8em; line-height: 1.75; color: #e8e8f0; }
+.wg-arch-code .k { color: #d7bde2; }
+.wg-arch-code .n { color: #f5b041; }
+.wg-arch-code .cmt { color: #6b7a8d; }
+.wg-arch-layers { margin-top: 12px; display: flex; flex-direction: column; gap: 3px; }
+.wg-arch-layer { display: flex; justify-content: space-between; align-items: center; gap: 10px; padding: .5em .8em; border-radius: 8px; cursor: pointer; transition: all .2s; border: 2px solid var(--border); background: #fff; }
+.wg-arch-layer:hover, .wg-arch-layer.lit { border-color: #0b6e4f; background: #e6f3ee; }
+.wg-arch-layer b { font-size: .88em; color: #333; white-space: nowrap; }
+.wg-arch-layer span { font-size: .78em; color: #8a8f93; font-family: Consolas, monospace; text-align: right; }
+.wg-arch-layer.mid b { color: #00979d; }
+.wg-arch-layer.idf b { color: #1a1a2e; }
+.wg-arch-layer.hw b { color: #c0392b; }
+.wg-arch-arrow { text-align: center; font-size: .72em; color: #9aa0a6; }
+.wg-arch-note { margin-top: 10px; font-size: .85em; line-height: 1.65; color: #444; background: #fffdf5; border-left: 4px solid #e0b84b; padding: .55em .8em; border-radius: 0 6px 6px 0; }
+.wgt-arch .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-arch');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const bArd = document.getElementById('wg-arch-ard');
+  const bIdf = document.getElementById('wg-arch-idf');
+  const cArd = document.getElementById('wg-arch-ard-code');
+  const cIdf = document.getElementById('wg-arch-idf-code');
+  const note = document.getElementById('wg-arch-note');
+  const layers = Array.from(root.querySelectorAll('.wg-arch-layer'));
+  const l0 = document.getElementById('wg-arch-l0');
+
+  const DEFAULT = '点击任意一层，看它在调用链里的角色。<b>关键事实：Arduino 框架本身就是架在 IDF 上的库</b>——所以"学 IDF"是往下挖一层，不是推倒重来。';
+  const NOTES = [
+    '<b>① 你的代码层</b>：Arduino 视角是 <code>digitalWrite(4,HIGH)</code>，IDF 视角是 <code>gpio_set_level()</code>——<b>同一块硬件，两种方言</b>。',
+    '<b>② Arduino 框架层</b>：它做的事 = 简化参数 + 吞掉错误 + 提供 delay。<b>它本身就是一个跑在 IDF 上的库</b>——你学的一切没有白费。',
+    '<b>③ ESP-IDF 层</b>：官方 SDK 真正干活——驱动、TCP/IP、Wi-Fi、<b>FreeRTOS 调度</b>。Arduino 的 delay 内部也最终走到这层，只是它替你把选择做完了。',
+    '<b>④ 硬件寄存器层</b>：所有代码的终点——往 GPIO 寄存器的某一位写 1，引脚输出 3.3V。<b>第 1 课讲的"GPIO 输出"，物理真相就是这一位</b>。'
+  ];
+
+  bArd.onclick = () => {
+    bArd.classList.add('active'); bIdf.classList.remove('active');
+    cArd.style.display = ''; cIdf.style.display = 'none';
+    l0.textContent = 'digitalWrite / delay / Wire';
+  };
+  bIdf.onclick = () => {
+    bIdf.classList.add('active'); bArd.classList.remove('active');
+    cIdf.style.display = ''; cArd.style.display = 'none';
+    l0.textContent = 'gpio_config / vTaskDelay / ESP_ERROR_CHECK';
+  };
+
+  layers.forEach((ly, i) => {
+    ly.onclick = () => {
+      layers.forEach(x => x.classList.remove('lit'));
+      ly.classList.add('lit');
+      note.innerHTML = NOTES[i];
+    };
+  });
+})();
+</script>
