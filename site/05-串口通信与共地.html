@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 5 课：串口通信与共地——让两个设备说话</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 5 课：串口通信与共地——让两个设备说话</h1>
+<blockquote>
+<p><strong>阶段二 · 输入与输出</strong> ｜ 难度：★★★☆☆ ｜ 预计用时：45–60 分钟</p>
+<p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、杜邦线若干（最好再有一块任意开发板/USB-TTL 模块，没有也能学完）
+<strong>无硬件替代</strong>：Wokwi 里放一块 Arduino Uno 与 ESP32 对接，或用串口监视器自环演示</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson05-hero.svg" alt="第 5 课效果预告：两块芯片通过 TX/RX 两根线对话"></p>
+<blockquote>
+<p>你将做出：<strong>ESP32 每秒发出一句&quot;你好，我是 ESP32 #1&quot;，另一个设备回它一句&quot;收到！&quot;—两颗芯片只用两根线（加一根地线）就聊起了天。</strong> 同时你会亲眼看到：<strong>少接一根 GND，字全变乱码。</strong></p>
+</blockquote>
+<p>前四课，芯片的所有&quot;对话&quot;（串口监视器）其实都借道 USB 芯片——那是电脑和板子在聊。这一课拆掉中介，<strong>让两颗芯片的引脚直接对上</strong>。第 1 课 GND 词条里那句&quot;共地是一切通讯的前提&quot;，现在兑现。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 理解 UART——TX/RX 两根线如何实现双向通信（异步、约定速率）</li>
+<li>✅ 接对&quot;交叉连线&quot;：TX 接对方 RX，RX 接对方 TX</li>
+<li>✅ <strong>亲手制造一次乱码</strong>：断开 GND，观察&quot;共地&quot;被破坏后的现场</li>
+<li>✅ 掌握 <code>Serial2</code>（或任意自定义引脚）收发数据，读懂 <code>available()/read()</code></li>
+<li>✅ 攒下证据：串口是<strong>逐字节、无结构</strong>的裸数据流——第 9 课讲协议时回收</li>
+</ol>
+<hr>
+<h2>🔁 开课先接棒：你的&quot;电话线&quot;其实是借来的</h2>
+<p>第 1 课就用了 <code>Serial.println(&quot;LED ON&quot;)</code>——但你可能从没细想：这行字<strong>到底走哪根线到电脑的</strong>？</p>
+<p>答案：<strong>ESP32 的 GPIO1（TX0）/ GPIO3（RX0）连到板上的 USB 转串口芯片（CP2102/CH340），再经 USB 线进电脑</strong>。你在串口监视器里看到的每个字，都是从这两个引脚&quot;物理流出去&quot;的：</p>
+<pre><code>Serial.println(&quot;Hi&quot;)  →  GPIO1(TX0) 引脚电平翻飞  →  USB 芯片  →  电脑屏幕
+</code></pre>
+<p>第 1 课引脚图里我们标过：<strong>TX0/RX0 别接外设</strong>——因为它们正忙着给你的串口监视器打工。这一课，我们用<strong>另一组串口</strong>（<code>Serial2</code>，默认 GPIO17/GPIO16）去和外部设备聊天，互不打扰。</p>
+<hr>
+<h2>📡 新知识一：UART——最朴素的&quot;两线聊天法&quot;</h2>
+<p><strong>UART（Universal Asynchronous Receiver/Transmitter，通用异步收发器）</strong> 是嵌入式最基础的通信协议。它的哲学简单到可爱：</p>
+<blockquote>
+<p><strong>一根线只管往外说（TX），一根线只管往里听（RX）。没有时钟线，双方事先约好语速，一个字节一个字节地蹦。</strong></p>
+</blockquote>
+<pre><code>   ESP32                                对方设备
+  ┌─────┐                            ┌─────┐
+  │ TX17├───────────────────────────→│ RX  │   你说，我听
+  │ RX16│←───────────────────────────┤ TX  │   你说，我听
+  │ GND ├═══════════════════════════╤╡ GND │   ⚡ 共同的&quot;零&quot;！
+  └─────┘                           ╘══════╛
+</code></pre>
+<p>三个要点，逐个拆：</p>
+<h3>① 交叉连接：TX 找 RX，RX 找 TX</h3>
+<p>&quot;我发射的，必须是你的接收&quot;——像说话：我的嘴对你的耳。<strong>同名相连（TX-TX）是新手第一大错</strong>，两边都在说、没人听，什么也收不到。</p>
+<h3>② 异步：没有节拍器，全靠&quot;约定语速（波特率）&quot;</h3>
+<p>同步通信有时钟线打拍子；UART 没有——它靠双方<strong>事先约定相同的波特率（Baud Rate）</strong>，比如都按 115200 bit/s 发收：</p>
+<pre><code>发方：按 115200 的节奏把电压翻飞（1、0、1、1…）
+收方：按 115200 的节奏去采样解读
+       ↑ 两边速率必须一致，差一点 → 采样点漂移 → 字节全错 → 乱码！
+</code></pre>
+<p><strong>串口乱码的两大元凶就埋在这</strong>：波特率不一致，或（本课重点）下面这个——</p>
+<h3>③ 共地：没有&quot;共同的零&quot;，电压就是鬼话</h3>
+<p>TX 线上传的是<strong>电压</strong>：3.3V 算 1、0V 算 0。但&quot;3.3V 是相对谁的？&quot;</p>
+<blockquote>
+<p><strong>答案：相对 GND。</strong> 收方判断&quot;这根线上是 3.3V 还是 0V&quot;，必须拿自己的 GND 当参照去量。<strong>两颗芯片 GND 不相连，就不存在共同的零电位——你眼中的 3.3V，在它眼里可能是飘忽的噪声。</strong></p>
+</blockquote>
+<p>这就是第 1 课 GND 词条那句&quot;<strong>共地是一切通讯的前提</strong>&quot;的物理含义。空口无凭——本课的破坏性实验会给你现场。</p>
+<hr>
+<h2>🔌 动手接线（先断电！）</h2>
+<h3>标准接线表（ESP32 ↔ 对方设备）</h3>
+<table>
+<thead>
+<tr>
+<th>从</th>
+<th>到</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>ESP32 <strong>GPIO17</strong>（TX2）</td>
+<td>对方 <strong>RX</strong></td>
+<td>交叉！我发你听</td>
+</tr>
+<tr>
+<td>ESP32 <strong>GPIO16</strong>（RX2）</td>
+<td>对方 <strong>TX</strong></td>
+<td>交叉！你发我听</td>
+</tr>
+<tr>
+<td>ESP32 <strong>GND</strong></td>
+<td>对方 <strong>GND</strong></td>
+<td>⚡ <strong>必接</strong>——本课主角</td>
+</tr>
+<tr>
+<td>对方设备电源</td>
+<td>按其要求</td>
+<td>3.3V 器件共 3V3；5V 器件注意电平兼容（第 6 课伏笔）</td>
+</tr>
+</tbody></table>
+<p><strong>对方设备三选一：</strong></p>
+<ol>
+<li><strong>另一块开发板</strong>（任意 ESP32/Arduino/STM32 都行）：跑本课&quot;回声&quot;代码</li>
+<li><strong>USB-TTL 串口模块</strong>：TX/RX/GND 三线接电脑，用电脑串口助手当&quot;对方&quot;</li>
+<li><strong>都没有？</strong> 自环演示：用一根杜邦线把 <strong>GPIO17 和 GPIO16 直接连起来</strong>（TX 短到 RX），自己发的话自己收到——Wokwi 同理，零成本体验收发全流程</li>
+</ol>
+<blockquote>
+<p><strong>Wokwi 方案</strong>：模板里加一块 <code>Arduino Uno</code>，ESP32 的 17/16 交叉接 Uno 的 0/1（RX/TX），<strong>GND 务必相连</strong>；或用自环法一块板跑通。</p>
+</blockquote>
+<hr>
+<h2>💡 完整代码（直接复制）</h2>
+<pre><code class="language-cpp">// ============================================
+// 第 5 课：UART 双机对话（ESP32 端）
+// ============================================
+const int TX_PIN = 17;          // Serial2 默认 TX（可改任意输出脚）
+const int RX_PIN = 16;          // Serial2 默认 RX
+unsigned long lastSend = 0;
+int counter = 0;
+
+void setup() {
+  Serial.begin(115200);                    // USB 口：给电脑看日志
+  Serial2.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);  // 对外口：给对方设备
+  Serial.println(&quot;UART 通信启动（电脑日志口）&quot;);
+}
+
+void loop() {
+  // —— ① 每秒主动发一句 ——
+  if (millis() - lastSend &gt;= 1000) {
+    lastSend = millis();
+    counter++;
+    Serial2.print(&quot;Hello from ESP32 #&quot;);
+    Serial2.println(counter);              // 发给对方
+    Serial.print(&quot;[TX] 发出: Hello #&quot;);    // 同步在电脑上留底
+    Serial.println(counter);
+  }
+
+  // —— ② 随时监听对方回话 ——
+  if (Serial2.available()) {               // 收到字节了吗？
+    String msg = Serial2.readStringUntil(&#39;\n&#39;);  // 读到换行为止
+    msg.trim();                            // 去掉末尾换行/回车
+    Serial.print(&quot;[RX] 对方回: &quot;);
+    Serial.println(msg);                   // 转播到电脑屏幕
+  }
+}
+</code></pre>
+<h3>逐段拆解</h3>
+<p><strong><code>Serial2.begin(115200, SERIAL_8N1, RX_PIN, TX_PIN);</code></strong>
+开第二路串口。四个参数是 UART 的&quot;通用约定格式&quot;：</p>
+<pre><code>115200      波特率——双方必须一模一样（乱码头号元凶）
+SERIAL_8N1  数据格式：8 位数据、无校验(None)、1 位停止位——业界默认，背下来
+RX_PIN, TX_PIN  引脚映射——ESP32 的串口引脚可自由重映射，这是它的优点
+</code></pre>
+<p><strong>两路 <code>Serial</code> 并存：<code>Serial</code> 给电脑，<code>Serial2</code> 给对方</strong>
+本课的核心架构：<strong>日志和通信分道扬镳</strong>。调试信息走 USB 让你随时看，业务数据走 17/16 和对方聊——互不污染。工程上这叫&quot;带外管理&quot;：<strong>调试通道永远别混进业务通道</strong>。</p>
+<p><strong><code>Serial2.print</code> vs <code>Serial2.println</code></strong>
+<code>println</code> 自动补 <code>\n</code>。<strong>收方用 <code>readStringUntil(&#39;\n&#39;)</code> 正是以它为界</strong>——发收双方对&quot;一句话到哪结束&quot;的约定，就是最原始的<strong>消息边界协议</strong>。</p>
+<p><strong><code>if (Serial2.available())</code> + <code>readStringUntil(&#39;\n&#39;)</code></strong>
+<code>available()</code> 是&quot;信箱里有信吗&quot;——<strong>非阻塞</strong>！没信立刻跳过，loop 继续转（第 3 课的 millis 思维在这里复用）。有信才读，读到换行为止。</p>
+<p><strong><code>msg.trim()</code></strong>
+串口数据常带 <code>\r\n</code> 或尾部空格，<code>trim()</code> 一剑削掉——<strong>永远别信任从线路上读到的原始字符串</strong>，清洗是肌肉记忆。</p>
+<hr>
+<h2>🎭 破坏性实验：拔掉 GND，制造乱码（本课最重要的 10 分钟）</h2>
+<p>按接线表正常跑通后（对方能正确回话），做这个实验：</p>
+<blockquote>
+<p><strong>步骤</strong>：只拔掉那根 <strong>GND 连线</strong>，其他都不动，复位两块板。</p>
+<p><strong>现象</strong>：对方收到的不再是 <code>Hello from ESP32 #1</code>，而是<strong>随机乱码</strong>（<code>???</code>、<code>ÿÿÿ</code>、半个字、完全随机的字符），时好时坏、毫无规律。</p>
+</blockquote>
+<p><!-- 组件：共地破坏实验 · 用于第 5 课破坏性实验 -->
+<div class="wgt wgt-gnd" id="wg-gnd">
+  <div class="wgt-head"><span>⚡ 交互实验：拔掉 GND，制造乱码</span><span class="wgt-badge">点开关断开/接回地线</span></div>
+  <div class="wgt-body">
+    <svg viewBox="0 0 640 250" style="width:100%;height:auto;display:block" id="wg-gnd-svg">
+      <!-- 左芯片 -->
+      <rect x="30" y="55" width="150" height="140" rx="10" fill="#0f3d2e" stroke="#0a2c21" stroke-width="3"/>
+      <text x="105" y="85" fill="#8fd6bd" font-size="14" font-weight="bold" text-anchor="middle">ESP32</text>
+      <text x="105" y="107" fill="#5f7484" font-size="11" text-anchor="middle">发: Hello #N</text>
+      <!-- TX 线 -->
+      <line x1="180" y1="130" x2="460" y2="130" stroke="#e67e22" stroke-width="4"/>
+      <text x="320" y="122" fill="#e67e22" font-size="12" font-weight="bold" text-anchor="middle">TX(17) → RX</text>
+      <!-- TX 上的流动数据包 -->
+      <rect id="wg-gnd-pkt" x="185" y="123" width="26" height="14" rx="3" fill="#e67e22">
+        <animate attributeName="x" values="185;430" dur="1.2s" repeatCount="indefinite"/>
+      </rect>
+      <!-- GND 线（可断开） -->
+      <g id="wg-gnd-wire">
+        <line x1="180" y1="185" x2="310" y2="185" stroke="#4a5b66" stroke-width="5"/>
+        <line x1="330" y1="185" x2="460" y2="185" stroke="#4a5b66" stroke-width="5"/>
+        <line id="wg-gnd-bridge" x1="310" y1="185" x2="330" y2="185" stroke="#4a5b66" stroke-width="5"/>
+        <text x="320" y="207" fill="#4a5b66" font-size="12" font-weight="bold" text-anchor="middle">GND</text>
+      </g>
+      <!-- 断开时的红叉 -->
+      <g id="wg-gnd-x" opacity="0">
+        <line x1="303" y1="176" x2="337" y2="194" stroke="#e74c3c" stroke-width="5" stroke-linecap="round"/>
+        <line x1="337" y1="176" x2="303" y2="194" stroke="#e74c3c" stroke-width="5" stroke-linecap="round"/>
+      </g>
+      <!-- 右芯片 -->
+      <rect x="460" y="55" width="150" height="140" rx="10" fill="#0f3d2e" stroke="#0a2c21" stroke-width="3"/>
+      <text x="535" y="85" fill="#8fd6bd" font-size="14" font-weight="bold" text-anchor="middle">对方设备</text>
+      <text x="535" y="107" fill="#5f7484" font-size="11" text-anchor="middle">采样判 1/0</text>
+      <!-- 参照箭头：从对方 GND 指向 TX 线 -->
+      <path id="wg-gnd-ref" d="M460 185 L460 140" stroke="#4a5b66" stroke-width="2" stroke-dasharray="5 4" marker-end="url(#refA)"/>
+      <text id="wg-gnd-reftext" x="448" y="165" fill="#4a5b66" font-size="10.5" text-anchor="end">以自家 GND 为参照量电压</text>
+      <defs>
+        <marker id="refA" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+          <path d="M0 0 L10 5 L0 10 z" fill="#4a5b66"/>
+        </marker>
+      </defs>
+    </svg>
+
+    <!-- 接收窗口模拟 -->
+    <div class="wg-gnd-term">
+      <div class="wg-gnd-termbar">
+        <span>对方设备 · 接收窗口</span>
+        <button id="wg-gnd-toggle">🔌 断开 GND</button>
+      </div>
+      <div id="wg-gnd-screen" class="wg-gnd-screen">Hello from ESP32 #1
+Hello from ESP32 #2
+Hello from ESP32 #3</div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">断开地线：**数据包还在 TX 线上跑（橙色），但对方失去了"零"的参照**——采样掷硬币，接收窗口变乱码。接回地线立刻恢复。第 9 课讲帧格式时，我们再回来解释乱码的具体形态。</p>
+  </div>
+</div>
+<style>
+.wg-gnd-term { margin-top: 10px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
+.wg-gnd-termbar { display: flex; justify-content: space-between; align-items: center; padding: .45em .8em; background: #1e2f3d; color: #9fb6c4; font-size: .85em; }
+.wg-gnd-termbar button { font-family: inherit; font-size: .85em; padding: .3em .9em; border-radius: 6px; border: 1px solid #3fa67a; background: #0b6e4f; color: #fff; cursor: pointer; }
+.wg-gnd-termbar button.off { background: #c0392b; border-color: #c0392b; }
+.wg-gnd-screen { background: #0d1821; color: #8fd6bd; font-family: Consolas, monospace; font-size: .9em; padding: .7em .9em; min-height: 84px; line-height: 1.7; white-space: pre-wrap; word-break: break-all; }
+.wg-gnd-screen.garbled { color: #e74c3c; }
+.wgt-gnd .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-gnd');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1');
+  const btn = document.getElementById('wg-gnd-toggle');
+  const screen = document.getElementById('wg-gnd-screen');
+  const bridge = document.getElementById('wg-gnd-bridge');
+  const xmark = document.getElementById('wg-gnd-x');
+  const refArrow = document.getElementById('wg-gnd-ref');
+  const refText = document.getElementById('wg-gnd-reftext');
+
+  let connected = true;
+  let counter = 1;
+  const GARBLE = ['ÿ', '¿', '§', 'Ã', '?', '¨', '¤', '½', '¾', 'Ã', '€', '†'];
+
+  function garble(text) {
+    let out = '';
+    for (const ch of text) {
+      out += (Math.random() < 0.45)
+        ? GARBLE[Math.floor(Math.random() * GARBLE.length)]
+        : (Math.random() < 0.5 ? ch : '');
+    }
+    return out;
+  }
+
+  function setConnected(v) {
+    connected = v;
+    bridge.setAttribute('opacity', v ? '1' : '0');
+    xmark.setAttribute('opacity', v ? '0' : '1');
+    refArrow.setAttribute('stroke', v ? '#4a5b66' : '#e74c3c');
+    refText.textContent = v ? '以自家 GND 为参照量电压' : '❌ 没有共同的零！电压成鬼话';
+    refText.setAttribute('fill', v ? '#4a5b6b' : '#e74c3c');
+    btn.textContent = v ? '🔌 断开 GND' : '🔗 接回 GND';
+    btn.classList.toggle('off', !v);
+    screen.classList.toggle('garbled', !v);
+    if (v) screen.textContent = 'GND 已接回，通信恢复正常…';
+  }
+
+  btn.onclick = () => setConnected(!connected);
+
+  // 每 1.2s 模拟一次收包
+  setInterval(() => {
+    counter++;
+    const line = `Hello from ESP32 #${counter}`;
+    const shown = connected ? line : garble(line) + (Math.random() < 0.4 ? garble('##') : '');
+    const lines = screen.textContent.split('\n').slice(-3);
+    lines.push(shown);
+    screen.textContent = lines.slice(-4).join('\n');
+    screen.scrollTop = screen.scrollHeight;
+  }, 1200);
+})();
+</script>
+</p>
+<p><strong>为什么会这样？</strong> 对照新知识 ③：</p>
+<ol>
+<li>TX 线还在翻飞，电信号确实传到了对方——<strong>线没断</strong></li>
+<li>但对方失去共同的零电位参照，它量出来的&quot;3.3V&quot;是相对于<strong>它自己的 GND</strong>，与发方的 0V 对不上</li>
+<li>于是&quot;1&quot;可能被读成&quot;0&quot;、字节边界漂移、起始位误判——<strong>每个 bit 都在掷硬币</strong></li>
+<li>波特率越低，电压窗口越宽，可能&quot;偶尔蒙对几个字&quot;；越高则越碎——这就是&quot;乱码且毫无规律&quot;的原因</li>
+</ol>
+<blockquote>
+<p>🔑 <strong>本课最重要的一句话</strong>：
+<strong>通信三要素 = TX/RX 交叉 + 波特率一致 + 共地。</strong> 前两个错了有规律（完全没反应/固定乱码），第三个错了是&quot;薛定谔的乱码&quot;——排查串口问题时，<strong>先摸地线</strong>。</p>
+<p>把这个实验现象记进笔记本：第 9 课讲 SPI/I2C 时你会发现，<strong>所有有线通信都逃不过这三条</strong>。</p>
+</blockquote>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 接线正确（17→对方RX、16→对方TX、GND→GND），通电无短路</li>
+<li><input disabled="" type="checkbox"> 电脑串口监视器（115200）看到 <code>[TX] 发出: Hello #1,2,3…</code> 每秒滚动</li>
+<li><input disabled="" type="checkbox"> 对方设备收到正确语句，且回话被 <code>[RX]</code> 转播——<strong>双向通了</strong></li>
+<li><input disabled="" type="checkbox"> 拔掉 GND 复位：<strong>亲眼观察到乱码</strong>，插回后恢复——破坏性实验完成</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①为什么要 TX/RX 交叉 ②波特率是什么 ③为什么必须共地</li>
+<li><input disabled="" type="checkbox"> 自查：本课所有定时仍用 millis，代码中无 <code>delay(</code></li>
+<li><input disabled="" type="checkbox"> 记录：拔 GND 后的乱码长什么样（截图或抄几个字符）——第 9 课协议课要用这个证据</li>
+</ul>
+<p><strong>全部打勾 → 你打通了芯片间的物理通信链路，并且亲手验证了&quot;共地&quot;不是教条而是物理。进入第 6 课。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>自环回声</strong>：用杜邦线短接 17–16，把发出去的 <code>Hello #N</code> 改成读到什么原样回发（echo），在电脑上看到&quot;自己对自己说话&quot;。</li>
+<li><strong>改波特率作死</strong>：把 <code>Serial2</code> 改成 9600、对方不动（115200），观察乱码形态——<strong>有规律的错</strong>（全是乱码）和拔地线<strong>无规律的错</strong>有什么不同？记下对比，第 9 课讲帧格式时你会秒懂。</li>
+<li><strong>十六进制dump（选做）</strong>：把 <code>readStringUntil</code> 换成逐字节 <code>Serial2.read()</code> + <code>Serial::println(b, HEX)</code>，直接看原始字节——工程排查串口的标准姿势。</li>
+<li><strong>电平预警（选做）</strong>：如果你的对方设备是 5V 的（如老 Arduino），查一下&quot;ESP32 5V 耐受&quot;问题——把疑问记下来，第 6 课引脚清算给你答案。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>完全收不到，对方零反应</td>
+<td>① TX/RX 没交叉（TX-TX 同名相连）② 波特率不一致 ③ GND 断开</td>
+<td>交叉重接；两边都设 115200；<strong>先摸地线</strong>（本课实验）</td>
+</tr>
+<tr>
+<td>收到但全是乱码</td>
+<td>同上三条（最常见是 GND 或波特率）</td>
+<td>按&quot;通信三要素&quot;逐条排查；乱码无规律 → 优先怀疑 GND</td>
+</tr>
+<tr>
+<td>收到半句话后卡住</td>
+<td>发方没发 <code>\n</code>，收方 <code>readStringUntil(&#39;\n&#39;)</code> 一直等</td>
+<td>确认发方用 <code>println</code>；或改用带超时的读法</td>
+</tr>
+<tr>
+<td>对方偶尔回对、偶尔乱</td>
+<td>接触不良 / 地线太细太长 / 共地路径绕远</td>
+<td>换短粗杜邦线；两板共用同一电源地</td>
+</tr>
+<tr>
+<td><code>Serial2</code> 收发引脚不生效</td>
+<td>引脚号写进了 begin 的错误位置</td>
+<td>参数顺序：<code>begin(波特率, 格式, RX脚, TX脚)</code>——<strong>先 RX 后 TX</strong></td>
+</tr>
+<tr>
+<td>电脑口（Serial）没输出</td>
+<td>监视器开的是别的 COM 口或波特率不对</td>
+<td>选对 COM；监视器设 115200</td>
+</tr>
+<tr>
+<td>5V 设备接上后行为异常/发烫</td>
+<td><strong>电平不兼容</strong>——ESP32 不耐 5V</td>
+<td>立即断电；第 6 课讲电平真相与电平转换</td>
+</tr>
+<tr>
+<td>通信干扰对方程序跑飞</td>
+<td>共地环路噪声 / 对方中断被串口打断</td>
+<td>短线、共地、必要时降低波特率；深层原因第 10 课任务视角再看</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>通信三要素你已掌握，但本课接线时你可能已经嘀咕过：<strong>&quot;哪些脚能随便接？哪些脚接了会出事？&quot;</strong> <strong>第 6 课：引脚大清算</strong>——第 1 课三原则、GPIO34 仅输入、电位器接 34 的悬案、strapping 脚的脾气、浮空引脚、ADC2 与 Wi-Fi 冲突、5V 电平……<strong>所有欠你的引脚答案，一次全拆</strong>。这是全系列承上启下的&quot;总清算课&quot;，手里已有 5 个课的证据，看完你就是&quot;引脚安全&quot;半个专家。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

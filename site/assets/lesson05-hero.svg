@@ -1,0 +1,77 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg5" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7faf8"/>
+      <stop offset="1" stop-color="#e8f1ec"/>
+    </linearGradient>
+    <filter id="ds5" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0b3d30" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="440" fill="url(#bg5)"/>
+
+  <text x="600" y="52" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">通信三要素：交叉 · 波特率一致 · 共地</text>
+
+  <!-- ===== 左芯片 ===== -->
+  <g transform="translate(95 115)" filter="url(#ds5)">
+    <rect width="220" height="230" rx="13" fill="#0f3d2e" stroke="#0a2c21" stroke-width="4"/>
+    <rect x="35" y="26" width="150" height="86" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="110" y="64" fill="#4a5057" font-size="19" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="110" y="90" fill="#6b7280" font-size="13" text-anchor="middle">Serial2 · 115200</text>
+    <!-- 引脚标签 -->
+    <text x="20" y="152" fill="#e67e22" font-size="15" font-weight="bold">TX  GPIO17</text>
+    <text x="20" y="188" fill="#3fa67a" font-size="15" font-weight="bold">RX  GPIO16</text>
+    <text x="20" y="220" fill="#7f8c8d" font-size="15" font-weight="bold">GND</text>
+    <!-- 打招呼的气泡 -->
+    <g transform="translate(120 130)">
+      <rect x="0" y="-2" width="92" height="30" rx="15" fill="#fff" stroke="#e67e22" stroke-width="2"/>
+      <text x="46" y="18" fill="#e67e22" font-size="13" font-weight="bold" text-anchor="middle">Hello #1</text>
+      <animate attributeName="opacity" values="0;1;1;0" dur="2s" repeatCount="indefinite"/>
+    </g>
+  </g>
+
+  <!-- ===== 右芯片 ===== -->
+  <g transform="translate(885 115)" filter="url(#ds5)">
+    <rect width="220" height="230" rx="13" fill="#123a5c" stroke="#0b2740" stroke-width="4"/>
+    <rect x="35" y="26" width="150" height="86" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="110" y="64" fill="#4a5057" font-size="19" font-weight="bold" text-anchor="middle">对方设备</text>
+    <text x="110" y="90" fill="#6b7280" font-size="13" text-anchor="middle">采样 · 解帧</text>
+    <text x="200" y="152" fill="#3fa67a" font-size="15" font-weight="bold" text-anchor="end">RX</text>
+    <text x="200" y="188" fill="#e67e22" font-size="15" font-weight="bold" text-anchor="end">TX</text>
+    <text x="200" y="220" fill="#7f8c8d" font-size="15" font-weight="bold" text-anchor="end">GND</text>
+    <!-- 回话气泡 -->
+    <g transform="translate(8 130)">
+      <rect x="0" y="-2" width="104" height="30" rx="15" fill="#fff" stroke="#3fa67a" stroke-width="2"/>
+      <text x="52" y="18" fill="#3fa67a" font-size="13" font-weight="bold" text-anchor="middle">收到！#1</text>
+      <animate attributeName="opacity" values="0;0;1;1" dur="2s" repeatCount="indefinite"/>
+    </g>
+  </g>
+
+  <!-- ===== 三根连线（交叉 + 共地） ===== -->
+  <!-- TX → RX（上） -->
+  <path d="M315 267 C 500 267, 500 240, 885 240" stroke="#e67e22" stroke-width="5" fill="none"/>
+  <text x="600" y="232" fill="#e67e22" font-size="15" font-weight="bold" text-anchor="middle">① TX → RX（交叉！我发你听）</text>
+  <!-- 流动数据包 -->
+  <rect x="315" y="260" width="24" height="14" rx="3" fill="#e67e22">
+    <animate attributeName="x" values="315;860" dur="1.1s" repeatCount="indefinite"/>
+  </rect>
+  <!-- RX ← TX（中） -->
+  <path d="M315 303 C 500 303, 500 303, 885 303" stroke="#3fa67a" stroke-width="5" fill="none"/>
+  <text x="600" y="295" fill="#3fa67a" font-size="15" font-weight="bold" text-anchor="middle">② RX ← TX（交叉回来）</text>
+  <rect x="860" y="296" width="24" height="14" rx="3" fill="#3fa67a">
+    <animate attributeName="x" values="860;315" dur="1.1s" begin="0.55s" repeatCount="indefinite"/>
+  </rect>
+  <!-- GND（下，强调） -->
+  <path d="M315 350 C 500 380, 500 380, 885 350" stroke="#7f8c8d" stroke-width="6" fill="none"/>
+  <text x="600" y="398" fill="#c0392b" font-size="16" font-weight="bold" text-anchor="middle">③ GND ═ GND ⚡ 没有共同的零，以上全是鬼话</text>
+
+  <!-- 波特率约定 -->
+  <g transform="translate(505 100)">
+    <rect width="190" height="56" rx="10" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+    <text x="95" y="24" fill="#0b6e4f" font-size="15" font-weight="bold" text-anchor="middle">两边约定：115200</text>
+    <text x="95" y="45" fill="#6b6b6b" font-size="12" text-anchor="middle">8N1 · 异步无时钟线</text>
+  </g>
+
+  <!-- 底部标语 -->
+  <text x="600" y="428" fill="#0b6e4f" font-size="17" font-weight="bold" text-anchor="middle">少一根地线 = 零电位参照消失 = 每个 bit 都在掷硬币 → 薛定谔的乱码</text>
+</svg>
