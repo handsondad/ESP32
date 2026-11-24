@@ -494,15 +494,15 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
         <text x="394" y="577" text-anchor="middle" fill="#4a5057" font-size="10" font-weight="bold">EN/RST</text>
         <!-- 板载 LED 标注 -->
         <circle cx="368" cy="245" r="7" fill="#ffd24d" stroke="#e6a700" stroke-width="2"/>
-        <text x="384" y="249" fill="#ffd24d" font-size="11" font-weight="bold">板载 LED → IO2</text>
+        <text x="356" y="249" text-anchor="end" fill="#ffd24d" font-size="11" font-weight="bold">板载 LED → IO2</text>
         <!-- 引脚由 JS 动态生成 -->
         <g id="wg-po-pins"></g>
         <!-- 提示详情区 -->
         <g id="wg-po-tip" opacity="0">
-          <rect id="wg-po-tipbg" x="110" y="240" width="340" height="180" rx="10" fill="#12262e" stroke="#ffb84d" stroke-width="2"/>
-          <text id="wg-po-tiptitle" x="280" y="272" text-anchor="middle" fill="#ffb84d" font-size="17" font-weight="bold"></text>
-          <foreignObject id="wg-po-tipbody" x="120" y="284" width="320" height="128">
-            <div xmlns="http://www.w3.org/1999/xhtml" id="wg-po-tiphtml" style="color:#d7e3e8;font-size:12.5px;line-height:1.55;padding:0 6px"></div>
+          <rect id="wg-po-tipbg" x="154" y="268" width="252" height="165" rx="10" fill="#12262e" stroke="#ffb84d" stroke-width="2"/>
+          <text id="wg-po-tiptitle" x="280" y="294" text-anchor="middle" fill="#ffb84d" font-size="15" font-weight="bold"></text>
+          <foreignObject id="wg-po-tipbody" x="162" y="306" width="236" height="118">
+            <div xmlns="http://www.w3.org/1999/xhtml" id="wg-po-tiphtml" style="color:#d7e3e8;font-size:12px;line-height:1.5;padding:0 4px"></div>
           </foreignObject>
         </g>
       </svg>
@@ -574,7 +574,9 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 
   function makePin(p, side) {
     const x = side === 'L' ? 90 : 470;       // 板边
-    const padX = side === 'L' ? 100 : 434;
+    // 焊盘宽度按名称长度自适应：TX2/17 等长名称不再溢出边框
+    const padW = Math.max(36, p.name.length * 7 + 12);
+    const padX = side === 'L' ? 100 : 470 - padW;
     const y = 45 + (p.n - (side === 'L' ? 1 : 16)) * 41 + 10;
     const grp = document.createElementNS(NS, 'g');
     grp.setAttribute('class', 'wg-po-pin');
@@ -591,7 +593,7 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
     const pad = document.createElementNS(NS, 'rect');
     pad.setAttribute('x', padX);
     pad.setAttribute('y', y - 12);
-    pad.setAttribute('width', 36);
+    pad.setAttribute('width', padW);
     pad.setAttribute('height', 24);
     pad.setAttribute('rx', 5);
     pad.setAttribute('fill', COLORS[p.type]);
@@ -608,13 +610,13 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
     num.setAttribute('font-size', '10');
     num.textContent = p.n;
     grp.appendChild(num);
-    // 名称
+    // 名称（长名称自动缩小字号，确保不超出焊盘）
     const label = document.createElementNS(NS, 'text');
-    label.setAttribute('x', side === 'L' ? padX + 18 : padX + 18);
+    label.setAttribute('x', padX + padW / 2);
     label.setAttribute('y', y + 4);
     label.setAttribute('text-anchor', 'middle');
     label.setAttribute('fill', '#ffffff');
-    label.setAttribute('font-size', '12');
+    label.setAttribute('font-size', p.name.length > 4 ? '11' : '12');
     label.setAttribute('font-weight', 'bold');
     label.textContent = p.name;
     grp.appendChild(label);
