@@ -119,7 +119,10 @@ void loop() {
   if (now - lastChange >= 10) {    // 距上次变化已过 10ms？
     lastChange = now;              // 记下这次的时刻
     brightness += step;            // 亮度进一档
-    if (brightness >= 255 || brightness <= 0) step = -step;  // 到头反向
+    if (brightness >= 255 || brightness <= 0) {
+      step = -step;                // 到头反向
+      brightness = constrain(brightness, 0, 255); // 钳位防越界（避免改 step=4 时 256 溢出闪灭）
+    }
     analogWrite(LED_PIN, brightness);
   }
 
@@ -187,6 +190,7 @@ void loop() {
 
     if (brightness >= 255 || brightness <= 0) {
       step = -step;                      // ⑤ 到头反向，开始呼吸
+      brightness = constrain(brightness, 0, 255); // 钳位在 0–255 内，改任意步长都不越界
     }
 
     analogWrite(LED_PIN, brightness);    // ⑥ 输出新亮度
@@ -209,12 +213,12 @@ void loop() {
 更新基准时刻。**必须写成 `now` 而不是重新读一次 `millis()`**——保证节奏稳定，不累积漂移。
 
 **④⑤ `brightness += step` + 到头反向**
-状态机的最小形态：一个变量记录"往哪走"，到边界自动掉头。第 2 课的 `ledOn = !ledOn` 是两态翻转，这里是**连续量的往返**——同一个思想的放大版。
+状态机的最小形态：一个变量记录"往哪走"，到边界自动掉头，并用 `constrain` 钳住上下界。第 2 课的 `ledOn = !ledOn` 是两态翻转，这里是**连续量的往返**——同一个思想的放大版。
 
-**⑥ `analogWrite(LED_PIN, brightness);`
+**⑥ `analogWrite(LED_PIN, brightness);`**
 0–255 的值 → 占空比 → 平均亮度。值变一点，亮度就动一点，255 级灰度足够画出人眼无感的平滑曲线。
 
-**⑦ `Serial.println(brightness);`
+**⑦ `Serial.println(brightness);`**
 每档都打印。打开串口监视器右上角的**串口绘图器（Serial Plotter）**，你会直接看到一条锯齿状的三角波——**代码里的数字变成了屏幕上的曲线**，这就是工程师的"示波器视角"。
 
 **⑧ 自由时间**
@@ -261,7 +265,7 @@ void loop() {
 
 ## 🔜 下一课预告
 
-呼吸灯让你第一次拥有了"连续量"——但它的亮度值是你**写死在代码里**的。**第 4 课：模拟世界——ADC 与电位器**：你会接一个真实的旋钮（电位器），把"手拧的位置"读成 0–4055 的数字，**用旋转来控制呼吸灯的亮度**——输出的连续量接上输入的连续量，闭环就此形成。同时你会第一次见识 ESP32 模拟输入的两个坑（12 位分辨率、ADC2 与 Wi-Fi 冲突），第 6 课引脚清算前先攒两个新证据。
+呼吸灯让你第一次拥有了"连续量"——但它的亮度值是你**写死在代码里**的。**第 4 课：模拟世界——ADC 与电位器**：你会接一个真实的旋钮（电位器），把"手拧的位置"读成 0–4095 的数字，**用旋转来控制呼吸灯的亮度**——输出的连续量接上输入的连续量，闭环就此形成。同时你会第一次见识 ESP32 模拟输入的两个坑（12 位分辨率、ADC2 与 Wi-Fi 冲突），第 6 课引脚清算前先攒两个新证据。
 
 ---
 

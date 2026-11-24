@@ -1,0 +1,14 @@
+{
+  "name": "esp32-zero-to-expert-tutorial",
+  "version": "1.0.0",
+  "private": true,
+  "description": "ESP32 从零到专家 · 15 课交互式实战教程",
+  "scripts": {
+    "build": "node tools/render.js",
+    "validate": "node tools/validate.js",
+    "test": "node tools/render.js && node tools/validate.js"
+  },
+  "dependencies": {
+    "marked": "^12.0.0"
+  }
+}

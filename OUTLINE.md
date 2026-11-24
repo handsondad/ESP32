@@ -46,7 +46,7 @@
 | 5 | 串口通信与共地：让两个设备对话 | ✅ 已发布 | UART TX/RX、**共地深刻体会**（回收 L1）、软串口/接线 | 1 widget + 1 SVG |
 | 6 | 引脚大清算：GPIO 的脾气 | ✅ 已发布 | **回收**：GPIO34 仅输入、strapping、浮空引脚、电平阈值 1.65V、ADC2、5V 电平 | 1 widget + 1 SVG |
 | 7 | I2C 总线入门：两根线挂遍模块 | ✅ 已发布 | I2C 时序、上拉、寻址、OLED 显示 Hello | 1 widget + 1 SVG |
-| 8 | I2C 传感器实战：温湿度与姿态 | ✅ 已发布 | **IO21 SDA 主角回收**、读传感器、数据校验 | 1 widget + 1 SVG |
+| 8 | I2C 传感器实战：温压与姿态 | ✅ 已发布 | **IO21 SDA 主角回收**、读传感器、数据校验 | 1 widget + 1 SVG |
 | 9 | SPI 高速通信：TFT 彩屏 | ✅ 已发布 | SPI 四线、全双工、速率对比 I2C | 1 widget + 1 SVG |
 | 10 | 蓝牙控制与 millis：delay 的罪状 | ✅ 已发布 | **回收**：delay 断蓝牙、millis 非阻塞、按键抖动根治 | 1 widget + 1 SVG |
 | 11 | Wi-Fi 与 Web 服务器：手机浏览器控灯 | ✅ 已发布 | STA/AP、HTTP 服务器、HTML 控制页、**ADC2 雷引爆** | 1 widget + 1 SVG |

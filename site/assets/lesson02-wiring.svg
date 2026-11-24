@@ -41,41 +41,56 @@
   <g transform="translate(430 90)">
     <!-- 面包板 -->
     <rect width="600" height="240" rx="10" fill="#f2f0ec" stroke="#c8c2b6" stroke-width="3"/>
-    <text x="300" y="26" fill="#8a8378" font-size="14" font-weight="bold" text-anchor="middle">面包板</text>
+    <text x="300" y="26" fill="#8a8378" font-size="14" font-weight="bold" text-anchor="middle">面包板（纵向 3 孔同列连通，元件必须跨列插！）</text>
+    <!-- 纵向铜片示意（淡绿底） -->
+    <g fill="#e6f3ee" opacity="0.65">
+      <rect x="60" y="56" width="20" height="148" rx="5"/>
+      <rect x="120" y="56" width="20" height="148" rx="5"/>
+      <rect x="180" y="56" width="20" height="148" rx="5"/>
+      <rect x="240" y="56" width="20" height="148" rx="5"/>
+      <rect x="300" y="56" width="20" height="148" rx="5"/>
+      <rect x="360" y="56" width="20" height="148" rx="5"/>
+      <rect x="420" y="56" width="20" height="148" rx="5"/>
+      <rect x="480" y="56" width="20" height="148" rx="5"/>
+    </g>
     <!-- 孔阵 -->
     <g fill="#fff" stroke="#a9a294" stroke-width="1.5">
       <circle cx="70" cy="70" r="8"/><circle cx="130" cy="70" r="8"/><circle cx="190" cy="70" r="8"/><circle cx="250" cy="70" r="8"/><circle cx="310" cy="70" r="8"/><circle cx="370" cy="70" r="8"/><circle cx="430" cy="70" r="8"/><circle cx="490" cy="70" r="8"/>
       <circle cx="70" cy="130" r="8"/><circle cx="130" cy="130" r="8"/><circle cx="190" cy="130" r="8"/><circle cx="250" cy="130" r="8"/><circle cx="310" cy="130" r="8"/><circle cx="370" cy="130" r="8"/><circle cx="430" cy="130" r="8"/><circle cx="490" cy="130" r="8"/>
       <circle cx="70" cy="190" r="8"/><circle cx="130" cy="190" r="8"/><circle cx="190" cy="190" r="8"/><circle cx="250" cy="190" r="8"/><circle cx="310" cy="190" r="8"/><circle cx="370" cy="190" r="8"/><circle cx="430" cy="190" r="8"/><circle cx="490" cy="190" r="8"/>
     </g>
-    <!-- 同组高亮（每 5 孔一组的概念简化：这里标两组） -->
-    <rect x="100" y="52" width="230" height="36" rx="6" fill="none" stroke="#0b6e4f" stroke-width="2" stroke-dasharray="6 4"/>
-    <text x="338" y="64" fill="#0b6e4f" font-size="11">同组连通</text>
+    <!-- 同列连通高亮（纵向一列把电阻右脚与 LED 长脚连起来） -->
+    <rect x="234" y="52" width="32" height="156" rx="6" fill="none" stroke="#0b6e4f" stroke-width="2.2" stroke-dasharray="6 4"/>
+    <text x="250" y="224" fill="#0b6e4f" font-size="11.5" font-weight="bold" text-anchor="middle">纵向同组连通</text>
 
-    <!-- 电阻 -->
-    <g transform="translate(150 70)">
-      <line x1="-40" y1="0" x2="-16" y2="0" stroke="#8a8378" stroke-width="4"/>
-      <rect x="-16" y="-11" width="48" height="22" rx="3" fill="#e8dcc8" stroke="#b0a48c" stroke-width="2"/>
-      <line x1="-4" y1="-11" x2="-4" y2="11" stroke="#c0392b" stroke-width="4"/>
-      <line x1="6" y1="-11" x2="6" y2="11" stroke="#1a1a1a" stroke-width="4"/>
-      <line x1="16" y1="-11" x2="16" y2="11" stroke="#e67e22" stroke-width="4"/>
-      <line x1="32" y1="0" x2="52" y2="0" stroke="#8a8378" stroke-width="4"/>
-      <text x="8" y="-20" fill="#8a8378" font-size="13" font-weight="bold" text-anchor="middle">220Ω 电阻</text>
+    <!-- 电阻：跨列插 (x=130,y=70) → (x=250,y=70) -->
+    <g transform="translate(190 70)">
+      <line x1="-60" y1="0" x2="-24" y2="0" stroke="#8a8378" stroke-width="4"/>
+      <rect x="-24" y="-11" width="48" height="22" rx="3" fill="#e8dcc8" stroke="#b0a48c" stroke-width="2"/>
+      <line x1="-10" y1="-11" x2="-10" y2="11" stroke="#c0392b" stroke-width="4"/>
+      <line x1="0" y1="-11" x2="0" y2="11" stroke="#c0392b" stroke-width="4"/>
+      <line x1="10" y1="-11" x2="10" y2="11" stroke="#6e3b1e" stroke-width="4"/>
+      <line x1="24" y1="0" x2="60" y2="0" stroke="#8a8378" stroke-width="4"/>
+      <circle cx="-60" cy="0" r="4" fill="#555"/>
+      <circle cx="60" cy="0" r="4" fill="#555"/>
+      <text x="0" y="-18" fill="#8a8378" font-size="13" font-weight="bold" text-anchor="middle">220Ω 电阻（跨列）</text>
     </g>
-    <!-- LED -->
-    <g transform="translate(310 70)">
+    <!-- LED：跨列插 长脚(x=250,y=130) → 短脚(x=370,y=130) -->
+    <g transform="translate(310 130)">
       <polygon points="-14,-16 -14,16 14,0" fill="#ff5252" stroke="#c62828" stroke-width="3"/>
       <line x1="14" y1="-16" x2="14" y2="16" stroke="#c62828" stroke-width="5"/>
-      <line x1="-40" y1="0" x2="-14" y2="0" stroke="#8a8378" stroke-width="4"/>
-      <line x1="14" y1="0" x2="50" y2="0" stroke="#8a8378" stroke-width="4"/>
-      <text x="0" y="40" fill="#8a8378" font-size="13" font-weight="bold" text-anchor="middle">LED</text>
-      <text x="-26" y="-26" fill="#c0392b" font-size="12" font-weight="bold">长脚 A +</text>
-      <text x="30" y="-26" fill="#6b6b6b" font-size="12" font-weight="bold">短脚 C −</text>
+      <line x1="-60" y1="0" x2="-14" y2="0" stroke="#8a8378" stroke-width="4"/>
+      <line x1="14" y1="0" x2="60" y2="0" stroke="#8a8378" stroke-width="4"/>
+      <circle cx="-60" cy="0" r="4" fill="#c0392b"/>
+      <circle cx="60" cy="0" r="4" fill="#555"/>
+      <text x="0" y="34" fill="#8a8378" font-size="13" font-weight="bold" text-anchor="middle">LED（跨列）</text>
+      <text x="-44" y="-20" fill="#c0392b" font-size="12" font-weight="bold" text-anchor="middle">长脚 A +</text>
+      <text x="46" y="-20" fill="#6b6b6b" font-size="12" font-weight="bold" text-anchor="middle">短脚 C −</text>
     </g>
     <!-- 接线说明 -->
-    <text x="520" y="75" fill="#e67e22" font-size="14" font-weight="bold" text-anchor="middle">GPIO4</text>
-    <text x="520" y="95" fill="#8a8378" font-size="12" text-anchor="middle">经电阻 → LED</text>
-    <text x="60" y="135" fill="#6b6b6b" font-size="13" font-weight="bold">回 GND 负极轨</text>
+    <text x="536" y="96" fill="#e67e22" font-size="13.5" font-weight="bold" text-anchor="middle">IO4 → 列2</text>
+    <text x="536" y="118" fill="#0b6e4f" font-size="12" text-anchor="middle">电阻 → 列4 → LED+</text>
+    <text x="536" y="140" fill="#6b6b6b" font-size="12" text-anchor="middle">LED− → 列6 → GND</text>
   </g>
 
   <!-- ============ 右下：按钮 ============ -->
@@ -104,15 +119,17 @@
   </g>
 
   <!-- ============ 连线（跨区） ============ -->
-  <!-- IO4 → 电阻区 -->
-  <path d="M330 280 C 380 280, 380 160, 430 160" stroke="#e67e22" stroke-width="4" fill="none"/>
-  <circle cx="430" cy="160" r="5" fill="#e67e22"/>
+  <!-- IO4 → 电阻左脚同列孔 (430+130=560, 90+130=220) -->
+  <path d="M326 302 C 420 302, 460 220, 560 220" stroke="#e67e22" stroke-width="4" fill="none"/>
+  <circle cx="560" cy="220" r="5" fill="#e67e22"/>
   <!-- IO23 → 按钮左脚 -->
-  <path d="M330 410 C 400 410, 400 470, 470 470" stroke="#0b6e4f" stroke-width="4" fill="none"/>
-  <circle cx="470" cy="470" r="5" fill="#0b6e4f"/>
-  <!-- GND → 两处地 -->
-  <path d="M330 530 C 500 560, 700 560, 900 560 M900 560 C 940 560, 940 300, 700 300 C 640 300, 620 250, 620 230" stroke="#7f8c8d" stroke-width="4" fill="none" stroke-dasharray="9 6"/>
-  <text x="820" y="580" fill="#7f8c8d" font-size="14" font-weight="bold">GND（黑线，公共地）</text>
+  <path d="M326 432 C 410 432, 440 458, 534 458" stroke="#0b6e4f" stroke-width="4" fill="none"/>
+  <circle cx="534" cy="458" r="5" fill="#0b6e4f"/>
+  <!-- GND → 按钮右脚 & LED短脚同列孔 (430+370=800, 90+190=280) -->
+  <path d="M326 552 C 500 585, 760 585, 830 458 M760 568 C 830 550, 800 360, 800 280" stroke="#7f8c8d" stroke-width="4" fill="none" stroke-dasharray="9 6"/>
+  <circle cx="800" cy="280" r="5" fill="#7f8c8d"/>
+  <circle cx="830" cy="458" r="5" fill="#7f8c8d"/>
+  <text x="820" y="592" fill="#7f8c8d" font-size="14" font-weight="bold">GND（黑线，公共地）</text>
 
   <!-- 口诀 -->
   <text x="550" y="640" fill="#0b6e4f" font-size="17" font-weight="bold" text-anchor="middle">口诀：LED 跟着电阻走（串联回路）；按钮一头引脚一头地（配合内部上拉）</text>

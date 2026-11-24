@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>第 5 课：串口通信与共地——让两个设备说话</title>
+<title>第 5 课：串口通信与共地——让两个设备说话 · ESP32 从零到专家</title>
 <style>
 :root {
   --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
@@ -16,8 +16,8 @@ body {
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   font-size: 16.5px; line-height: 1.85;
 }
-.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
-h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; margin-top: .6em; }
 h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
      border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
 h3 { font-size: 1.15em; margin-top: 1.8em; }
@@ -33,20 +33,41 @@ code {
   font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
 }
 pre {
+  position: relative;
   background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
   overflow-x: auto; line-height: 1.6; font-size: .86em;
 }
 pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  font-family: inherit; font-size: 12px; padding: 3px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08); color: #d5dae3; cursor: pointer;
+  opacity: .75; transition: .15s;
+}
+.copy-btn:hover { opacity: 1; background: rgba(255,255,255,.18); color: #fff; }
+.copy-btn.copied { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
 table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
 th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
 th { background: var(--accent-soft); }
 tr:nth-child(even) td { background: #f6f5f2; }
 ul, ol { padding-left: 1.6em; }
 li { margin: .3em 0; }
-li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+li.task-item { list-style: none; margin-left: -1.2em; padding: .28em .55em; border-radius: 6px; transition: background .15s; }
+li.task-item:hover { background: #f3f1ec; }
+li.task-item.done { background: #edf7f3; color: #3c6e5b; }
+li input[type="checkbox"] { margin-right: .55em; transform: scale(1.2); cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
+.check-progress {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: .55em .9em; margin: .8em 0 .6em; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; font-size: .88em; color: var(--muted);
+}
+.check-bar-wrap { flex: 1; height: 8px; background: #ece9e2; border-radius: 99px; overflow: hidden; }
+.check-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
 hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
 em { color: var(--muted); }
 strong { color: #1a1a1a; }
+img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figure { margin: 1.6em 0; text-align: center; }
 figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
@@ -55,15 +76,46 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
   color: var(--muted); background: #fff; font-size: .95em;
 }
 .widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 顶部与底部课程导航 ---- */
+.top-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: .55em .9em; margin-bottom: 1.2em; background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; font-size: .88em; box-shadow: 0 1px 4px rgba(0,0,0,.03);
+}
+.top-nav a { text-decoration: none; font-weight: 600; color: var(--accent); }
+.top-nav a:hover { text-decoration: underline; }
+.top-nav .meta-pill { color: var(--muted); font-size: .92em; }
+.top-nav .quick-jump { display: flex; gap: 10px; align-items: center; }
+.top-nav .quick-jump a {
+  padding: .2em .65em; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font-weight: 500; font-size: .9em;
+}
+.top-nav .quick-jump a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.pager {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch;
+  margin-top: 3em; padding-top: 1.6em; border-top: 2px solid var(--border);
+}
+.pager a, .pager .pager-empty {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: .85em 1.1em; border-radius: 10px; border: 1px solid var(--border);
+  background: #fff; text-decoration: none; color: var(--fg); transition: .15s;
+}
+.pager a:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pager .pager-empty { background: transparent; border-style: dashed; color: var(--muted); font-size: .88em; align-items: center; }
+.pager .dir { font-size: .8em; color: var(--muted); margin-bottom: .2em; }
+.pager .ttl { font-weight: 600; color: var(--accent); font-size: .95em; line-height: 1.4; }
+.pager .next { text-align: right; }
+.pager .home-btn { align-items: center; font-weight: 600; color: var(--accent); font-size: .9em; white-space: nowrap; }
 /* ---- 交互动画组件通用外壳 ---- */
 .wgt {
   margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
   background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
+.wgt pre { background: transparent; padding: 0; border-radius: 0; }
 .wgt-head {
   padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
   font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
-  justify-content: space-between; align-items: center; gap: .5em;
+  justify-content: space-between; align-items: center; gap: .5em; flex-wrap: wrap;
 }
 .wgt-body { padding: 1em; }
 .wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
@@ -73,10 +125,25 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 }
 .wgt button:hover { border-color: var(--accent); color: var(--accent); }
 .wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 64px; }
+  body { font-size: 15.5px; }
+  .pager { grid-template-columns: 1fr; }
+  .pager .next { text-align: left; }
+}
 </style>
 </head>
-<body><div class="wrap"><h1>第 5 课：串口通信与共地——让两个设备说话</h1>
+<body>
+<div class="wrap">
+<nav class="top-nav">
+  <a href="index.html">← 课程总目录</a>
+  <span class="meta-pill">阶段二 · 输入与输出 · 第 5 / 15 课</span>
+  <span class="quick-jump">
+    <a href="04-%E6%A8%A1%E6%8B%9F%E4%B8%96%E7%95%8CADC%E4%B8%8E%E7%94%B5%E4%BD%8D%E5%99%A8.html" title="第 4 课：模拟世界——ADC 与电位器">‹ 上一课</a>
+    <a href="06-%E5%BC%95%E8%84%9A%E5%A4%A7%E6%B8%85%E7%AE%97.html" title="第 6 课：引脚大清算——GPIO 的脾气">下一课 ›</a>
+  </span>
+</nav>
+<h1>第 5 课：串口通信与共地——让两个设备说话</h1>
 <blockquote>
 <p><strong>阶段二 · 输入与输出</strong> ｜ 难度：★★★☆☆ ｜ 预计用时：45–60 分钟</p>
 <p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、杜邦线若干（最好再有一块任意开发板/USB-TTL 模块，没有也能学完）
@@ -284,7 +351,7 @@ RX_PIN, TX_PIN  引脚映射——ESP32 的串口引脚可自由重映射，这�
 Hello from ESP32 #2
 Hello from ESP32 #3</div>
     </div>
-    <p class="wgt-hint" style="text-align:center">断开地线：**数据包还在 TX 线上跑（橙色），但对方失去了"零"的参照**——采样掷硬币，接收窗口变乱码。接回地线立刻恢复。第 9 课讲帧格式时，我们再回来解释乱码的具体形态。</p>
+    <p class="wgt-hint" style="text-align:center">断开地线：<b>数据包还在 TX 线上跑（橙色），但对方失去了“零”的参照</b>——采样掷硬币，接收窗口变乱码。接回地线立刻恢复。第 9 课讲帧格式时，我们再回来解释乱码的具体形态。</p>
   </div>
 </div>
 <style>
@@ -299,7 +366,8 @@ Hello from ESP32 #3</div>
 <script>
 (function () {
   const root = document.getElementById('wg-gnd');
-  if (!root || root.dataset.bound) return; root.dataset.bound = '1');
+  if (!root || root.dataset.bound) return;
+  root.dataset.bound = '1';
   const btn = document.getElementById('wg-gnd-toggle');
   const screen = document.getElementById('wg-gnd-screen');
   const bridge = document.getElementById('wg-gnd-bridge');
@@ -308,7 +376,7 @@ Hello from ESP32 #3</div>
   const refText = document.getElementById('wg-gnd-reftext');
 
   let connected = true;
-  let counter = 1;
+  let counter = 3;
   const GARBLE = ['ÿ', '¿', '§', 'Ã', '?', '¨', '¤', '½', '¾', 'Ã', '€', '†'];
 
   function garble(text) {
@@ -327,7 +395,7 @@ Hello from ESP32 #3</div>
     xmark.setAttribute('opacity', v ? '0' : '1');
     refArrow.setAttribute('stroke', v ? '#4a5b66' : '#e74c3c');
     refText.textContent = v ? '以自家 GND 为参照量电压' : '❌ 没有共同的零！电压成鬼话';
-    refText.setAttribute('fill', v ? '#4a5b6b' : '#e74c3c');
+    refText.setAttribute('fill', v ? '#4a5b66' : '#e74c3c');
     btn.textContent = v ? '🔌 断开 GND' : '🔗 接回 GND';
     btn.classList.toggle('off', !v);
     screen.classList.toggle('garbled', !v);
@@ -364,13 +432,13 @@ Hello from ESP32 #3</div>
 <hr>
 <h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 接线正确（17→对方RX、16→对方TX、GND→GND），通电无短路</li>
-<li><input disabled="" type="checkbox"> 电脑串口监视器（115200）看到 <code>[TX] 发出: Hello #1,2,3…</code> 每秒滚动</li>
-<li><input disabled="" type="checkbox"> 对方设备收到正确语句，且回话被 <code>[RX]</code> 转播——<strong>双向通了</strong></li>
-<li><input disabled="" type="checkbox"> 拔掉 GND 复位：<strong>亲眼观察到乱码</strong>，插回后恢复——破坏性实验完成</li>
-<li><input disabled="" type="checkbox"> 能向外行解释三句话：①为什么要 TX/RX 交叉 ②波特率是什么 ③为什么必须共地</li>
-<li><input disabled="" type="checkbox"> 自查：本课所有定时仍用 millis，代码中无 <code>delay(</code></li>
-<li><input disabled="" type="checkbox"> 记录：拔 GND 后的乱码长什么样（截图或抄几个字符）——第 9 课协议课要用这个证据</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="0"> 接线正确（17→对方RX、16→对方TX、GND→GND），通电无短路</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="1"> 电脑串口监视器（115200）看到 <code>[TX] 发出: Hello #1,2,3…</code> 每秒滚动</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="2"> 对方设备收到正确语句，且回话被 <code>[RX]</code> 转播——<strong>双向通了</strong></li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="3"> 拔掉 GND 复位：<strong>亲眼观察到乱码</strong>，插回后恢复——破坏性实验完成</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="4"> 能向外行解释三句话：①为什么要 TX/RX 交叉 ②波特率是什么 ③为什么必须共地</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="5"> 自查：本课所有定时仍用 millis，代码中无 <code>delay(</code></li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="6"> 记录：拔 GND 后的乱码长什么样（截图或抄几个字符）——第 9 课协议课要用这个证据</li>
 </ul>
 <p><strong>全部打勾 → 你打通了芯片间的物理通信链路，并且亲手验证了&quot;共地&quot;不是教条而是物理。进入第 6 课。</strong></p>
 <hr>
@@ -378,7 +446,7 @@ Hello from ESP32 #3</div>
 <ol>
 <li><strong>自环回声</strong>：用杜邦线短接 17–16，把发出去的 <code>Hello #N</code> 改成读到什么原样回发（echo），在电脑上看到&quot;自己对自己说话&quot;。</li>
 <li><strong>改波特率作死</strong>：把 <code>Serial2</code> 改成 9600、对方不动（115200），观察乱码形态——<strong>有规律的错</strong>（全是乱码）和拔地线<strong>无规律的错</strong>有什么不同？记下对比，第 9 课讲帧格式时你会秒懂。</li>
-<li><strong>十六进制dump（选做）</strong>：把 <code>readStringUntil</code> 换成逐字节 <code>Serial2.read()</code> + <code>Serial::println(b, HEX)</code>，直接看原始字节——工程排查串口的标准姿势。</li>
+<li><strong>十六进制 dump（选做）</strong>：把 <code>readStringUntil</code> 换成逐字节 <code>Serial2.read()</code> + <code>Serial.println(b, HEX)</code>，直接看原始字节——工程排查串口的标准姿势。</li>
 <li><strong>电平预警（选做）</strong>：如果你的对方设备是 5V 的（如老 Arduino），查一下&quot;ESP32 5V 耐受&quot;问题——把疑问记下来，第 6 课引脚清算给你答案。</li>
 </ol>
 <hr>
@@ -437,5 +505,116 @@ Hello from ESP32 #3</div>
 <p>通信三要素你已掌握，但本课接线时你可能已经嘀咕过：<strong>&quot;哪些脚能随便接？哪些脚接了会出事？&quot;</strong> <strong>第 6 课：引脚大清算</strong>——第 1 课三原则、GPIO34 仅输入、电位器接 34 的悬案、strapping 脚的脾气、浮空引脚、ADC2 与 Wi-Fi 冲突、5V 电平……<strong>所有欠你的引脚答案，一次全拆</strong>。这是全系列承上启下的&quot;总清算课&quot;，手里已有 5 个课的证据，看完你就是&quot;引脚安全&quot;半个专家。</p>
 <hr>
 <p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
-</div></body>
+
+<nav class="pager">
+  <a class="prev" href="04-%E6%A8%A1%E6%8B%9F%E4%B8%96%E7%95%8CADC%E4%B8%8E%E7%94%B5%E4%BD%8D%E5%99%A8.html"><span class="dir">← 上一课</span><span class="ttl">第 4 课：模拟世界——ADC 与电位器</span></a>
+  <a class="home-btn" href="index.html">📚 课程总目录</a>
+  <a class="next" href="06-%E5%BC%95%E8%84%9A%E5%A4%A7%E6%B8%85%E7%AE%97.html"><span class="dir">下一课 →</span><span class="ttl">第 6 课：引脚大清算——GPIO 的脾气</span></a>
+</nav>
+</div>
+<script>
+(function () {
+  var STORAGE_KEY = 'esp32_tutorial_progress_v1';
+  var LESSON_KEY = "05";
+  var TOTAL = 7;
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+  function saveStore(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  // 1. 代码块一键复制按钮（排除交互组件内部的 <pre>）
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.closest('.wgt')) return;
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = '复制代码';
+    btn.addEventListener('click', function () {
+      var text = code.innerText || code.textContent || '';
+      function done() {
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = '复制代码'; btn.classList.remove('copied'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  // 2. 验收 Checklist 持久化打勾与进度条
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input.task-cb'));
+  if (!boxes.length) return;
+
+  var store = loadStore();
+  var saved = Array.isArray(store[LESSON_KEY]) ? store[LESSON_KEY] : [];
+
+  var firstUl = boxes[0].closest('ul');
+  var barFill = null, barLabel = null;
+  if (firstUl && firstUl.parentNode) {
+    var wrap = document.createElement('div');
+    wrap.className = 'check-progress';
+    wrap.innerHTML = '<span>📋 本课验收进度</span><div class="check-bar-wrap"><div class="check-bar-fill"></div></div><strong class="check-count"></strong>';
+    firstUl.parentNode.insertBefore(wrap, firstUl);
+    barFill = wrap.querySelector('.check-bar-fill');
+    barLabel = wrap.querySelector('.check-count');
+  }
+
+  function refreshUI() {
+    var checkedIdx = [];
+    boxes.forEach(function (cb, i) {
+      var li = cb.closest('li.task-item');
+      if (cb.checked) {
+        checkedIdx.push(i);
+        if (li) li.classList.add('done');
+      } else if (li) {
+        li.classList.remove('done');
+      }
+    });
+    if (barFill && barLabel) {
+      var pct = Math.round((checkedIdx.length / boxes.length) * 100);
+      barFill.style.width = pct + '%';
+      barLabel.textContent = checkedIdx.length + ' / ' + boxes.length + (checkedIdx.length === boxes.length ? ' 🎉 已通关' : '');
+    }
+    var cur = loadStore();
+    cur[LESSON_KEY] = { checked: checkedIdx, total: TOTAL || boxes.length };
+    saveStore(cur);
+  }
+
+  var initChecked = Array.isArray(saved) ? saved : (saved && Array.isArray(saved.checked) ? saved.checked : []);
+  boxes.forEach(function (cb, i) {
+    if (initChecked.indexOf(i) !== -1) cb.checked = true;
+    cb.addEventListener('change', refreshUI);
+    var li = cb.closest('li.task-item');
+    if (li) {
+      li.addEventListener('click', function (e) {
+        if (e.target === cb || e.target.tagName === 'A' || e.target.tagName === 'CODE') return;
+        cb.checked = !cb.checked;
+        refreshUI();
+      });
+    }
+  });
+  refreshUI();
+})();
+</script>
+</body>
 </html>

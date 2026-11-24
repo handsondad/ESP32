@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>第 9 课：SPI 高速通信——TFT 彩屏</title>
+<title>第 9 课：SPI 高速通信——TFT 彩屏 · ESP32 从零到专家</title>
 <style>
 :root {
   --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
@@ -16,8 +16,8 @@ body {
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   font-size: 16.5px; line-height: 1.85;
 }
-.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
-h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; margin-top: .6em; }
 h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
      border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
 h3 { font-size: 1.15em; margin-top: 1.8em; }
@@ -33,20 +33,41 @@ code {
   font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
 }
 pre {
+  position: relative;
   background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
   overflow-x: auto; line-height: 1.6; font-size: .86em;
 }
 pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  font-family: inherit; font-size: 12px; padding: 3px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08); color: #d5dae3; cursor: pointer;
+  opacity: .75; transition: .15s;
+}
+.copy-btn:hover { opacity: 1; background: rgba(255,255,255,.18); color: #fff; }
+.copy-btn.copied { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
 table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
 th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
 th { background: var(--accent-soft); }
 tr:nth-child(even) td { background: #f6f5f2; }
 ul, ol { padding-left: 1.6em; }
 li { margin: .3em 0; }
-li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+li.task-item { list-style: none; margin-left: -1.2em; padding: .28em .55em; border-radius: 6px; transition: background .15s; }
+li.task-item:hover { background: #f3f1ec; }
+li.task-item.done { background: #edf7f3; color: #3c6e5b; }
+li input[type="checkbox"] { margin-right: .55em; transform: scale(1.2); cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
+.check-progress {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: .55em .9em; margin: .8em 0 .6em; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; font-size: .88em; color: var(--muted);
+}
+.check-bar-wrap { flex: 1; height: 8px; background: #ece9e2; border-radius: 99px; overflow: hidden; }
+.check-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
 hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
 em { color: var(--muted); }
 strong { color: #1a1a1a; }
+img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figure { margin: 1.6em 0; text-align: center; }
 figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
@@ -55,15 +76,46 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
   color: var(--muted); background: #fff; font-size: .95em;
 }
 .widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 顶部与底部课程导航 ---- */
+.top-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: .55em .9em; margin-bottom: 1.2em; background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; font-size: .88em; box-shadow: 0 1px 4px rgba(0,0,0,.03);
+}
+.top-nav a { text-decoration: none; font-weight: 600; color: var(--accent); }
+.top-nav a:hover { text-decoration: underline; }
+.top-nav .meta-pill { color: var(--muted); font-size: .92em; }
+.top-nav .quick-jump { display: flex; gap: 10px; align-items: center; }
+.top-nav .quick-jump a {
+  padding: .2em .65em; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font-weight: 500; font-size: .9em;
+}
+.top-nav .quick-jump a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.pager {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch;
+  margin-top: 3em; padding-top: 1.6em; border-top: 2px solid var(--border);
+}
+.pager a, .pager .pager-empty {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: .85em 1.1em; border-radius: 10px; border: 1px solid var(--border);
+  background: #fff; text-decoration: none; color: var(--fg); transition: .15s;
+}
+.pager a:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pager .pager-empty { background: transparent; border-style: dashed; color: var(--muted); font-size: .88em; align-items: center; }
+.pager .dir { font-size: .8em; color: var(--muted); margin-bottom: .2em; }
+.pager .ttl { font-weight: 600; color: var(--accent); font-size: .95em; line-height: 1.4; }
+.pager .next { text-align: right; }
+.pager .home-btn { align-items: center; font-weight: 600; color: var(--accent); font-size: .9em; white-space: nowrap; }
 /* ---- 交互动画组件通用外壳 ---- */
 .wgt {
   margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
   background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
+.wgt pre { background: transparent; padding: 0; border-radius: 0; }
 .wgt-head {
   padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
   font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
-  justify-content: space-between; align-items: center; gap: .5em;
+  justify-content: space-between; align-items: center; gap: .5em; flex-wrap: wrap;
 }
 .wgt-body { padding: 1em; }
 .wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
@@ -73,10 +125,25 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 }
 .wgt button:hover { border-color: var(--accent); color: var(--accent); }
 .wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 64px; }
+  body { font-size: 15.5px; }
+  .pager { grid-template-columns: 1fr; }
+  .pager .next { text-align: left; }
+}
 </style>
 </head>
-<body><div class="wrap"><h1>第 9 课：SPI 高速通信——TFT 彩屏</h1>
+<body>
+<div class="wrap">
+<nav class="top-nav">
+  <a href="index.html">← 课程总目录</a>
+  <span class="meta-pill">阶段三 · 通信 · 第 9 / 15 课</span>
+  <span class="quick-jump">
+    <a href="08-I2C%E4%BC%A0%E6%84%9F%E5%99%A8%E5%AE%9E%E6%88%98.html" title="第 8 课：I2C 传感器实战——温压与姿态">‹ 上一课</a>
+    <a href="10-%E8%93%9D%E7%89%99%E6%8E%A7%E5%88%B6%E4%B8%8Emillis.html" title="第 10 课：蓝牙控制与 millis——delay 的最后一桩罪">下一课 ›</a>
+  </span>
+</nav>
+<h1>第 9 课：SPI 高速通信——TFT 彩屏</h1>
 <blockquote>
 <p><strong>阶段三 · 通信</strong> ｜ 难度：★★★★☆ ｜ 预计用时：50–60 分钟</p>
 <p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、<strong>1.8 寸 TFT 彩屏（ST7735，SPI 接口）</strong> ×1、杜邦线若干
@@ -314,7 +381,7 @@ void setup() {
 }
 
 void drawTestPattern() {
-  // 顶部色带：16 色
+  // 顶部色带：8 色
   uint16_t colors[8] = {
     ST7735_RED, ST7735_GREEN, ST7735_BLUE, ST7735_YELLOW,
     ST7735_CYAN, ST7735_MAGENTA, ST7735_WHITE, ST7735_BLACK
@@ -345,10 +412,13 @@ void loop() {
     tft.fillRect(prevX, 55, 10, 14, ST7735_BLACK);
     tft.fillRect(x, 55, 10, 14, ST7735_CYAN);
 
-    // 每 20 帧换一次底色，展示全屏刷新速度
+    // 每 20 帧换一次底部状态栏颜色，展示大块区域高速填充且不闪整屏
     if (frame % 20 == 0) {
       uint16_t bg = (frame % 40 == 0) ? ST7735_NAVY : ST7735_BLACK;
-      tft.drawRect(0, 120, 160, 40, bg);   // 只刷底部区域，避免整屏闪
+      tft.fillRect(0, 120, 160, 40, bg);
+      tft.setTextColor(ST7735_WHITE, bg);
+      tft.setCursor(4, 130);
+      tft.print(&quot;SPI 40MHz! #&quot;); tft.print(frame);
       Serial.print(&quot;帧 #&quot;); Serial.println(frame);
     }
   }
@@ -375,10 +445,10 @@ ST7735 有多个厂家变体（黑标/红标/绿标），<strong>上电命令序
   <div class="wgt-body">
     <!-- 任务选择 -->
     <div class="wg-race-tasks" id="wg-race-tasks">
-      <button data-bits="8192" class="active">小图标（8 KB）</button>
-      <button data-bits="81920">单色 OLED 整屏（80 KB）</button>
-      <button data-bits="327680">彩屏一帧（320 KB）</button>
-      <button data-bits="2621440">彩屏 8 帧动画（2.5 MB）</button>
+      <button data-bits="1024">小图标（128 B）</button>
+      <button data-bits="8192">单色 OLED 整屏（1 KB）</button>
+      <button data-bits="327680" class="active">彩屏一帧（40 KB）</button>
+      <button data-bits="2621440">彩屏 8 帧动画（320 KB）</button>
     </div>
 
     <!-- 赛道 -->
@@ -454,7 +524,7 @@ ST7735 有多个厂家变体（黑标/红标/绿标），<strong>上电命令序
   const RATE_I2C = 400e3 / 1e6;   // MHz → 每毫秒 bit 数 = 400 bit/ms
   const RATE_SPI = 40e6 / 1e6;    // 40000 bit/ms
 
-  let bits = 8192;
+  let bits = 327680;
   let running = false;
 
   function fmtTime(bitCount, ratePerMs) {
@@ -504,8 +574,9 @@ ST7735 有多个厂家变体（黑标/红标/绿标），<strong>上电命令序
       }
       if (pI >= 1 && flagI2C.textContent === '—') {
         flagI2C.textContent = '到达';
-        const ratio = (tI2C / tSPI).toFixed(0);
-        status.textContent = `🏁 完成：同一任务 SPI 快约 ${ratio} 倍——彩屏只能属于 SPI！`;
+        const realI2C = fmtTime(bits, RATE_I2C);
+        const realSPI = fmtTime(bits, RATE_SPI);
+        status.textContent = `🏁 完成：理论耗时 SPI ${realSPI} vs I2C ${realI2C}（快整整 100 倍）——彩屏只能属于 SPI！`;
         btn.disabled = false;
         running = false;
         return;
@@ -524,14 +595,14 @@ ST7735 有多个厂家变体（黑标/红标/绿标），<strong>上电命令序
 <hr>
 <h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 接线正确（SCK=18、MOSI=23、CS=5、DC=2、RST=4、共地），通电屏幕背光亮</li>
-<li><input disabled="" type="checkbox"> 库安装完成：<code>Adafruit ST7735 and ST7789 Library</code>（连带 Adafruit GFX）</li>
-<li><input disabled="" type="checkbox"> 上电自检：8 色色带颜色正确（<strong>红不红、绿不绿 = 初始化表选错</strong>）</li>
-<li><input disabled="" type="checkbox"> 三圈圆环 + <code>SPI 40MHz!</code> 文字清晰显示</li>
-<li><input disabled="" type="checkbox"> 动画流畅：色块横向移动无拖影、底部区域每 20 帧变色一次</li>
-<li><input disabled="" type="checkbox"> 串口每 20 帧打印 <code>帧 #N</code>，数字连续无跳变</li>
-<li><input disabled="" type="checkbox"> 能向外行解释三句话：①SPI 四根线各干什么 ②片选 CS 怎么&quot;点名&quot; ③为什么 SPI 比 I2C 快</li>
-<li><input disabled="" type="checkbox"> （可选彩蛋）保留第 8 课的 OLED 接线：<strong>两屏同时工作</strong>——证明 SPI 与 I2C 总线可共存</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="0"> 接线正确（SCK=18、MOSI=23、CS=5、DC=2、RST=4、共地），通电屏幕背光亮</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="1"> 库安装完成：<code>Adafruit ST7735 and ST7789 Library</code>（连带 Adafruit GFX）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="2"> 上电自检：8 色色带颜色正确（<strong>红不红、绿不绿 = 初始化表选错</strong>）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="3"> 三圈圆环 + <code>SPI 40MHz!</code> 文字清晰显示</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="4"> 动画流畅：色块横向移动无拖影、底部区域每 20 帧变色一次</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="5"> 串口每 20 帧打印 <code>帧 #N</code>，数字连续无跳变</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="6"> 能向外行解释三句话：①SPI 四根线各干什么 ②片选 CS 怎么&quot;点名&quot; ③为什么 SPI 比 I2C 快</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="7"> （可选彩蛋）保留第 8 课的 OLED 接线：<strong>两屏同时工作</strong>——证明 SPI 与 I2C 总线可共存</li>
 </ul>
 <p><strong>全部打勾 → 你掌握了嵌入式两大主流总线，具备&quot;按数据量选型&quot;的能力。通信篇还剩最后一块拼图：这些协议传的到底是什么&quot;内容&quot;？第 10 课揭晓——顺便清算 delay 的最后一桩罪。</strong></p>
 <hr>
@@ -598,5 +669,116 @@ ST7735 有多个厂家变体（黑标/红标/绿标），<strong>上电命令序
 <p>两大总线你都拿下了——但它们传的&quot;内容&quot;还是一串串裸字节，<strong>谁来规定第一个字节是什么意思、错了一个 bit 谁负责？</strong> <strong>第 10 课：蓝牙控制与 millis——delay 的最后一桩罪</strong>：你会用手机蓝牙（BLE）控制板上的灯，然后亲手制造一次&quot;按下按钮没反应&quot;的事故——<strong>凶手正是第 3 课被你扔掉一半的 delay</strong>。那一课同时回收三颗埋了 8 课的雷：delay 断蓝牙、按键抖动根治、&quot;帧与校验&quot;的实战意义。</p>
 <hr>
 <p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
-</div></body>
+
+<nav class="pager">
+  <a class="prev" href="08-I2C%E4%BC%A0%E6%84%9F%E5%99%A8%E5%AE%9E%E6%88%98.html"><span class="dir">← 上一课</span><span class="ttl">第 8 课：I2C 传感器实战——温压与姿态</span></a>
+  <a class="home-btn" href="index.html">📚 课程总目录</a>
+  <a class="next" href="10-%E8%93%9D%E7%89%99%E6%8E%A7%E5%88%B6%E4%B8%8Emillis.html"><span class="dir">下一课 →</span><span class="ttl">第 10 课：蓝牙控制与 millis——delay 的最后一桩罪</span></a>
+</nav>
+</div>
+<script>
+(function () {
+  var STORAGE_KEY = 'esp32_tutorial_progress_v1';
+  var LESSON_KEY = "09";
+  var TOTAL = 8;
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+  function saveStore(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  // 1. 代码块一键复制按钮（排除交互组件内部的 <pre>）
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.closest('.wgt')) return;
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = '复制代码';
+    btn.addEventListener('click', function () {
+      var text = code.innerText || code.textContent || '';
+      function done() {
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = '复制代码'; btn.classList.remove('copied'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  // 2. 验收 Checklist 持久化打勾与进度条
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input.task-cb'));
+  if (!boxes.length) return;
+
+  var store = loadStore();
+  var saved = Array.isArray(store[LESSON_KEY]) ? store[LESSON_KEY] : [];
+
+  var firstUl = boxes[0].closest('ul');
+  var barFill = null, barLabel = null;
+  if (firstUl && firstUl.parentNode) {
+    var wrap = document.createElement('div');
+    wrap.className = 'check-progress';
+    wrap.innerHTML = '<span>📋 本课验收进度</span><div class="check-bar-wrap"><div class="check-bar-fill"></div></div><strong class="check-count"></strong>';
+    firstUl.parentNode.insertBefore(wrap, firstUl);
+    barFill = wrap.querySelector('.check-bar-fill');
+    barLabel = wrap.querySelector('.check-count');
+  }
+
+  function refreshUI() {
+    var checkedIdx = [];
+    boxes.forEach(function (cb, i) {
+      var li = cb.closest('li.task-item');
+      if (cb.checked) {
+        checkedIdx.push(i);
+        if (li) li.classList.add('done');
+      } else if (li) {
+        li.classList.remove('done');
+      }
+    });
+    if (barFill && barLabel) {
+      var pct = Math.round((checkedIdx.length / boxes.length) * 100);
+      barFill.style.width = pct + '%';
+      barLabel.textContent = checkedIdx.length + ' / ' + boxes.length + (checkedIdx.length === boxes.length ? ' 🎉 已通关' : '');
+    }
+    var cur = loadStore();
+    cur[LESSON_KEY] = { checked: checkedIdx, total: TOTAL || boxes.length };
+    saveStore(cur);
+  }
+
+  var initChecked = Array.isArray(saved) ? saved : (saved && Array.isArray(saved.checked) ? saved.checked : []);
+  boxes.forEach(function (cb, i) {
+    if (initChecked.indexOf(i) !== -1) cb.checked = true;
+    cb.addEventListener('change', refreshUI);
+    var li = cb.closest('li.task-item');
+    if (li) {
+      li.addEventListener('click', function (e) {
+        if (e.target === cb || e.target.tagName === 'A' || e.target.tagName === 'CODE') return;
+        cb.checked = !cb.checked;
+        refreshUI();
+      });
+    }
+  });
+  refreshUI();
+})();
+</script>
+</body>
 </html>

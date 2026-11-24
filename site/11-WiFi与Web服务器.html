@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>第 11 课：Wi-Fi 与 Web 服务器——手机浏览器控灯</title>
+<title>第 11 课：Wi-Fi 与 Web 服务器——手机浏览器控灯 · ESP32 从零到专家</title>
 <style>
 :root {
   --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
@@ -16,8 +16,8 @@ body {
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   font-size: 16.5px; line-height: 1.85;
 }
-.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
-h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; margin-top: .6em; }
 h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
      border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
 h3 { font-size: 1.15em; margin-top: 1.8em; }
@@ -33,20 +33,41 @@ code {
   font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
 }
 pre {
+  position: relative;
   background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
   overflow-x: auto; line-height: 1.6; font-size: .86em;
 }
 pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  font-family: inherit; font-size: 12px; padding: 3px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08); color: #d5dae3; cursor: pointer;
+  opacity: .75; transition: .15s;
+}
+.copy-btn:hover { opacity: 1; background: rgba(255,255,255,.18); color: #fff; }
+.copy-btn.copied { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
 table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
 th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
 th { background: var(--accent-soft); }
 tr:nth-child(even) td { background: #f6f5f2; }
 ul, ol { padding-left: 1.6em; }
 li { margin: .3em 0; }
-li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+li.task-item { list-style: none; margin-left: -1.2em; padding: .28em .55em; border-radius: 6px; transition: background .15s; }
+li.task-item:hover { background: #f3f1ec; }
+li.task-item.done { background: #edf7f3; color: #3c6e5b; }
+li input[type="checkbox"] { margin-right: .55em; transform: scale(1.2); cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
+.check-progress {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: .55em .9em; margin: .8em 0 .6em; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; font-size: .88em; color: var(--muted);
+}
+.check-bar-wrap { flex: 1; height: 8px; background: #ece9e2; border-radius: 99px; overflow: hidden; }
+.check-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
 hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
 em { color: var(--muted); }
 strong { color: #1a1a1a; }
+img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figure { margin: 1.6em 0; text-align: center; }
 figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
@@ -55,15 +76,46 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
   color: var(--muted); background: #fff; font-size: .95em;
 }
 .widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 顶部与底部课程导航 ---- */
+.top-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: .55em .9em; margin-bottom: 1.2em; background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; font-size: .88em; box-shadow: 0 1px 4px rgba(0,0,0,.03);
+}
+.top-nav a { text-decoration: none; font-weight: 600; color: var(--accent); }
+.top-nav a:hover { text-decoration: underline; }
+.top-nav .meta-pill { color: var(--muted); font-size: .92em; }
+.top-nav .quick-jump { display: flex; gap: 10px; align-items: center; }
+.top-nav .quick-jump a {
+  padding: .2em .65em; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font-weight: 500; font-size: .9em;
+}
+.top-nav .quick-jump a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.pager {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch;
+  margin-top: 3em; padding-top: 1.6em; border-top: 2px solid var(--border);
+}
+.pager a, .pager .pager-empty {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: .85em 1.1em; border-radius: 10px; border: 1px solid var(--border);
+  background: #fff; text-decoration: none; color: var(--fg); transition: .15s;
+}
+.pager a:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pager .pager-empty { background: transparent; border-style: dashed; color: var(--muted); font-size: .88em; align-items: center; }
+.pager .dir { font-size: .8em; color: var(--muted); margin-bottom: .2em; }
+.pager .ttl { font-weight: 600; color: var(--accent); font-size: .95em; line-height: 1.4; }
+.pager .next { text-align: right; }
+.pager .home-btn { align-items: center; font-weight: 600; color: var(--accent); font-size: .9em; white-space: nowrap; }
 /* ---- 交互动画组件通用外壳 ---- */
 .wgt {
   margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
   background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
+.wgt pre { background: transparent; padding: 0; border-radius: 0; }
 .wgt-head {
   padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
   font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
-  justify-content: space-between; align-items: center; gap: .5em;
+  justify-content: space-between; align-items: center; gap: .5em; flex-wrap: wrap;
 }
 .wgt-body { padding: 1em; }
 .wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
@@ -73,10 +125,25 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 }
 .wgt button:hover { border-color: var(--accent); color: var(--accent); }
 .wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 64px; }
+  body { font-size: 15.5px; }
+  .pager { grid-template-columns: 1fr; }
+  .pager .next { text-align: left; }
+}
 </style>
 </head>
-<body><div class="wrap"><h1>第 11 课：Wi-Fi 与 Web 服务器——手机浏览器控灯</h1>
+<body>
+<div class="wrap">
+<nav class="top-nav">
+  <a href="index.html">← 课程总目录</a>
+  <span class="meta-pill">阶段四 · 无线物联 · 第 11 / 15 课</span>
+  <span class="quick-jump">
+    <a href="10-%E8%93%9D%E7%89%99%E6%8E%A7%E5%88%B6%E4%B8%8Emillis.html" title="第 10 课：蓝牙控制与 millis——delay 的最后一桩罪">‹ 上一课</a>
+    <a href="12-MQTT%E4%B8%8E%E4%BA%91%E5%B9%B3%E5%8F%B0.html" title="第 12 课：MQTT 与云平台——数据上云">下一课 ›</a>
+  </span>
+</nav>
+<h1>第 11 课：Wi-Fi 与 Web 服务器——手机浏览器控灯</h1>
 <blockquote>
 <p><strong>阶段四 · 无线物联</strong> ｜ 难度：★★★★★ ｜ 预计用时：60 分钟</p>
 <p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、LED（GPIO4 经 220Ω）×1、按钮（GPIO23）×1（沿用第 2 课接线）、<strong>2.4GHz Wi-Fi 路由器</strong>（必须是 2.4G，ESP32 不支持 5G）
@@ -201,8 +268,9 @@ Content-Type: text/html
 // 第 11 课：Wi-Fi + WebServer 手机浏览器控灯
 // ============================================
 #include &lt;WiFi.h&gt;
+#include &lt;WebServer.h&gt;
 
-const char* SSID = &quot;你的WiFi名&quot;;        // ← 改成你家的
+const char* SSID = &quot;你的WiFi名&quot;;        // ← 改成你家的（必须 2.4GHz）
 const char* PASS = &quot;你的WiFi密码&quot;;      // ← 改成你家的
 
 const int LED_PIN = 4;
@@ -210,11 +278,10 @@ const int BTN_PIN = 23;
 
 WebServer server(80);        // 80 = HTTP 默认端口
 bool ledOn = false;
-unsigned long lastStatus = 0;
 unsigned long lastRetry = 0;
-unsigned long lastBtnStable = 0;   // 防抖状态机（第 10 课模板）
 int lastRaw = HIGH, stableState = HIGH;
 unsigned long lastChange = 0;
+const unsigned long DEBOUNCE_MS = 25;
 
 // —— 控制页（内嵌 HTML，&quot;前后端一体&quot;的最小形态）——
 String page() {
@@ -231,9 +298,9 @@ String page() {
   html += &quot;&lt;h1&gt;ESP32 智能灯&lt;/h1&gt;&quot;;
   html += &quot;&lt;button class=&#39;btn on&#39; onclick=\&quot;location.href=&#39;/led?state=on&#39;\&quot;&gt;开灯&lt;/button&gt;&quot;;
   html += &quot;&lt;button class=&#39;btn off&#39; onclick=\&quot;location.href=&#39;/led?state=off&#39;\&quot;&gt;关灯&lt;/button&gt;&quot;;
-  html += &quot;&lt;div class=&#39;st&#39;&gt;当前状态：&quot;;
+  html += &quot;&lt;div class=&#39;st&#39;&gt;当前状态：&lt;span id=&#39;s&#39;&gt;&quot;;
   html += ledOn ? &quot;🟢 亮着&quot; : &quot;⚫ 灭了&quot;;
-  html += &quot;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;&quot;;
+  html += &quot;&lt;/span&gt;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;&quot;;
   return html;
 }
 
@@ -256,9 +323,30 @@ void handleStatus() {            // GET /status → 纯文本状态（供 JS 轮
   server.send(200, &quot;text/plain&quot;, ledOn ? &quot;ON&quot; : &quot;OFF&quot;);
 }
 
-void maintainWiFi() { /* 上节的重连函数，原样放这里 */ }
+void maintainWiFi() {
+  if (WiFi.status() == WL_CONNECTED) return;
+  if (millis() - lastRetry &lt; 10000) return;  // 每 10 秒重试一次，非阻塞
+  lastRetry = millis();
+  Serial.println(&quot;Wi-Fi 断了，重连中...&quot;);
+  WiFi.disconnect();
+  WiFi.begin(SSID, PASS);
+}
 
-void pollButton() { /* 第 10 课防抖状态机，原样放这里（触发后翻转 ledOn） */ }
+void pollButton() {
+  int raw = digitalRead(BTN_PIN);
+  if (raw != lastRaw) {
+    lastRaw = raw;
+    lastChange = millis();
+  }
+  if (millis() - lastChange &gt;= DEBOUNCE_MS &amp;&amp; raw != stableState) {
+    stableState = raw;
+    if (stableState == LOW) {
+      ledOn = !ledOn;
+      digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+      Serial.println(ledOn ? &quot;BTN -&gt; ON&quot; : &quot;BTN -&gt; OFF&quot;);
+    }
+  }
+}
 
 void setup() {
   pinMode(LED_PIN, OUTPUT);
@@ -287,7 +375,7 @@ void loop() {
   server.handleClient();   // ① 有没有 HTTP 请求进门？（非阻塞，没有立刻返回）
   maintainWiFi();          // ② 断线保活
   pollButton();            // ③ 按钮防抖（第 10 课）
-  // ④ 自由：状态页每秒自刷新（页面里 meta refresh 实现）
+  // ④ 自由时间：可继续塞传感器采样、OLED 刷新等非阻塞任务
 }
 </code></pre>
 <h3>逐段拆解</h3>
@@ -441,14 +529,14 @@ void loop() {
 <hr>
 <h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 代码改好自家 SSID/密码（2.4GHz），上传无报错</li>
-<li><input disabled="" type="checkbox"> 串口打印出 IP 地址（192.168.x.x 格式）</li>
-<li><input disabled="" type="checkbox"> 手机（同一路由器下）浏览器输入 IP，<strong>看到控制页</strong></li>
-<li><input disabled="" type="checkbox"> 点&quot;开灯&quot;→ LED 亮 + 页面显示 🟢；点&quot;关灯&quot;→ 灭 + ⚫</li>
-<li><input disabled="" type="checkbox"> <strong>板上按钮也生效</strong>：按 GPIO23 的按钮，手机刷新页面看到状态变了（双向控制）</li>
-<li><input disabled="" type="checkbox"> 杀掉路由器 Wi-Fi 10 秒再开：<strong>串口看到&quot;断了，重连中&quot;并自动恢复</strong>（断线保活验证）</li>
-<li><input disabled="" type="checkbox"> 能向外行解释三句话：①STA 模式是什么 ②点按钮到底发生了什么 ③为什么 IP 每次可能不一样</li>
-<li><input disabled="" type="checkbox"> <strong>ADC2 雷确认</strong>：说出&quot;开 Wi-Fi 后模拟输入要用哪些脚&quot;（32–39，第 6 课规则）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="0"> 代码改好自家 SSID/密码（2.4GHz），上传无报错</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="1"> 串口打印出 IP 地址（192.168.x.x 格式）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="2"> 手机（同一路由器下）浏览器输入 IP，<strong>看到控制页</strong></li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="3"> 点&quot;开灯&quot;→ LED 亮 + 页面显示 🟢；点&quot;关灯&quot;→ 灭 + ⚫</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="4"> <strong>板上按钮也生效</strong>：按 GPIO23 的按钮，手机刷新页面看到状态变了（双向控制）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="5"> 杀掉路由器 Wi-Fi 10 秒再开：<strong>串口看到&quot;断了，重连中&quot;并自动恢复</strong>（断线保活验证）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="6"> 能向外行解释三句话：①STA 模式是什么 ②点按钮到底发生了什么 ③为什么 IP 每次可能不一样</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="7"> <strong>ADC2 雷确认</strong>：说出&quot;开 Wi-Fi 后模拟输入要用哪些脚&quot;（32–39，第 6 课规则）</li>
 </ul>
 <p><strong>全部打勾 → 你的板子正式接入网络，成为局域网里的一台服务器。进入第 12 课，把它送上云端。</strong></p>
 <hr>
@@ -526,5 +614,116 @@ void loop() {
 <p>网页控灯虽好，但它有个天花板：<strong>你的板子和手机必须在同一个局域网</strong>——出了家门就摸不到它了。<strong>第 12 课：MQTT 与云平台</strong>：你会把板子连上真正的互联网（MQTT 服务器），<strong>人在外面用手机流量也能收到传感器数据、发控制命令</strong>。你会学到发布/订阅模式（和 HTTP 的请求-响应完全是另一个世界观）、主题（Topic）设计，以及为什么物联网都用 MQTT——同时第 10 课的&quot;心跳&quot;和&quot;回执&quot;思想将在云上以 QoS 的形式重生。</p>
 <hr>
 <p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
-</div></body>
+
+<nav class="pager">
+  <a class="prev" href="10-%E8%93%9D%E7%89%99%E6%8E%A7%E5%88%B6%E4%B8%8Emillis.html"><span class="dir">← 上一课</span><span class="ttl">第 10 课：蓝牙控制与 millis——delay 的最后一桩罪</span></a>
+  <a class="home-btn" href="index.html">📚 课程总目录</a>
+  <a class="next" href="12-MQTT%E4%B8%8E%E4%BA%91%E5%B9%B3%E5%8F%B0.html"><span class="dir">下一课 →</span><span class="ttl">第 12 课：MQTT 与云平台——数据上云</span></a>
+</nav>
+</div>
+<script>
+(function () {
+  var STORAGE_KEY = 'esp32_tutorial_progress_v1';
+  var LESSON_KEY = "11";
+  var TOTAL = 8;
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+  function saveStore(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  // 1. 代码块一键复制按钮（排除交互组件内部的 <pre>）
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.closest('.wgt')) return;
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = '复制代码';
+    btn.addEventListener('click', function () {
+      var text = code.innerText || code.textContent || '';
+      function done() {
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = '复制代码'; btn.classList.remove('copied'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  // 2. 验收 Checklist 持久化打勾与进度条
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input.task-cb'));
+  if (!boxes.length) return;
+
+  var store = loadStore();
+  var saved = Array.isArray(store[LESSON_KEY]) ? store[LESSON_KEY] : [];
+
+  var firstUl = boxes[0].closest('ul');
+  var barFill = null, barLabel = null;
+  if (firstUl && firstUl.parentNode) {
+    var wrap = document.createElement('div');
+    wrap.className = 'check-progress';
+    wrap.innerHTML = '<span>📋 本课验收进度</span><div class="check-bar-wrap"><div class="check-bar-fill"></div></div><strong class="check-count"></strong>';
+    firstUl.parentNode.insertBefore(wrap, firstUl);
+    barFill = wrap.querySelector('.check-bar-fill');
+    barLabel = wrap.querySelector('.check-count');
+  }
+
+  function refreshUI() {
+    var checkedIdx = [];
+    boxes.forEach(function (cb, i) {
+      var li = cb.closest('li.task-item');
+      if (cb.checked) {
+        checkedIdx.push(i);
+        if (li) li.classList.add('done');
+      } else if (li) {
+        li.classList.remove('done');
+      }
+    });
+    if (barFill && barLabel) {
+      var pct = Math.round((checkedIdx.length / boxes.length) * 100);
+      barFill.style.width = pct + '%';
+      barLabel.textContent = checkedIdx.length + ' / ' + boxes.length + (checkedIdx.length === boxes.length ? ' 🎉 已通关' : '');
+    }
+    var cur = loadStore();
+    cur[LESSON_KEY] = { checked: checkedIdx, total: TOTAL || boxes.length };
+    saveStore(cur);
+  }
+
+  var initChecked = Array.isArray(saved) ? saved : (saved && Array.isArray(saved.checked) ? saved.checked : []);
+  boxes.forEach(function (cb, i) {
+    if (initChecked.indexOf(i) !== -1) cb.checked = true;
+    cb.addEventListener('change', refreshUI);
+    var li = cb.closest('li.task-item');
+    if (li) {
+      li.addEventListener('click', function (e) {
+        if (e.target === cb || e.target.tagName === 'A' || e.target.tagName === 'CODE') return;
+        cb.checked = !cb.checked;
+        refreshUI();
+      });
+    }
+  });
+  refreshUI();
+})();
+</script>
+</body>
 </html>

@@ -85,11 +85,11 @@ MQTT 给了三种**服务质量（QoS, Quality of Service）**，专门对付"�
 | **1** | 至少一次 | **broker 必须回 ACK**，没收到就重发 | **第 10 课 `OK` 回执** |
 | **2** | 恰好一次 | 四次握手，绝不重复绝不丢失 | 银行转账级 |
 
-**QoS 1 就是第 10 课"回执协议"的标准化版本**——你当初自己写的 `OK ON`，MQTT 帮你做成了协议规范（而且要考虑了重发去重）。**"通信必须有确认"这条线，从第 10 课一路贯到云端。**
+**QoS 1 就是第 10 课"回执协议"的标准化版本**——你当初自己写的 `OK ON`，MQTT 帮你做成了协议规范（而且内置了重发机制）。**"通信必须有确认"这条线，从第 10 课一路贯到云端。**
 
 **保留消息（Retain）**：broker 会**替你记住每个主题的最后一条**。新订阅者一连上，**立刻收到最近一次的状态**，不用等下一次发布——
 
-> 这解决了第 11 课挑战 5 留下的问题：**"板子重启后状态丢了、页面显示不对"**。用 Retain 发布 `home/lab/light/state = ON`，**任何时刻、任何新客户端连上都知道灯是亮的**。状态持久化的最小方案。
+> 这解决了"新客户端打开 App 或断线重连后不知道当前状态"的问题：用 Retain 发布 `home/lab/light/state = ON`，**任何时刻、任何新客户端连上都知道灯是亮的**。（注：如果 ESP32 本身断电重启且未用 NVS 存状态，`ledOn` 会随物理灯一起复位为 `OFF` 并上报新状态，远端显示依然与真实硬件一致。）
 
 **心跳（Keep Alive）**：MQTT 连接要定期发 PINGREQ（默认 60s）——**broker 60 秒没听到就宣布你死了**。这就是第 10 课 `reportStatus()` 心跳的协议化：**让对端知道"我还活着"**。
 
@@ -123,7 +123,7 @@ const char* PASS = "你的WiFi密码";
 const char* MQTT_SERVER = "broker.emqx.io";
 const int   MQTT_PORT   = 1883;
 
-const char* TOPIC_STATE  = "esp32/demo/light/state";   // 我发布：状态（Retain）
+const char* TOPIC_STATE  = "esp32/demo/light/state";   // 建议把 demo 改成你的专属代号，防公共节点撞车
 const char* TOPIC_SET    = "esp32/demo/light/set";     // 我订阅：命令
 const char* TOPIC_TEMP   = "esp32/demo/temp";          // 我发布：传感器数据
 
@@ -135,9 +135,11 @@ PubSubClient mqtt(espClient);
 
 bool ledOn = false;
 unsigned long lastPublish = 0;
-unsigned long lastRetry = 0;
+unsigned long lastMqttRetry = 0;
+unsigned long lastWifiRetry = 0;
 int lastRaw = HIGH, stableState = HIGH;
 unsigned long lastChange = 0;
+const unsigned long DEBOUNCE_MS = 25;
 
 // —— 收到消息的回调：broker 转发来的数据从这里进 ——
 void onMqttMessage(char* topic, byte* payload, unsigned int length) {
@@ -161,9 +163,10 @@ void onMqttMessage(char* topic, byte* payload, unsigned int length) {
 }
 
 void connectMqtt() {
+  if (WiFi.status() != WL_CONNECTED) return;    // Wi-Fi 没通前不白费力气
   if (mqtt.connected()) return;
-  if (millis() - lastRetry < 5000) return;      // 5 秒重试节奏（millis 第 4 次立功）
-  lastRetry = millis();
+  if (millis() - lastMqttRetry < 5000) return;  // 5 秒重试节奏（millis 第 4 次立功）
+  lastMqttRetry = millis();
 
   Serial.print("连接 MQTT broker...");
   // clientId 要唯一：否则两台设备会互相顶掉连接
@@ -192,12 +195,30 @@ void setup() {
   mqtt.setCallback(onMqttMessage);     // 注册回调：所有订阅消息走这
 }
 
-void pollButton() { /* 第 10 课防抖状态机；触发时 ledOn 翻转 + publish(TOPIC_STATE,...,true) */ }
+void pollButton() {
+  int raw = digitalRead(BTN_PIN);
+  if (raw != lastRaw) {
+    lastRaw = raw;
+    lastChange = millis();
+  }
+  if (millis() - lastChange >= DEBOUNCE_MS && raw != stableState) {
+    stableState = raw;
+    if (stableState == LOW) {
+      ledOn = !ledOn;
+      digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+      mqtt.publish(TOPIC_STATE, ledOn ? "ON" : "OFF", true);
+      Serial.println(ledOn ? "BTN -> ON (已同步云端)" : "BTN -> OFF (已同步云端)");
+    }
+  }
+}
 
 void loop() {
-  // —— Wi-Fi 保活（第 11 课）——
-  if (WiFi.status() != WL_CONNECTED && millis() - lastRetry > 10000) {
-    WiFi.disconnect(); WiFi.begin(SSID, PASS); lastRetry = millis();
+  // —— Wi-Fi 保活（独立计时器，避免与 MQTT 5 秒重试互相清零）——
+  if (WiFi.status() != WL_CONNECTED && millis() - lastWifiRetry >= 10000) {
+    lastWifiRetry = millis();
+    Serial.println("Wi-Fi 断线，尝试重连...");
+    WiFi.disconnect();
+    WiFi.begin(SSID, PASS);
   }
 
   connectMqtt();        // ① 保持 MQTT 在线（断了按节奏重连）
@@ -260,8 +281,8 @@ void loop() {
 - [ ] 手机看到板子每 5 秒发布的温度数字
 - [ ] 手机发布 `esp32/demo/light/set` 内容 `ON` → **板上灯亮** + 手机收到 `light/state: ON`
 - [ ] 发布 `OFF` → 灯灭；发布 `XYZ` → 串口"未知命令，忽略"（白名单生效）
-- [ ] **Retain 验证**：手机断开 App 重连 → **立刻收到最近一次的 `light/state`**（不用等板子再发）
-- [ ] 板子断电重启 → `light/state` 仍显示正确（Retain 帮你记着）
+- [ ] **Retain 验证**：手机断开 App 重连（或换另一台设备新订阅） → **立刻收到最近一次的 `light/state`**（不用等板子下次操作）
+- [ ] **本地与云端双向同步**：按板上 GPIO23 按钮切换灯 → 手机上的 `light/state` 同步刷新；板子断电重启 → 云端 `light/state` 自动更新为复位后的 `OFF`
 - [ ] 能向外行解释三句话：①发布/订阅和 HTTP 有什么不同 ②Topic 为什么要分层 ③QoS1 解决什么问题
 
 **全部打勾 → 你的设备已经接入真正的互联网，完成了"物联网"的最后一跳。进入进阶篇。**

@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>第 1 课：认识你的新玩具，点亮第一盏灯</title>
+<title>第 1 课：认识你的新玩具，点亮第一盏灯 · ESP32 从零到专家</title>
 <style>
 :root {
   --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
@@ -16,8 +16,8 @@ body {
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   font-size: 16.5px; line-height: 1.85;
 }
-.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
-h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; margin-top: .6em; }
 h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
      border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
 h3 { font-size: 1.15em; margin-top: 1.8em; }
@@ -33,20 +33,41 @@ code {
   font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
 }
 pre {
+  position: relative;
   background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
   overflow-x: auto; line-height: 1.6; font-size: .86em;
 }
 pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  font-family: inherit; font-size: 12px; padding: 3px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08); color: #d5dae3; cursor: pointer;
+  opacity: .75; transition: .15s;
+}
+.copy-btn:hover { opacity: 1; background: rgba(255,255,255,.18); color: #fff; }
+.copy-btn.copied { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
 table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
 th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
 th { background: var(--accent-soft); }
 tr:nth-child(even) td { background: #f6f5f2; }
 ul, ol { padding-left: 1.6em; }
 li { margin: .3em 0; }
-li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+li.task-item { list-style: none; margin-left: -1.2em; padding: .28em .55em; border-radius: 6px; transition: background .15s; }
+li.task-item:hover { background: #f3f1ec; }
+li.task-item.done { background: #edf7f3; color: #3c6e5b; }
+li input[type="checkbox"] { margin-right: .55em; transform: scale(1.2); cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
+.check-progress {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: .55em .9em; margin: .8em 0 .6em; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; font-size: .88em; color: var(--muted);
+}
+.check-bar-wrap { flex: 1; height: 8px; background: #ece9e2; border-radius: 99px; overflow: hidden; }
+.check-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
 hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
 em { color: var(--muted); }
 strong { color: #1a1a1a; }
+img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figure { margin: 1.6em 0; text-align: center; }
 figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
@@ -55,15 +76,46 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
   color: var(--muted); background: #fff; font-size: .95em;
 }
 .widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 顶部与底部课程导航 ---- */
+.top-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: .55em .9em; margin-bottom: 1.2em; background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; font-size: .88em; box-shadow: 0 1px 4px rgba(0,0,0,.03);
+}
+.top-nav a { text-decoration: none; font-weight: 600; color: var(--accent); }
+.top-nav a:hover { text-decoration: underline; }
+.top-nav .meta-pill { color: var(--muted); font-size: .92em; }
+.top-nav .quick-jump { display: flex; gap: 10px; align-items: center; }
+.top-nav .quick-jump a {
+  padding: .2em .65em; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font-weight: 500; font-size: .9em;
+}
+.top-nav .quick-jump a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.pager {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch;
+  margin-top: 3em; padding-top: 1.6em; border-top: 2px solid var(--border);
+}
+.pager a, .pager .pager-empty {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: .85em 1.1em; border-radius: 10px; border: 1px solid var(--border);
+  background: #fff; text-decoration: none; color: var(--fg); transition: .15s;
+}
+.pager a:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pager .pager-empty { background: transparent; border-style: dashed; color: var(--muted); font-size: .88em; align-items: center; }
+.pager .dir { font-size: .8em; color: var(--muted); margin-bottom: .2em; }
+.pager .ttl { font-weight: 600; color: var(--accent); font-size: .95em; line-height: 1.4; }
+.pager .next { text-align: right; }
+.pager .home-btn { align-items: center; font-weight: 600; color: var(--accent); font-size: .9em; white-space: nowrap; }
 /* ---- 交互动画组件通用外壳 ---- */
 .wgt {
   margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
   background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
+.wgt pre { background: transparent; padding: 0; border-radius: 0; }
 .wgt-head {
   padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
   font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
-  justify-content: space-between; align-items: center; gap: .5em;
+  justify-content: space-between; align-items: center; gap: .5em; flex-wrap: wrap;
 }
 .wgt-body { padding: 1em; }
 .wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
@@ -73,10 +125,25 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 }
 .wgt button:hover { border-color: var(--accent); color: var(--accent); }
 .wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 64px; }
+  body { font-size: 15.5px; }
+  .pager { grid-template-columns: 1fr; }
+  .pager .next { text-align: left; }
+}
 </style>
 </head>
-<body><div class="wrap"><h1>第 1 课：认识你的新玩具，点亮第一盏灯</h1>
+<body>
+<div class="wrap">
+<nav class="top-nav">
+  <a href="index.html">← 课程总目录</a>
+  <span class="meta-pill">阶段一 · 破冰与建立信心 · 第 1 / 15 课</span>
+  <span class="quick-jump">
+    
+    <a href="02-%E6%95%B0%E5%AD%97%E4%BF%A1%E5%8F%B7%E4%B8%8E%E5%9F%BA%E6%9C%AC%E7%94%B5%E8%B7%AF.html" title="第 2 课：数字信号与基本电路——按键点灯">下一课 ›</a>
+  </span>
+</nav>
+<h1>第 1 课：认识你的新玩具，点亮第一盏灯</h1>
 <blockquote>
 <p><strong>阶段一 · 破冰与建立信心</strong> ｜ 难度：★☆☆☆☆ ｜ 预计用时：30–45 分钟（其中环境安装约 20 分钟，写代码只要 15 分钟）</p>
 <p><strong>本课材料</strong>：ESP32 开发板 ×1、<strong>带数据传输功能的</strong> USB 线 ×1（就这么点东西）
@@ -199,7 +266,7 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
         <div class="wg-ohm-ledlabel">LED 亮度随电流变化</div>
       </div>
     </div>
-    <p class="wgt-hint">试试把电阻拉到最小（10Ω）：电流冲破 200mA，LED 和引脚瞬间烧毁——这就是"忘串电阻"的下场。第 2 课你将亲手算出正确的阻值。</p>
+    <p class="wgt-hint">注：这里的 V 指<b>加在电阻两端的电压</b>（若与吃掉约 2V 的红光 LED 串在 3.3V 下，电阻分得约 1.3V，220Ω 时电流约 5.9mA）。试试把电阻拉到最小（10Ω）：电流破百毫安，LED 和引脚瞬间烧毁——第 2 课你将亲手算出正确阻值。</p>
   </div>
 </div>
 <style>
@@ -475,7 +542,7 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
     { n: 9,  name: 'IO25',  type: 'ok', desc: '普通 GPIO，支持 DAC1 输出（12 位模拟输出）。' },
     { n: 10, name: 'IO26',  type: 'ok', desc: '普通 GPIO，支持 DAC2 输出（12 位模拟输出）。' },
     { n: 11, name: 'IO27',  type: 'ok', desc: '普通 GPIO，可输入输出，支持 ADC2 与触摸。' },
-    { n: 12, name: 'IO14',  type: 'warn', desc: 'GPIO14，strapping 脚。启动时若被拉高，会影响 Flash 时钟；正常应用中当普通 GPIO 没问题。' },
+    { n: 12, name: 'IO14',  type: 'ok',   desc: '普通 GPIO，可输入输出（支持 ADC2 与触摸）。开机瞬间会输出极短暂脉冲，一般做普通 IO 完全放心。' },
     { n: 13, name: 'IO12',  type: 'warn', desc: '⚠️ GPIO12（MTDI）：strapping 脚，<b>启动时必须为 LOW</b>。接了上拉电阻的外设可能导致板子无法启动（1.8V Flash 选择）。' },
     { n: 14, name: 'GND',   type: 'power', desc: '地。所有电路的回流终点，LED 回路的另一端就接这里。' },
     { n: 15, name: 'IO13',  type: 'ok', desc: '普通 GPIO，板载 LED 有些变体接这里（本板是 IO2）。' }
@@ -484,7 +551,7 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
     { n: 16, name: 'VIN',   type: 'power', desc: '5V 输入（接 USB 或外部 5V 电源），经板载稳压器降到 3.3V。<b>别和 3V3 接混</b>。' },
     { n: 17, name: 'GND',   type: 'power', desc: '地。' },
     { n: 18, name: 'IO23',  type: 'ok', desc: '普通 GPIO，SPI 默认 MOSI。' },
-    { n: 19, name: 'IO22',  type: 'ok', desc: '普通 GPIO，SPI 默认 SCL（I2C 时钟常用）。' },
+    { n: 19, name: 'IO22',  type: 'ok', desc: '普通 GPIO，I2C 默认 SCL（时钟线，第 7–8 课传感器主角）。' },
     { n: 20, name: 'TX0/1', type: 'danger', desc: 'GPIO1，UART0 发送（串口监视器打印走这里）。<b>别接外设</b>，会干扰烧录和日志。' },
     { n: 21, name: 'RX0/3', type: 'danger', desc: 'GPIO3，UART0 接收。<b>别接外设</b>，同上。' },
     { n: 22, name: 'IO21',  type: 'ok', desc: '普通 GPIO，I2C 默认 SDA（第 8 课传感器主角）。' },
@@ -744,14 +811,7 @@ void loop() {
     // 固定画 3 个周期，缩放显示
     const x0 = 30, x1 = 600, yH = 30, yL = 90;
     const cycles = 3, seg = (x1 - x0) / (cycles * 2);
-    let d = `M ${x0} ${yH}`;
-    for (let i = 0; i < cycles * 2; i++) {
-      const x = x0 + seg * (i + 1);
-      d += ` L ${x} ${i % 2 === 0 ? yH : yL}`.replace(`L ${x} ${yH}`, i % 2 === 1 ? `L ${x} ${yL}` : `L ${x} ${yH}`);
-      // 手动构造：先保持，再跳变
-    }
-    // 更清晰的构造
-    d = `M ${x0} ${yL} L ${x0} ${yH}`;
+    let d = `M ${x0} ${yL} L ${x0} ${yH}`;
     for (let i = 0; i < cycles; i++) {
       const xa = x0 + (seg * 2) * i;          // 高电平开始
       const xb = xa + seg;                     // 高电平结束
@@ -813,12 +873,12 @@ LED OFF
 <hr>
 <h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 设备管理器里能看到 COM 端口（或 Wokwi 里项目能启动）</li>
-<li><input disabled="" type="checkbox"> 代码编译通过，上传无报错</li>
-<li><input disabled="" type="checkbox"> 板载 LED 以约 1 秒亮、1 秒灭的节奏闪烁</li>
-<li><input disabled="" type="checkbox"> 串口监视器（115200 波特率）同步打印 <code>LED ON</code> / <code>LED OFF</code>，<strong>无乱码</strong></li>
-<li><input disabled="" type="checkbox"> 按一下 EN 复位键，灯和打印从头重新开始（证明程序确实在芯片里运行）</li>
-<li><input disabled="" type="checkbox"> 不看笔记，能画出板载 LED 的完整回路（电源 → GPIO → 电阻 → LED → GND），并说出 <code>HIGH</code>/<code>LOW</code> 分别对应回路的什么状态</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="0"> 设备管理器里能看到 COM 端口（或 Wokwi 里项目能启动）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="1"> 代码编译通过，上传无报错</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="2"> 板载 LED 以约 1 秒亮、1 秒灭的节奏闪烁</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="3"> 串口监视器（115200 波特率）同步打印 <code>LED ON</code> / <code>LED OFF</code>，<strong>无乱码</strong></li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="4"> 按一下 EN 复位键，灯和打印从头重新开始（证明程序确实在芯片里运行）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="5"> 不看笔记，能画出板载 LED 的完整回路（电源 → GPIO → 电阻 → LED → GND），并说出 <code>HIGH</code>/<code>LOW</code> 分别对应回路的什么状态</li>
 </ul>
 <p><strong>全部打勾 → 你已经完成了嵌入式界的 Hello World，进入第 2 课。</strong></p>
 <hr>
@@ -885,5 +945,116 @@ LED OFF
 <p>灯只能闪，还不够&quot;智能&quot;。<strong>第 2 课：数字信号与基本电路</strong>——接一颗外置 LED 和一个实体按钮，实现&quot;按一下开灯、再按一下关灯&quot;。你会第一次接触<strong>输入</strong>（读按钮）、第一次动手搭真实电路（面包板 + 亲手实践本课学的限流电阻），并提前埋下一个大坑的引子：<strong>按键抖动</strong>。</p>
 <hr>
 <p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
-</div></body>
+
+<nav class="pager">
+  <div class="pager-empty">已经是第一课啦</div>
+  <a class="home-btn" href="index.html">📚 课程总目录</a>
+  <a class="next" href="02-%E6%95%B0%E5%AD%97%E4%BF%A1%E5%8F%B7%E4%B8%8E%E5%9F%BA%E6%9C%AC%E7%94%B5%E8%B7%AF.html"><span class="dir">下一课 →</span><span class="ttl">第 2 课：数字信号与基本电路——按键点灯</span></a>
+</nav>
+</div>
+<script>
+(function () {
+  var STORAGE_KEY = 'esp32_tutorial_progress_v1';
+  var LESSON_KEY = "01";
+  var TOTAL = 6;
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+  function saveStore(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  // 1. 代码块一键复制按钮（排除交互组件内部的 <pre>）
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.closest('.wgt')) return;
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = '复制代码';
+    btn.addEventListener('click', function () {
+      var text = code.innerText || code.textContent || '';
+      function done() {
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = '复制代码'; btn.classList.remove('copied'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  // 2. 验收 Checklist 持久化打勾与进度条
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input.task-cb'));
+  if (!boxes.length) return;
+
+  var store = loadStore();
+  var saved = Array.isArray(store[LESSON_KEY]) ? store[LESSON_KEY] : [];
+
+  var firstUl = boxes[0].closest('ul');
+  var barFill = null, barLabel = null;
+  if (firstUl && firstUl.parentNode) {
+    var wrap = document.createElement('div');
+    wrap.className = 'check-progress';
+    wrap.innerHTML = '<span>📋 本课验收进度</span><div class="check-bar-wrap"><div class="check-bar-fill"></div></div><strong class="check-count"></strong>';
+    firstUl.parentNode.insertBefore(wrap, firstUl);
+    barFill = wrap.querySelector('.check-bar-fill');
+    barLabel = wrap.querySelector('.check-count');
+  }
+
+  function refreshUI() {
+    var checkedIdx = [];
+    boxes.forEach(function (cb, i) {
+      var li = cb.closest('li.task-item');
+      if (cb.checked) {
+        checkedIdx.push(i);
+        if (li) li.classList.add('done');
+      } else if (li) {
+        li.classList.remove('done');
+      }
+    });
+    if (barFill && barLabel) {
+      var pct = Math.round((checkedIdx.length / boxes.length) * 100);
+      barFill.style.width = pct + '%';
+      barLabel.textContent = checkedIdx.length + ' / ' + boxes.length + (checkedIdx.length === boxes.length ? ' 🎉 已通关' : '');
+    }
+    var cur = loadStore();
+    cur[LESSON_KEY] = { checked: checkedIdx, total: TOTAL || boxes.length };
+    saveStore(cur);
+  }
+
+  var initChecked = Array.isArray(saved) ? saved : (saved && Array.isArray(saved.checked) ? saved.checked : []);
+  boxes.forEach(function (cb, i) {
+    if (initChecked.indexOf(i) !== -1) cb.checked = true;
+    cb.addEventListener('change', refreshUI);
+    var li = cb.closest('li.task-item');
+    if (li) {
+      li.addEventListener('click', function (e) {
+        if (e.target === cb || e.target.tagName === 'A' || e.target.tagName === 'CODE') return;
+        cb.checked = !cb.checked;
+        refreshUI();
+      });
+    }
+  });
+  refreshUI();
+})();
+</script>
+</body>
 </html>

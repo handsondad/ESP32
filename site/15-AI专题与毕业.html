@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>第 15 课：AI 专题——毕业模块（可选）</title>
+<title>第 15 课：AI 专题——毕业模块（可选） · ESP32 从零到专家</title>
 <style>
 :root {
   --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
@@ -16,8 +16,8 @@ body {
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   font-size: 16.5px; line-height: 1.85;
 }
-.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
-h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; margin-top: .6em; }
 h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
      border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
 h3 { font-size: 1.15em; margin-top: 1.8em; }
@@ -33,20 +33,41 @@ code {
   font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
 }
 pre {
+  position: relative;
   background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
   overflow-x: auto; line-height: 1.6; font-size: .86em;
 }
 pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  font-family: inherit; font-size: 12px; padding: 3px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08); color: #d5dae3; cursor: pointer;
+  opacity: .75; transition: .15s;
+}
+.copy-btn:hover { opacity: 1; background: rgba(255,255,255,.18); color: #fff; }
+.copy-btn.copied { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
 table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
 th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
 th { background: var(--accent-soft); }
 tr:nth-child(even) td { background: #f6f5f2; }
 ul, ol { padding-left: 1.6em; }
 li { margin: .3em 0; }
-li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+li.task-item { list-style: none; margin-left: -1.2em; padding: .28em .55em; border-radius: 6px; transition: background .15s; }
+li.task-item:hover { background: #f3f1ec; }
+li.task-item.done { background: #edf7f3; color: #3c6e5b; }
+li input[type="checkbox"] { margin-right: .55em; transform: scale(1.2); cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
+.check-progress {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: .55em .9em; margin: .8em 0 .6em; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; font-size: .88em; color: var(--muted);
+}
+.check-bar-wrap { flex: 1; height: 8px; background: #ece9e2; border-radius: 99px; overflow: hidden; }
+.check-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
 hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
 em { color: var(--muted); }
 strong { color: #1a1a1a; }
+img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figure { margin: 1.6em 0; text-align: center; }
 figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
@@ -55,15 +76,46 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
   color: var(--muted); background: #fff; font-size: .95em;
 }
 .widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 顶部与底部课程导航 ---- */
+.top-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: .55em .9em; margin-bottom: 1.2em; background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; font-size: .88em; box-shadow: 0 1px 4px rgba(0,0,0,.03);
+}
+.top-nav a { text-decoration: none; font-weight: 600; color: var(--accent); }
+.top-nav a:hover { text-decoration: underline; }
+.top-nav .meta-pill { color: var(--muted); font-size: .92em; }
+.top-nav .quick-jump { display: flex; gap: 10px; align-items: center; }
+.top-nav .quick-jump a {
+  padding: .2em .65em; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font-weight: 500; font-size: .9em;
+}
+.top-nav .quick-jump a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.pager {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch;
+  margin-top: 3em; padding-top: 1.6em; border-top: 2px solid var(--border);
+}
+.pager a, .pager .pager-empty {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: .85em 1.1em; border-radius: 10px; border: 1px solid var(--border);
+  background: #fff; text-decoration: none; color: var(--fg); transition: .15s;
+}
+.pager a:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pager .pager-empty { background: transparent; border-style: dashed; color: var(--muted); font-size: .88em; align-items: center; }
+.pager .dir { font-size: .8em; color: var(--muted); margin-bottom: .2em; }
+.pager .ttl { font-weight: 600; color: var(--accent); font-size: .95em; line-height: 1.4; }
+.pager .next { text-align: right; }
+.pager .home-btn { align-items: center; font-weight: 600; color: var(--accent); font-size: .9em; white-space: nowrap; }
 /* ---- 交互动画组件通用外壳 ---- */
 .wgt {
   margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
   background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
+.wgt pre { background: transparent; padding: 0; border-radius: 0; }
 .wgt-head {
   padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
   font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
-  justify-content: space-between; align-items: center; gap: .5em;
+  justify-content: space-between; align-items: center; gap: .5em; flex-wrap: wrap;
 }
 .wgt-body { padding: 1em; }
 .wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
@@ -73,10 +125,25 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 }
 .wgt button:hover { border-color: var(--accent); color: var(--accent); }
 .wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 64px; }
+  body { font-size: 15.5px; }
+  .pager { grid-template-columns: 1fr; }
+  .pager .next { text-align: left; }
+}
 </style>
 </head>
-<body><div class="wrap"><h1>第 15 课：AI 专题——毕业模块（可选）</h1>
+<body>
+<div class="wrap">
+<nav class="top-nav">
+  <a href="index.html">← 课程总目录</a>
+  <span class="meta-pill">阶段五 · 进阶专家 · 第 15 / 15 课</span>
+  <span class="quick-jump">
+    <a href="14-ESP-IDF%E5%B7%A5%E4%B8%9A%E7%BA%A7%E6%A1%86%E6%9E%B6.html" title="第 14 课：ESP-IDF——官方工业级框架">‹ 上一课</a>
+    
+  </span>
+</nav>
+<h1>第 15 课：AI 专题——毕业模块（可选）</h1>
 <blockquote>
 <p><strong>阶段五 · 进阶专家</strong> ｜ 难度：★★★☆☆（概念课，代码可选）｜ 预计用时：45–60 分钟</p>
 <p><strong>本课材料</strong>：无强制硬件。想跑真推理可用 ESP32 + INMP441 麦克风模块（可选）或直接用 Wokwi/在线演示
@@ -199,7 +266,7 @@ ESP32 录 1000 个    PC/云上用             .h5 → .tflite      float32 → 
 </ol>
 <h3>路线 B：真机跑一次关键词唤醒（进阶选做）</h3>
 <ol>
-<li>板子 + INMP441 I2C 麦克风（SDA=21, SCL=22——<strong>又是你熟悉的传感器总线</strong>）</li>
+<li>板子 + INMP441 I2S 数字麦克风（SCK/WS/SD 三线音频总线；或用第 4 课 ADC 接模拟驻极体麦）</li>
 <li>用 ESP-SR（乐鑫官方语音识别框架）或 TensorFlow Lite Micro 示例工程</li>
 <li>训练/下载一个&quot;你好小智&quot;唤醒词模型，编译烧录</li>
 <li>对板子说唤醒词，LED 亮起——<strong>20KB 的模型听懂了你的声音</strong></li>
@@ -315,20 +382,20 @@ ESP32 录 1000 个    PC/云上用             .h5 → .tflite      float32 → 
 <hr>
 <h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 能分清&quot;用 AI 开发 / 边缘 AI / 云 AI&quot;三条路线，各举一个例子</li>
-<li><input disabled="" type="checkbox"> 能画出 TinyML 五步流水线，并说出&quot;训练在哪、推理在哪&quot;</li>
-<li><input disabled="" type="checkbox"> 能解释量化：为什么要 int8、换来什么代价</li>
-<li><input disabled="" type="checkbox"> 说出 3 个&quot;ESP32 能跑的 AI 任务&quot;和 1 个&quot;跑不了的&quot;及原因</li>
-<li><input disabled="" type="checkbox"> 完成路线 A：<strong>审出了 AI 输出里（或被你追问出来的）ADC2 雷</strong></li>
-<li><input disabled="" type="checkbox"> 能向外行解释一句话：<strong>&quot;边缘 AI = 训练在云上、推理在设备上，换来隐私、延迟和断网可用&quot;</strong></li>
-<li><input disabled="" type="checkbox"> 拿到毕业进阶地图（见下），选定一个感兴趣的方向</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="0"> 能分清&quot;用 AI 开发 / 边缘 AI / 云 AI&quot;三条路线，各举一个例子</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="1"> 能画出 TinyML 五步流水线，并说出&quot;训练在哪、推理在哪&quot;</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="2"> 能解释量化：为什么要 int8、换来什么代价</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="3"> 说出 3 个&quot;ESP32 能跑的 AI 任务&quot;和 1 个&quot;跑不了的&quot;及原因</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="4"> 完成路线 A：<strong>审出了 AI 输出里（或被你追问出来的）ADC2 雷</strong></li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="5"> 能向外行解释一句话：<strong>&quot;边缘 AI = 训练在云上、推理在设备上，换来隐私、延迟和断网可用&quot;</strong></li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="6"> 拿到毕业进阶地图（见下），选定一个感兴趣的方向</li>
 </ul>
 <p><strong>全部打勾 → 15 课全部完成。🎉 毕业快乐——但学习才刚开始。</strong></p>
 <hr>
 <h2>🏆 毕业挑战（这不是结束，是你的第一个&quot;正经项目&quot;）</h2>
 <p>毕业设计（<strong>三选一，用你学过的全部能力</strong>）：</p>
 <ol>
-<li><strong>智能气象站</strong>：BMP280 温湿度气压（L8）+ OLED 显示（L7）+ Wi-Fi 上云画曲线（L11/L12）+ millis 三任务结构（L10）——<strong>课程内容 80% 的综合复习</strong></li>
+<li><strong>智能气象站</strong>：BMP280 温度气压（L8）+ OLED 显示（L7）+ Wi-Fi 上云画曲线（L11/L12）+ millis 三任务结构（L10）——<strong>课程内容 80% 的综合复习</strong></li>
 <li><strong>手势/声音控制器</strong>：MPU6050 采手势（L8）+ ADC 声音（L4）+ 蓝牙或 Wi-Fi 控制灯/屏（L10/L11）+ 简单分类判断（L15 概念）</li>
 <li><strong>异常报警器</strong>：振动/声音传感器 + 本地阈值或 TinyML 异常检测（本课）+ MQTT 推送手机（L12）+ 断网本地蜂鸣——<strong>边缘 AI 的最小闭环</strong></li>
 </ol>
@@ -346,7 +413,7 @@ ESP32 录 1000 个    PC/云上用             .h5 → .tflite      float32 → 
 </thead>
 <tbody><tr>
 <td><strong>产品开发工程师</strong></td>
-<td>深挖 IDF/FreeRTOS、功耗优化、OTA、安全（L2  Secure Boot）、量产测试</td>
+<td>深挖 IDF/FreeRTOS、功耗优化、OTA、安全（Flash 加密 / Secure Boot）、量产测试</td>
 <td>ESP-IDF、低功耗、量产</td>
 <td>喜欢把东西做出来卖</td>
 </tr>
@@ -430,5 +497,116 @@ ESP32 录 1000 个    PC/云上用             .h5 → .tflite      float32 → 
 <p><strong>从点亮一盏灯，到设计一台会自己思考的机器——这条路你已经走完了第一段。剩下的，去造吧。</strong> 🚀</p>
 <hr>
 <p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。全 15 课完。</em></p>
-</div></body>
+
+<nav class="pager">
+  <a class="prev" href="14-ESP-IDF%E5%B7%A5%E4%B8%9A%E7%BA%A7%E6%A1%86%E6%9E%B6.html"><span class="dir">← 上一课</span><span class="ttl">第 14 课：ESP-IDF——官方工业级框架</span></a>
+  <a class="home-btn" href="index.html">📚 课程总目录</a>
+  <div class="pager-empty">🎓 恭喜完成全部 15 课！</div>
+</nav>
+</div>
+<script>
+(function () {
+  var STORAGE_KEY = 'esp32_tutorial_progress_v1';
+  var LESSON_KEY = "15";
+  var TOTAL = 7;
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+  function saveStore(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  // 1. 代码块一键复制按钮（排除交互组件内部的 <pre>）
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.closest('.wgt')) return;
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = '复制代码';
+    btn.addEventListener('click', function () {
+      var text = code.innerText || code.textContent || '';
+      function done() {
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = '复制代码'; btn.classList.remove('copied'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  // 2. 验收 Checklist 持久化打勾与进度条
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input.task-cb'));
+  if (!boxes.length) return;
+
+  var store = loadStore();
+  var saved = Array.isArray(store[LESSON_KEY]) ? store[LESSON_KEY] : [];
+
+  var firstUl = boxes[0].closest('ul');
+  var barFill = null, barLabel = null;
+  if (firstUl && firstUl.parentNode) {
+    var wrap = document.createElement('div');
+    wrap.className = 'check-progress';
+    wrap.innerHTML = '<span>📋 本课验收进度</span><div class="check-bar-wrap"><div class="check-bar-fill"></div></div><strong class="check-count"></strong>';
+    firstUl.parentNode.insertBefore(wrap, firstUl);
+    barFill = wrap.querySelector('.check-bar-fill');
+    barLabel = wrap.querySelector('.check-count');
+  }
+
+  function refreshUI() {
+    var checkedIdx = [];
+    boxes.forEach(function (cb, i) {
+      var li = cb.closest('li.task-item');
+      if (cb.checked) {
+        checkedIdx.push(i);
+        if (li) li.classList.add('done');
+      } else if (li) {
+        li.classList.remove('done');
+      }
+    });
+    if (barFill && barLabel) {
+      var pct = Math.round((checkedIdx.length / boxes.length) * 100);
+      barFill.style.width = pct + '%';
+      barLabel.textContent = checkedIdx.length + ' / ' + boxes.length + (checkedIdx.length === boxes.length ? ' 🎉 已通关' : '');
+    }
+    var cur = loadStore();
+    cur[LESSON_KEY] = { checked: checkedIdx, total: TOTAL || boxes.length };
+    saveStore(cur);
+  }
+
+  var initChecked = Array.isArray(saved) ? saved : (saved && Array.isArray(saved.checked) ? saved.checked : []);
+  boxes.forEach(function (cb, i) {
+    if (initChecked.indexOf(i) !== -1) cb.checked = true;
+    cb.addEventListener('change', refreshUI);
+    var li = cb.closest('li.task-item');
+    if (li) {
+      li.addEventListener('click', function (e) {
+        if (e.target === cb || e.target.tagName === 'A' || e.target.tagName === 'CODE') return;
+        cb.checked = !cb.checked;
+        refreshUI();
+      });
+    }
+  });
+  refreshUI();
+})();
+</script>
+</body>
 </html>

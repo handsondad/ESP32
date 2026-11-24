@@ -23,7 +23,7 @@
 
 **本课学习目标（完成后你将拥有）：**
 
-1. ✅ BLE 串口（UART over BLE）的基本用法：广播、连接、收发
+1. ✅ 蓝牙串口（`BluetoothSerial` SPP 透传）的基本用法：广播、连接、收发（兼辨析经典蓝牙与 BLE）
 2. ✅ **亲手制造并破案**：delay 版蓝牙为什么"按下没反应"——案发现场重演
 3. ✅ 用 millis 写出**完全体三任务循环**：蓝牙收发 + 按钮防抖 + LED 控制并行
 4. ✅ 按键抖动根治：状态机防抖（第 2 课 `delay(300)` 的正统接班人）
@@ -46,19 +46,20 @@ loop() 每一圈要照顾：
 
 ---
 
-## 📡 新知识：BLE 串口——手机和板子的"无线数据线"
+## 📡 新知识：蓝牙串口——手机和板子的"无线数据线"
 
-**ESP32 内置两种蓝牙**：经典蓝牙（SPP 串口透传）和 **BLE（Bluetooth Low Energy，低功耗蓝牙）**。本课用 **BLE 串口透传**——手机 App 和板子之间建立一条"虚拟串口线"，代码写起来和 `Serial` 几乎一样：
+**ESP32（经典 WROOM-32）内置两种蓝牙**：**经典蓝牙（BR/EDR，支持 SPP 串口透传）** 和 **BLE（Bluetooth Low Energy，低功耗蓝牙）**。本课主角是 `BluetoothSerial`（`SerialBT`，经典蓝牙 SPP）——在手机 App 或电脑蓝牙端口和板子之间拉一条"虚拟串口线"，代码写起来和第 5 课的 `Serial` 几乎一模一样：
 
 ```
-手机 App（蓝牙串口调试器）
-    ⚡ BLE 无线连接
-ESP32 BLESerial（SerialBT）
+手机 App（Serial Bluetooth Terminal）/ 电脑蓝牙串口
+    ⚡ 蓝牙 SPP 无线连接
+ESP32 BluetoothSerial（SerialBT）
 ```
 
-> 💡 **为什么用 BLE 而不是经典蓝牙？** BLE 功耗低、iOS/Android 现代手机都原生支持、连接建立快。经典蓝牙的 SPP 在 iOS 上还要 MFi 认证——**BLE 是跨平台的最省事选择**。
-
-库用 Arduino 自带的 `BluetoothSerial`（经典蓝牙 SPP，ESP32 核心自带）或 `BLEDevice`（BLE）。**本课用 `SerialBT`（SPP）**——因为它的 API 和 `Serial` 完全一致，学习成本最低；BLE 的 API 更啰嗦，原理相同，挑战题里让你对照。
+> 💡 **经典蓝牙 SPP vs BLE 怎么选？（避坑必看）**
+> - **`BluetoothSerial`（经典蓝牙 SPP，本课主代码）**：API 与 `Serial` 完全一致，学习成本最低；**Android 手机与 Windows/macOS 电脑原生支持**，装个"蓝牙串口终端"即可直连。
+> - **⚠️ iPhone（iOS）用户注意**：苹果限制了非 MFi 认证的经典蓝牙 SPP，**iPhone 蓝牙列表搜不到 `SerialBT`**！如果你只有 iPhone，请用电脑蓝牙连接测试，或直接看文末【挑战 4】切到 `BLEDevice`（Nordic UART BLE 透传，iOS 免认证原生支持，用 LightBlue / nRF Connect 即可收发）。
+> - **芯片变体提示**：ESP32-C3 / ESP32-S3 仅支持 **BLE**（无经典蓝牙），若用这两款板子也请走 `BLEDevice` 路线。
 
 ---
 
@@ -141,8 +142,9 @@ void pollButton() {
       && raw != stableState) {
     stableState = raw;                                // ⑤ 才更新稳定状态
     if (stableState == LOW) {                         // ⑥ 确认按下（下降沿）
-      digitalWrite(LED_PIN, !digitalRead(LED_PIN));   //    执行动作
-      SerialBT.println("BTN");
+      ledOn = !ledOn;                                 //    同步翻转状态变量
+      digitalWrite(LED_PIN, ledOn ? HIGH : LOW);      //    执行动作
+      SerialBT.println(ledOn ? "BTN ON" : "BTN OFF");
     }
   }
   // ⑦ 全程零等待——其他任务永远畅通
@@ -201,17 +203,36 @@ void setup() {
   Serial.println("蓝牙已启动，搜 'ESP32-Smart-Lamp'");
 }
 
-void pollButton() { /* 上节的防抖函数，原样放这里 */ }
+void pollButton() {
+  int raw = digitalRead(BTN_PIN);
+  if (raw != lastRaw) {
+    lastRaw = raw;
+    lastChangeTime = millis();
+  }
+  if (millis() - lastChangeTime >= DEBOUNCE_MS && raw != stableState) {
+    stableState = raw;
+    if (stableState == LOW) {
+      ledOn = !ledOn;
+      digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+      SerialBT.println(ledOn ? "BTN ON" : "BTN OFF");
+      Serial.println(ledOn ? "本地按钮 -> ON" : "本地按钮 -> OFF");
+    }
+  }
+}
 
 void handleBluetooth() {
   if (!SerialBT.available()) return;     // 没数据，立刻走人（非阻塞）
   String cmd = SerialBT.readStringUntil('\n');   // 读到换行为止
   cmd.trim();                                     // 清洗（第 5 课习惯）
+  if (cmd.length() == 0) return;
 
   // —— 消息协议：只认白名单命令（第 9 课"帧"的实战）——
   if (cmd == "ON")          { ledOn = true;  }
   else if (cmd == "OFF")    { ledOn = false; }
-  else if (cmd == "STATUS") { /* 立即回状态，见下 */ }
+  else if (cmd == "STATUS") {
+    SerialBT.println(ledOn ? "ST ON" : "ST OFF");
+    return;                                       // 仅查询状态，直接回传后退出
+  }
   else { SerialBT.println("ERR unknown"); return; }   // 未知命令报错
 
   digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
@@ -254,7 +275,7 @@ void loop() {
 > 💡 **为什么文本命令 + 回执是好设计？** ①人眼能读，串口/App 里直接看懂 ②**每条命令有应答，丢包能发现**（没收到回执就重发）③白名单校验，乱数据进不来。**这是从"裸字节流"（第 5 课 UART）到"有协议的通信"的关键一跃**——MQTT（第 12 课）会把这个思想放大到云端。
 
 **`reportStatus()` 的心跳**
-每秒一条 `ST ON`——**心跳（Heartbeat）**是所有远程系统的标配：**让对端知道"我还活着、状态是什么"**。手机 App 断线重连后，靠心跳立即恢复画面状态。
+每秒一条 `ST ON` —— **心跳（Heartbeat）** 是所有远程系统的标配：**让对端知道"我还活着、状态是什么"**。手机 App 断线重连后，靠心跳立即恢复画面状态。
 
 **三条任务并行的结构**
 `loop()` 里三个函数都是"到点才干活、没到点立刻返回"——**loop 转得飞快，三条时间线谁也不等谁**。这就是第 3 课埋下的心智模型的完全体：**从"扔掉一个 delay"到"整个系统里一个 delay 都没有"**（唯一的例外还是初始化失败死等——和第 7 课一样）。
@@ -291,8 +312,8 @@ void loop() {
 
 | 现象 / 报错关键词 | 原因 | 解决办法 |
 |---|---|---|
-| 编译报错 `蓝牙未启用 / CONFIG_BT_ENABLED` | 板型选错（选了非 ESP32 板） | 工具 → 开发板选 `ESP32 Dev Module` |
-| 手机搜不到设备 | ① 已连接其他设备 ② 代码没跑起来 | 断开手机其他蓝牙设备；看串口是否打印"蓝牙已启动" |
+| 编译报错 `蓝牙未启用 / CONFIG_BT_ENABLED` | 板型选错（如选了无经典蓝牙的 C3/S3 或非 ESP32 板） | 工具 → 开发板选 `ESP32 Dev Module`；C3/S3 请用 `BLEDevice` |
+| 手机搜不到设备 | ① 用的是 iPhone（iOS 不支持经典蓝牙 SPP）② 已连其他设备 ③ 代码未跑起 | Android 装 Serial Bluetooth Terminal，或用电脑蓝牙连；iPhone 走挑战 4 的 BLE |
 | 配对成功但发命令无反应 | ① App 不是 SPP 串口模式 ② 换行符没发（协议用 `\n` 分帧） | 换"蓝牙串口终端"类 App；设置里勾选"追加换行/CRLF" |
 | 灯受控但没有 `OK` 回执 | App 没开"接收显示" | 开启 App 的接收窗口 |
 | 压力测试丢命令 | ① 用了 delay 版（本课反面教材）② `readStringUntil` 超时太长 | 确认三任务全是非阻塞；命令频率降一档再测 |

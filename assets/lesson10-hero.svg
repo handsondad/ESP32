@@ -10,7 +10,7 @@
   </defs>
   <rect width="1200" height="440" fill="url(#bg10)"/>
 
-  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">手机 BLE 控灯：三条时间线并行，一个 delay 都不许有</text>
+  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">手机蓝牙控灯：三条时间线并行，一个 delay 都不许有</text>
 
   <!-- ===== 左：手机 ===== -->
   <g transform="translate(80 80)" filter="url(#ds10)">
@@ -42,7 +42,7 @@
     <path d="M0 60 Q 30 20, 60 60 T 120 60 T 180 60" fill="none" stroke="#5dade2" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6">
       <animate attributeName="stroke-dashoffset" values="0;28" dur="0.8s" repeatCount="indefinite"/>
     </path>
-    <text x="90" y="110" fill="#2980b9" font-size="15" font-weight="bold" text-anchor="middle">BLE 无线</text>
+    <text x="90" y="110" fill="#2980b9" font-size="15" font-weight="bold" text-anchor="middle">蓝牙无线 (SPP)</text>
     <text x="90" y="132" fill="#6b6b6b" font-size="12" text-anchor="middle">ON / OFF / STATUS</text>
     <text x="90" y="152" fill="#3fa67a" font-size="12" font-weight="bold" text-anchor="middle">← OK 回执</text>
   </g>
@@ -71,7 +71,7 @@
     <text x="155" y="28" fill="#0b6e4f" font-size="16" font-weight="bold" text-anchor="middle">接线（沿用第 2 课）</text>
     <text x="20" y="60" fill="#333" font-size="14" font-family="Consolas, monospace">LED  → GPIO4（经 220Ω）</text>
     <text x="20" y="88" fill="#333" font-size="14" font-family="Consolas, monospace">BTN  → GPIO23（INPUT_PULLUP）</text>
-    <text x="20" y="116" fill="#333" font-size="14" font-family="Consolas, monospace">手机 ↔ BLE ↔ SerialBT</text>
+    <text x="20" y="116" fill="#333" font-size="14" font-family="Consolas, monospace">手机 ↔ 蓝牙 ↔ SerialBT</text>
     <text x="20" y="140" fill="#9aa0a6" font-size="12">零新接线——本课的战场在代码结构</text>
   </g>
 

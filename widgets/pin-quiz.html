@@ -10,7 +10,7 @@
     <!-- 答案按钮 -->
     <div class="wg-quiz-opts" id="wg-quiz-opts">
       <button data-k="out">✅ 能输出（可点灯）</button>
-      <button data-k="in">👂 只能输入（读不了灯）</button>
+      <button data-k="in">👂 只能输入（点不了灯）</button>
       <button data-k="adc1">🌡️ 能模拟输入，且 Wi-Fi 下也安全</button>
       <button data-k="strap">⚠️ strapping，开机瞬间有讲究</button>
     </div>
@@ -96,18 +96,15 @@
 
   function pick(name, rect, text) {
     current = name;
-    remaining = new Set(PINS[name].tags.filter(t => t !== 'out' || true));
-    // 只保留"选项按钮里有的"tag
+    // 只保留"选项按钮里有的"正确 tag
     const valid = new Set();
     PINS[name].tags.forEach(t => {
       if (opts.querySelector(`[data-k="${t}"]`)) valid.add(t);
     });
-    // IO25 的特殊标记映射
-    if (PINS[name].tags.includes('adc1-fail')) { /* 不作为可点选项，只在解释里说 */ }
     remaining = valid;
     pinEl.textContent = name;
     qs.textContent = `「${name}」有哪些属性？把符合的全点出来（可多选）`;
-    fb.innerHTML = '逐个点击右侧按钮——点错会变红并给出提示，全对后揭示完整档案。';
+    fb.innerHTML = '逐个点击上方按钮——点错会变红并给出提示，全对后揭示完整档案。';
     // 重置按钮
     opts.querySelectorAll('button').forEach(b => {
       b.className = ''; b.disabled = false;
@@ -119,7 +116,7 @@
 
   opts.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!current) { fb.textContent = '先点上面的引脚选题！'; return; }
+      if (!current) { fb.textContent = '先点下面的引脚选题！'; return; }
       if (btn.disabled) return;
       const k = btn.dataset.k;
       totalPicks++;
@@ -138,7 +135,10 @@
         }
       } else {
         btn.classList.add('bad'); btn.disabled = true;
-        fb.innerHTML = `❌ 「${OPT_LABEL[k] || k}」不符合 ${current}——再想想它的脾气。`;
+        const extraHint = (current === 'IO25' && k === 'adc1')
+          ? '（注意：IO25 属于 ADC2，开 Wi-Fi 后模拟输入会失效！）'
+          : '';
+        fb.innerHTML = `❌ 「${OPT_LABEL[k] || k}」不符合 ${current}${extraHint}——再想想它的脾气。`;
       }
     });
   });

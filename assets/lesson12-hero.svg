@@ -10,7 +10,7 @@
   </defs>
   <rect width="1200" height="440" fill="url(#bg12)"/>
 
-  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">MQTT：公告栏世界观——发布者与订阅者互不认识，Broker 一切</text>
+  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">MQTT：公告栏世界观——发布者与订阅者互不认识，Broker 转一切</text>
 
   <!-- ===== 左：ESP32 ===== -->
   <g transform="translate(60 120)" filter="url(#ds12)">

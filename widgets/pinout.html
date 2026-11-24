@@ -69,7 +69,7 @@
     { n: 9,  name: 'IO25',  type: 'ok', desc: '普通 GPIO，支持 DAC1 输出（12 位模拟输出）。' },
     { n: 10, name: 'IO26',  type: 'ok', desc: '普通 GPIO，支持 DAC2 输出（12 位模拟输出）。' },
     { n: 11, name: 'IO27',  type: 'ok', desc: '普通 GPIO，可输入输出，支持 ADC2 与触摸。' },
-    { n: 12, name: 'IO14',  type: 'warn', desc: 'GPIO14，strapping 脚。启动时若被拉高，会影响 Flash 时钟；正常应用中当普通 GPIO 没问题。' },
+    { n: 12, name: 'IO14',  type: 'ok',   desc: '普通 GPIO，可输入输出（支持 ADC2 与触摸）。开机瞬间会输出极短暂脉冲，一般做普通 IO 完全放心。' },
     { n: 13, name: 'IO12',  type: 'warn', desc: '⚠️ GPIO12（MTDI）：strapping 脚，<b>启动时必须为 LOW</b>。接了上拉电阻的外设可能导致板子无法启动（1.8V Flash 选择）。' },
     { n: 14, name: 'GND',   type: 'power', desc: '地。所有电路的回流终点，LED 回路的另一端就接这里。' },
     { n: 15, name: 'IO13',  type: 'ok', desc: '普通 GPIO，板载 LED 有些变体接这里（本板是 IO2）。' }
@@ -78,7 +78,7 @@
     { n: 16, name: 'VIN',   type: 'power', desc: '5V 输入（接 USB 或外部 5V 电源），经板载稳压器降到 3.3V。<b>别和 3V3 接混</b>。' },
     { n: 17, name: 'GND',   type: 'power', desc: '地。' },
     { n: 18, name: 'IO23',  type: 'ok', desc: '普通 GPIO，SPI 默认 MOSI。' },
-    { n: 19, name: 'IO22',  type: 'ok', desc: '普通 GPIO，SPI 默认 SCL（I2C 时钟常用）。' },
+    { n: 19, name: 'IO22',  type: 'ok', desc: '普通 GPIO，I2C 默认 SCL（时钟线，第 7–8 课传感器主角）。' },
     { n: 20, name: 'TX0/1', type: 'danger', desc: 'GPIO1，UART0 发送（串口监视器打印走这里）。<b>别接外设</b>，会干扰烧录和日志。' },
     { n: 21, name: 'RX0/3', type: 'danger', desc: 'GPIO3，UART0 接收。<b>别接外设</b>，同上。' },
     { n: 22, name: 'IO21',  type: 'ok', desc: '普通 GPIO，I2C 默认 SDA（第 8 课传感器主角）。' },

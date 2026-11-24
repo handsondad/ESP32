@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>第 6 课：引脚大清算——GPIO 的脾气</title>
+<title>第 6 课：引脚大清算——GPIO 的脾气 · ESP32 从零到专家</title>
 <style>
 :root {
   --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
@@ -16,8 +16,8 @@ body {
   font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
   font-size: 16.5px; line-height: 1.85;
 }
-.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
-h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+.wrap { max-width: 860px; margin: 0 auto; padding: 32px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; margin-top: .6em; }
 h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
      border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
 h3 { font-size: 1.15em; margin-top: 1.8em; }
@@ -33,20 +33,41 @@ code {
   font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
 }
 pre {
+  position: relative;
   background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
   overflow-x: auto; line-height: 1.6; font-size: .86em;
 }
 pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+.copy-btn {
+  position: absolute; top: 8px; right: 8px;
+  font-family: inherit; font-size: 12px; padding: 3px 10px;
+  border-radius: 6px; border: 1px solid rgba(255,255,255,.22);
+  background: rgba(255,255,255,.08); color: #d5dae3; cursor: pointer;
+  opacity: .75; transition: .15s;
+}
+.copy-btn:hover { opacity: 1; background: rgba(255,255,255,.18); color: #fff; }
+.copy-btn.copied { background: var(--accent); border-color: var(--accent); color: #fff; opacity: 1; }
 table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
 th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
 th { background: var(--accent-soft); }
 tr:nth-child(even) td { background: #f6f5f2; }
 ul, ol { padding-left: 1.6em; }
 li { margin: .3em 0; }
-li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+li.task-item { list-style: none; margin-left: -1.2em; padding: .28em .55em; border-radius: 6px; transition: background .15s; }
+li.task-item:hover { background: #f3f1ec; }
+li.task-item.done { background: #edf7f3; color: #3c6e5b; }
+li input[type="checkbox"] { margin-right: .55em; transform: scale(1.2); cursor: pointer; accent-color: var(--accent); vertical-align: middle; }
+.check-progress {
+  display: flex; align-items: center; justify-content: space-between; gap: 12px;
+  padding: .55em .9em; margin: .8em 0 .6em; background: #fff; border: 1px solid var(--border);
+  border-radius: 8px; font-size: .88em; color: var(--muted);
+}
+.check-bar-wrap { flex: 1; height: 8px; background: #ece9e2; border-radius: 99px; overflow: hidden; }
+.check-bar-fill { height: 100%; width: 0%; background: var(--accent); border-radius: 99px; transition: width .25s ease; }
 hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
 em { color: var(--muted); }
 strong { color: #1a1a1a; }
+img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figure { margin: 1.6em 0; text-align: center; }
 figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
 figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
@@ -55,15 +76,46 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
   color: var(--muted); background: #fff; font-size: .95em;
 }
 .widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 顶部与底部课程导航 ---- */
+.top-nav {
+  display: flex; align-items: center; justify-content: space-between; gap: 10px; flex-wrap: wrap;
+  padding: .55em .9em; margin-bottom: 1.2em; background: #fff; border: 1px solid var(--border);
+  border-radius: 10px; font-size: .88em; box-shadow: 0 1px 4px rgba(0,0,0,.03);
+}
+.top-nav a { text-decoration: none; font-weight: 600; color: var(--accent); }
+.top-nav a:hover { text-decoration: underline; }
+.top-nav .meta-pill { color: var(--muted); font-size: .92em; }
+.top-nav .quick-jump { display: flex; gap: 10px; align-items: center; }
+.top-nav .quick-jump a {
+  padding: .2em .65em; border: 1px solid var(--border); border-radius: 6px;
+  background: var(--bg); color: var(--fg); font-weight: 500; font-size: .9em;
+}
+.top-nav .quick-jump a:hover { border-color: var(--accent); color: var(--accent); text-decoration: none; }
+.pager {
+  display: grid; grid-template-columns: 1fr auto 1fr; gap: 12px; align-items: stretch;
+  margin-top: 3em; padding-top: 1.6em; border-top: 2px solid var(--border);
+}
+.pager a, .pager .pager-empty {
+  display: flex; flex-direction: column; justify-content: center;
+  padding: .85em 1.1em; border-radius: 10px; border: 1px solid var(--border);
+  background: #fff; text-decoration: none; color: var(--fg); transition: .15s;
+}
+.pager a:hover { border-color: var(--accent); background: var(--accent-soft); }
+.pager .pager-empty { background: transparent; border-style: dashed; color: var(--muted); font-size: .88em; align-items: center; }
+.pager .dir { font-size: .8em; color: var(--muted); margin-bottom: .2em; }
+.pager .ttl { font-weight: 600; color: var(--accent); font-size: .95em; line-height: 1.4; }
+.pager .next { text-align: right; }
+.pager .home-btn { align-items: center; font-weight: 600; color: var(--accent); font-size: .9em; white-space: nowrap; }
 /* ---- 交互动画组件通用外壳 ---- */
 .wgt {
   margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
   background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
 }
+.wgt pre { background: transparent; padding: 0; border-radius: 0; }
 .wgt-head {
   padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
   font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
-  justify-content: space-between; align-items: center; gap: .5em;
+  justify-content: space-between; align-items: center; gap: .5em; flex-wrap: wrap;
 }
 .wgt-body { padding: 1em; }
 .wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
@@ -73,10 +125,25 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 }
 .wgt button:hover { border-color: var(--accent); color: var(--accent); }
 .wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
-@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+@media (max-width: 640px) {
+  .wrap { padding: 20px 16px 64px; }
+  body { font-size: 15.5px; }
+  .pager { grid-template-columns: 1fr; }
+  .pager .next { text-align: left; }
+}
 </style>
 </head>
-<body><div class="wrap"><h1>第 6 课：引脚大清算——GPIO 的脾气</h1>
+<body>
+<div class="wrap">
+<nav class="top-nav">
+  <a href="index.html">← 课程总目录</a>
+  <span class="meta-pill">阶段二 · 输入与输出 · 第 6 / 15 课</span>
+  <span class="quick-jump">
+    <a href="05-%E4%B8%B2%E5%8F%A3%E9%80%9A%E4%BF%A1%E4%B8%8E%E5%85%B1%E5%9C%B0.html" title="第 5 课：串口通信与共地——让两个设备说话">‹ 上一课</a>
+    <a href="07-I2C%E6%80%BB%E7%BA%BF%E5%85%A5%E9%97%A8.html" title="第 7 课：I2C 总线入门——两根线挂遍模块">下一课 ›</a>
+  </span>
+</nav>
+<h1>第 6 课：引脚大清算——GPIO 的脾气</h1>
 <blockquote>
 <p><strong>阶段二 · 输入与输出</strong> ｜ 难度：★★★★☆ ｜ 预计用时：60 分钟（本课是&quot;理论清算课&quot;，动手少、动脑多）</p>
 <p><strong>本课材料</strong>：前 5 课的板子与接线即可（本课大部分是&quot;讲清楚&quot;，附 2 个小验证实验）
@@ -370,12 +437,12 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 </tr>
 </thead>
 <tbody><tr>
-<td><strong>万能通用 GPIO</strong></td>
-<td>0,1,3,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33</td>
+<td><strong>无坑通用 GPIO（首选）</strong></td>
+<td><strong>4,13,14,16,17,18,19,21,22,23,25,26,27,32,33</strong></td>
 <td>✅</td>
 <td>部分（见下）</td>
 <td>✅</td>
-<td>最安全</td>
+<td>数字输入/输出最省心</td>
 </tr>
 <tr>
 <td><strong>仅输入</strong></td>
@@ -407,7 +474,7 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 <td>✅</td>
 <td>⚠️ Wi-Fi 下不可用</td>
 <td>✅</td>
-<td>开 Wi-Fi 别用</td>
+<td>开 Wi-Fi 别用模拟输入</td>
 </tr>
 <tr>
 <td><strong>TX0/RX0</strong></td>
@@ -444,7 +511,7 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
     <!-- 答案按钮 -->
     <div class="wg-quiz-opts" id="wg-quiz-opts">
       <button data-k="out">✅ 能输出（可点灯）</button>
-      <button data-k="in">👂 只能输入（读不了灯）</button>
+      <button data-k="in">👂 只能输入（点不了灯）</button>
       <button data-k="adc1">🌡️ 能模拟输入，且 Wi-Fi 下也安全</button>
       <button data-k="strap">⚠️ strapping，开机瞬间有讲究</button>
     </div>
@@ -530,18 +597,15 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 
   function pick(name, rect, text) {
     current = name;
-    remaining = new Set(PINS[name].tags.filter(t => t !== 'out' || true));
-    // 只保留"选项按钮里有的"tag
+    // 只保留"选项按钮里有的"正确 tag
     const valid = new Set();
     PINS[name].tags.forEach(t => {
       if (opts.querySelector(`[data-k="${t}"]`)) valid.add(t);
     });
-    // IO25 的特殊标记映射
-    if (PINS[name].tags.includes('adc1-fail')) { /* 不作为可点选项，只在解释里说 */ }
     remaining = valid;
     pinEl.textContent = name;
     qs.textContent = `「${name}」有哪些属性？把符合的全点出来（可多选）`;
-    fb.innerHTML = '逐个点击右侧按钮——点错会变红并给出提示，全对后揭示完整档案。';
+    fb.innerHTML = '逐个点击上方按钮——点错会变红并给出提示，全对后揭示完整档案。';
     // 重置按钮
     opts.querySelectorAll('button').forEach(b => {
       b.className = ''; b.disabled = false;
@@ -553,7 +617,7 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 
   opts.querySelectorAll('button').forEach(btn => {
     btn.addEventListener('click', () => {
-      if (!current) { fb.textContent = '先点上面的引脚选题！'; return; }
+      if (!current) { fb.textContent = '先点下面的引脚选题！'; return; }
       if (btn.disabled) return;
       const k = btn.dataset.k;
       totalPicks++;
@@ -572,7 +636,10 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
         }
       } else {
         btn.classList.add('bad'); btn.disabled = true;
-        fb.innerHTML = `❌ 「${OPT_LABEL[k] || k}」不符合 ${current}——再想想它的脾气。`;
+        const extraHint = (current === 'IO25' && k === 'adc1')
+          ? '（注意：IO25 属于 ADC2，开 Wi-Fi 后模拟输入会失效！）'
+          : '';
+        fb.innerHTML = `❌ 「${OPT_LABEL[k] || k}」不符合 ${current}${extraHint}——再想想它的脾气。`;
       }
     });
   });
@@ -582,13 +649,13 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 <hr>
 <h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
 <ul>
-<li><input disabled="" type="checkbox"> 能不看笔记说出 GPIO34 不亮灯的原因（仅输入、无驱动管）</li>
-<li><input disabled="" type="checkbox"> 能说出 5 个 strapping 引脚，以及 GPIO12 的特殊危险</li>
-<li><input disabled="" type="checkbox"> 能解释浮空引脚为什么乱跳、<code>INPUT_PULLUP</code> 如何解决</li>
-<li><input disabled="" type="checkbox"> 能说出 5V 设备为什么不能直连（VIH/VDD+0.3V），正确接法是什么</li>
-<li><input disabled="" type="checkbox"> 能解释 ADC2 与 Wi-Fi 的冲突，以及&quot;模拟输入永远用 ADC1&quot;的规则</li>
-<li><input disabled="" type="checkbox"> 完成 2 个验证实验：①LED 接 34 不亮、接 4 亮 ②<code>INPUT</code> vs <code>INPUT_PULLUP</code> 读数对比</li>
-<li><input disabled="" type="checkbox"> 把&quot;全景速查表&quot;抄进自己的笔记（这张表第 9–12 课会反复回来查）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="0"> 能不看笔记说出 GPIO34 不亮灯的原因（仅输入、无驱动管）</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="1"> 能说出 5 个 strapping 引脚，以及 GPIO12 的特殊危险</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="2"> 能解释浮空引脚为什么乱跳、<code>INPUT_PULLUP</code> 如何解决</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="3"> 能说出 5V 设备为什么不能直连（VIH/VDD+0.3V），正确接法是什么</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="4"> 能解释 ADC2 与 Wi-Fi 的冲突，以及&quot;模拟输入永远用 ADC1&quot;的规则</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="5"> 完成 2 个验证实验：①LED 接 34 不亮、接 4 亮 ②<code>INPUT</code> vs <code>INPUT_PULLUP</code> 读数对比</li>
+<li class="task-item"><input type="checkbox" class="task-cb" data-cb-idx="6"> 把&quot;全景速查表&quot;抄进自己的笔记（这张表第 9–12 课会反复回来查）</li>
 </ul>
 <p><strong>全部打勾 → 你已经拥有&quot;引脚安全&quot;完整知识体系，成为本系列第一个&quot;专家级小里程碑&quot;。进入第 7 课，开始通信大部头。</strong></p>
 <hr>
@@ -650,5 +717,116 @@ figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
 <p>引脚的地基终于打牢——现在开始&quot;让芯片互相说话&quot;的正式篇章。<strong>第 7 课：I2C 总线入门</strong>：只用两根线（SDA/SCL）+ 上拉电阻，就能挂上一整排传感器和屏幕；你会学到<strong>寻址</strong>（多设备如何区分谁在说话）、<strong>应答位</strong>（对方听懂了没）、并点亮一块 OLED 显示屏打印&quot;Hello&quot;。第 1 课引脚图里&quot;IO21 = I2C SDA（第 8 课传感器主角）&quot;的伏笔，从这里开始兑现。</p>
 <hr>
 <p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
-</div></body>
+
+<nav class="pager">
+  <a class="prev" href="05-%E4%B8%B2%E5%8F%A3%E9%80%9A%E4%BF%A1%E4%B8%8E%E5%85%B1%E5%9C%B0.html"><span class="dir">← 上一课</span><span class="ttl">第 5 课：串口通信与共地——让两个设备说话</span></a>
+  <a class="home-btn" href="index.html">📚 课程总目录</a>
+  <a class="next" href="07-I2C%E6%80%BB%E7%BA%BF%E5%85%A5%E9%97%A8.html"><span class="dir">下一课 →</span><span class="ttl">第 7 课：I2C 总线入门——两根线挂遍模块</span></a>
+</nav>
+</div>
+<script>
+(function () {
+  var STORAGE_KEY = 'esp32_tutorial_progress_v1';
+  var LESSON_KEY = "06";
+  var TOTAL = 7;
+
+  function loadStore() {
+    try { return JSON.parse(localStorage.getItem(STORAGE_KEY) || '{}') || {}; }
+    catch (_) { return {}; }
+  }
+  function saveStore(data) {
+    try { localStorage.setItem(STORAGE_KEY, JSON.stringify(data)); } catch (_) {}
+  }
+
+  // 1. 代码块一键复制按钮（排除交互组件内部的 <pre>）
+  document.querySelectorAll('pre').forEach(function (pre) {
+    if (pre.closest('.wgt')) return;
+    var code = pre.querySelector('code');
+    if (!code) return;
+    var btn = document.createElement('button');
+    btn.type = 'button';
+    btn.className = 'copy-btn';
+    btn.textContent = '复制代码';
+    btn.addEventListener('click', function () {
+      var text = code.innerText || code.textContent || '';
+      function done() {
+        btn.textContent = '✓ 已复制';
+        btn.classList.add('copied');
+        setTimeout(function () { btn.textContent = '复制代码'; btn.classList.remove('copied'); }, 1600);
+      }
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(done).catch(fallbackCopy);
+      } else {
+        fallbackCopy();
+      }
+      function fallbackCopy() {
+        var ta = document.createElement('textarea');
+        ta.value = text;
+        ta.style.position = 'fixed';
+        ta.style.opacity = '0';
+        document.body.appendChild(ta);
+        ta.select();
+        try { document.execCommand('copy'); done(); } catch (_) {}
+        document.body.removeChild(ta);
+      }
+    });
+    pre.appendChild(btn);
+  });
+
+  // 2. 验收 Checklist 持久化打勾与进度条
+  var boxes = Array.prototype.slice.call(document.querySelectorAll('input.task-cb'));
+  if (!boxes.length) return;
+
+  var store = loadStore();
+  var saved = Array.isArray(store[LESSON_KEY]) ? store[LESSON_KEY] : [];
+
+  var firstUl = boxes[0].closest('ul');
+  var barFill = null, barLabel = null;
+  if (firstUl && firstUl.parentNode) {
+    var wrap = document.createElement('div');
+    wrap.className = 'check-progress';
+    wrap.innerHTML = '<span>📋 本课验收进度</span><div class="check-bar-wrap"><div class="check-bar-fill"></div></div><strong class="check-count"></strong>';
+    firstUl.parentNode.insertBefore(wrap, firstUl);
+    barFill = wrap.querySelector('.check-bar-fill');
+    barLabel = wrap.querySelector('.check-count');
+  }
+
+  function refreshUI() {
+    var checkedIdx = [];
+    boxes.forEach(function (cb, i) {
+      var li = cb.closest('li.task-item');
+      if (cb.checked) {
+        checkedIdx.push(i);
+        if (li) li.classList.add('done');
+      } else if (li) {
+        li.classList.remove('done');
+      }
+    });
+    if (barFill && barLabel) {
+      var pct = Math.round((checkedIdx.length / boxes.length) * 100);
+      barFill.style.width = pct + '%';
+      barLabel.textContent = checkedIdx.length + ' / ' + boxes.length + (checkedIdx.length === boxes.length ? ' 🎉 已通关' : '');
+    }
+    var cur = loadStore();
+    cur[LESSON_KEY] = { checked: checkedIdx, total: TOTAL || boxes.length };
+    saveStore(cur);
+  }
+
+  var initChecked = Array.isArray(saved) ? saved : (saved && Array.isArray(saved.checked) ? saved.checked : []);
+  boxes.forEach(function (cb, i) {
+    if (initChecked.indexOf(i) !== -1) cb.checked = true;
+    cb.addEventListener('change', refreshUI);
+    var li = cb.closest('li.task-item');
+    if (li) {
+      li.addEventListener('click', function (e) {
+        if (e.target === cb || e.target.tagName === 'A' || e.target.tagName === 'CODE') return;
+        cb.checked = !cb.checked;
+        refreshUI();
+      });
+    }
+  });
+  refreshUI();
+})();
+</script>
+</body>
 </html>

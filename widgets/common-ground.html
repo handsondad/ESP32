@@ -50,7 +50,7 @@
 Hello from ESP32 #2
 Hello from ESP32 #3</div>
     </div>
-    <p class="wgt-hint" style="text-align:center">断开地线：**数据包还在 TX 线上跑（橙色），但对方失去了"零"的参照**——采样掷硬币，接收窗口变乱码。接回地线立刻恢复。第 9 课讲帧格式时，我们再回来解释乱码的具体形态。</p>
+    <p class="wgt-hint" style="text-align:center">断开地线：<b>数据包还在 TX 线上跑（橙色），但对方失去了“零”的参照</b>——采样掷硬币，接收窗口变乱码。接回地线立刻恢复。第 9 课讲帧格式时，我们再回来解释乱码的具体形态。</p>
   </div>
 </div>
 <style>
@@ -65,7 +65,8 @@ Hello from ESP32 #3</div>
 <script>
 (function () {
   const root = document.getElementById('wg-gnd');
-  if (!root || root.dataset.bound) return; root.dataset.bound = '1');
+  if (!root || root.dataset.bound) return;
+  root.dataset.bound = '1';
   const btn = document.getElementById('wg-gnd-toggle');
   const screen = document.getElementById('wg-gnd-screen');
   const bridge = document.getElementById('wg-gnd-bridge');
@@ -74,7 +75,7 @@ Hello from ESP32 #3</div>
   const refText = document.getElementById('wg-gnd-reftext');
 
   let connected = true;
-  let counter = 1;
+  let counter = 3;
   const GARBLE = ['ÿ', '¿', '§', 'Ã', '?', '¨', '¤', '½', '¾', 'Ã', '€', '†'];
 
   function garble(text) {
@@ -93,7 +94,7 @@ Hello from ESP32 #3</div>
     xmark.setAttribute('opacity', v ? '0' : '1');
     refArrow.setAttribute('stroke', v ? '#4a5b66' : '#e74c3c');
     refText.textContent = v ? '以自家 GND 为参照量电压' : '❌ 没有共同的零！电压成鬼话';
-    refText.setAttribute('fill', v ? '#4a5b6b' : '#e74c3c');
+    refText.setAttribute('fill', v ? '#4a5b66' : '#e74c3c');
     btn.textContent = v ? '🔌 断开 GND' : '🔗 接回 GND';
     btn.classList.toggle('off', !v);
     screen.classList.toggle('garbled', !v);

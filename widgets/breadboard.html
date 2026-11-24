@@ -8,11 +8,16 @@
       <!-- 中央沟槽 -->
       <rect x="40" y="158" width="560" height="14" rx="7" fill="#ddd8cf" stroke="#c8c2b6" stroke-width="2"/>
       <text x="320" y="169" text-anchor="middle" fill="#8a8378" font-size="11">沟槽（两侧不相通）</text>
-      <!-- 列标 -->
+      <!-- 列号（真实面包板横向标数字 1, 2, 3...，纵向标字母 A-E / F-J） -->
       <g fill="#8a8378" font-size="12" font-weight="bold" text-anchor="middle">
-        <text x="70" y="42">A</text><text x="140" y="42">B</text><text x="210" y="42">C</text>
-        <text x="280" y="42">D</text><text x="350" y="42">E</text>
-        <text x="430" y="42">F</text><text x="500" y="42">G</text><text x="570" y="42">H</text>
+        <text x="70" y="42">1</text><text x="140" y="42">2</text><text x="210" y="42">3</text>
+        <text x="280" y="42">4</text><text x="350" y="42">5</text>
+        <text x="430" y="42">6</text><text x="500" y="42">7</text><text x="570" y="42">8</text>
+      </g>
+      <!-- 行标 -->
+      <g fill="#a9a294" font-size="11" font-weight="bold" text-anchor="middle">
+        <text x="38" y="69">A</text><text x="38" y="99">B</text><text x="38" y="129">C</text>
+        <text x="38" y="204">F</text><text x="38" y="234">G</text><text x="38" y="264">H</text>
       </g>
       <!-- 孔位由 JS 生成 -->
       <g id="wg-bb-holes"></g>
@@ -87,12 +92,12 @@
     linkbox.setAttribute('x', minX); linkbox.setAttribute('y', minY);
     linkbox.setAttribute('width', maxX - minX); linkbox.setAttribute('height', maxY - minY);
     links.setAttribute('opacity', '1');
-    // 列名 + 半区
-    const side = group[0] === 'L' ? 'ABCDEFGHI'[+group[1]] : 'FGH'[+group[1]];
-    const half = group[2] === 'T' ? '上半（沟槽上方）' : '下半（沟槽下方）';
-    readout.textContent = `${side} 列 ${half}：这 3 孔连通 ✅ —— 同列对面（隔沟槽）和旁边列都不通 ❌`;
+    // 列号 + 半区
+    const colNum = group[0] === 'L' ? (+group[1] + 1) : (+group[1] + 6);
+    const half = group[2] === 'T' ? '上半区（A–C 行，沟槽上方）' : '下半区（F–H 行，沟槽下方）';
+    readout.textContent = `第 ${colNum} 列 · ${half}：这纵向 3 孔连通 ✅ —— 隔沟槽对面和相邻列都不通 ❌`;
   }
 
-  select('L4T'); // 默认演示 E 列上半
+  select('L4T'); // 默认演示第 5 列上半区
 })();
 </script>

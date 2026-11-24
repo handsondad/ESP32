@@ -183,7 +183,7 @@ void setup() {
 }
 
 void drawTestPattern() {
-  // 顶部色带：16 色
+  // 顶部色带：8 色
   uint16_t colors[8] = {
     ST7735_RED, ST7735_GREEN, ST7735_BLUE, ST7735_YELLOW,
     ST7735_CYAN, ST7735_MAGENTA, ST7735_WHITE, ST7735_BLACK
@@ -214,10 +214,13 @@ void loop() {
     tft.fillRect(prevX, 55, 10, 14, ST7735_BLACK);
     tft.fillRect(x, 55, 10, 14, ST7735_CYAN);
 
-    // 每 20 帧换一次底色，展示全屏刷新速度
+    // 每 20 帧换一次底部状态栏颜色，展示大块区域高速填充且不闪整屏
     if (frame % 20 == 0) {
       uint16_t bg = (frame % 40 == 0) ? ST7735_NAVY : ST7735_BLACK;
-      tft.drawRect(0, 120, 160, 40, bg);   // 只刷底部区域，避免整屏闪
+      tft.fillRect(0, 120, 160, 40, bg);
+      tft.setTextColor(ST7735_WHITE, bg);
+      tft.setCursor(4, 130);
+      tft.print("SPI 40MHz! #"); tft.print(frame);
       Serial.print("帧 #"); Serial.println(frame);
     }
   }

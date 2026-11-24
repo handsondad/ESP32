@@ -46,6 +46,7 @@
       <line x1="395" y1="140" x2="470" y2="173" stroke="#e67e22" stroke-width="3"/>
       <!-- 飞行包 -->
       <rect id="wg-mqtt-pkt" x="170" y="108" width="24" height="14" rx="3" fill="#3fa67a" opacity="0"/>
+      <rect id="wg-mqtt-pkt2" x="395" y="133" width="24" height="14" rx="3" fill="#e67e22" opacity="0"/>
     </svg>
 
     <!-- 控制 -->
@@ -74,6 +75,7 @@
   const root = document.getElementById('wg-mqtt');
   if (!root || root.dataset.bound) return; root.dataset.bound = '1';
   const pkt = document.getElementById('wg-mqtt-pkt');
+  const pkt2 = document.getElementById('wg-mqtt-pkt2');
   const log = document.getElementById('wg-mqtt-log');
   const led = document.getElementById('wg-mqtt-led');
   const btns = {
@@ -86,34 +88,43 @@
 
   function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
   function write(t) { log.textContent = t; }
-  async function fly(from, to, color, dur) {
-    pkt.setAttribute('fill', color);
-    pkt.setAttribute('opacity', '1');
-    const step = to > from ? 6 : -6;
-    for (let x = from; x !== to; x += step) {
-      pkt.setAttribute('cx', x);
-      await sleep(dur / Math.abs((to - from) / step));
+  async function fly(el, p1, p2, color, dur) {
+    el.setAttribute('fill', color);
+    el.setAttribute('opacity', '1');
+    const steps = 20;
+    for (let i = 0; i <= steps; i++) {
+      const k = i / steps;
+      el.setAttribute('x', (p1[0] + (p2[0] - p1[0]) * k - 12).toFixed(1));
+      el.setAttribute('y', (p1[1] + (p2[1] - p1[1]) * k - 7).toFixed(1));
+      await sleep(dur / steps);
     }
-    pkt.setAttribute('opacity', '0');
+    el.setAttribute('opacity', '0');
   }
   async function run(fn) {
     if (busy) return;
     busy = true;
     Object.values(btns).forEach(b => b.disabled = true);
-    await fn();
-    Object.values(btns).forEach(b => b.disabled = false);
-    busy = false;
+    try { await fn(); } finally {
+      Object.values(btns).forEach(b => b.disabled = false);
+      busy = false;
+    }
   }
 
-  const PUB = 170, BROKER_IN = 238, BROKER_OUT = 402, PHONE = 470;
+  const ESP = [170, 115];
+  const BRK_L = [245, 115];
+  const BRK_TOP = [395, 90], PHONE = [470, 63];
+  const BRK_BOT = [395, 140], DASH = [470, 173];
 
   btns.pub.onclick = () => run(async () => {
     const t = (20 + Math.random() * 12).toFixed(1);
     write(`ESP32 → broker：PUBLISH esp32/demo/temp = "${t}" (QoS0，不等回执)`);
-    await fly(PUB, BROKER_IN, '#3fa67a', 500);
-    write(`broker 收到：查订阅表——esp32/demo/# 被 2 个客户端订阅，逐个转发`);
-    await fly(BROKER_OUT, PHONE, '#8e44ad', 500);
-    write(`✅ 手机 App 收到 ${t}（它根本不知道是谁发的，只认主题）\n   QoS0：丢了也无所谓——5 秒后又有新数据。`);
+    await fly(pkt, ESP, BRK_L, '#3fa67a', 420);
+    write(`broker 收到：查订阅表——手机 App(#) 与 云仪表盘(temp) 均命中，同时转发！`);
+    await Promise.all([
+      fly(pkt, BRK_TOP, PHONE, '#8e44ad', 440),
+      fly(pkt2, BRK_BOT, DASH, '#e67e22', 440)
+    ]);
+    write(`✅ 手机 App 与云仪表盘同时收到 ${t} °C（它们根本不知道发布者是谁，只认主题）\n   QoS0：丢了也无所谓——5 秒后又有新数据。`);
   });
 
   btns.on.onclick = () => run(async () => { await setLight('ON'); });
@@ -121,21 +132,21 @@
 
   async function setLight(cmd) {
     write(`手机 → broker：PUBLISH esp32/demo/light/set = "${cmd}" (QoS1)`);
-    await fly(PHONE, BROKER_IN, '#8e44ad', 500);
+    await fly(pkt, PHONE, BRK_TOP, '#8e44ad', 420);
     write(`broker 转发 → ESP32 订阅了 light/set，回调 onMqttMessage() 被触发`);
-    await fly(BROKER_OUT, PUB, '#3fa67a', 500);
+    await fly(pkt, BRK_L, ESP, '#3fa67a', 420);
     ledOn = (cmd === 'ON');
     led.setAttribute('fill', ledOn ? '#ffd24d' : '#5a5140');
     led.setAttribute('stroke', ledOn ? '#e6a700' : '#6b6250');
     lastState = cmd;
     write(`ESP32 执行：digitalWrite(LED, ${ledOn ? 'HIGH' : 'LOW'})\n然后回发：PUBLISH .../light/state = "${cmd}" (Retain=true) → broker 记住了！`);
-    await fly(PUB, BROKER_IN, '#e67e22', 400);
+    await fly(pkt, ESP, BRK_L, '#e67e22', 380);
   }
 
   btns.ret.onclick = () => run(async () => {
     write(`新客户端连接 broker，SUBSCRIBE esp32/demo/light/state ...`);
-    await fly(BROKER_OUT, PHONE, '#e67e22', 450);
-    write(`✅ Retain 生效：broker 立刻推送最后一条 "${lastState}" —— 不用等板子下次发布。\n   （第 11 课"重启丢状态"问题在此解决）`);
+    await fly(pkt, BRK_TOP, PHONE, '#e67e22', 420);
+    write(`✅ Retain 生效：broker 立刻推送最后一条保留消息 "${lastState}" —— 不用等板子下次发布。\n   （客户端重连/新打开 App 丢状态的问题在此解决）`);
   });
 })();
 </script>

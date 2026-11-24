@@ -122,8 +122,9 @@ Content-Type: text/html
 // 第 11 课：Wi-Fi + WebServer 手机浏览器控灯
 // ============================================
 #include <WiFi.h>
+#include <WebServer.h>
 
-const char* SSID = "你的WiFi名";        // ← 改成你家的
+const char* SSID = "你的WiFi名";        // ← 改成你家的（必须 2.4GHz）
 const char* PASS = "你的WiFi密码";      // ← 改成你家的
 
 const int LED_PIN = 4;
@@ -131,11 +132,10 @@ const int BTN_PIN = 23;
 
 WebServer server(80);        // 80 = HTTP 默认端口
 bool ledOn = false;
-unsigned long lastStatus = 0;
 unsigned long lastRetry = 0;
-unsigned long lastBtnStable = 0;   // 防抖状态机（第 10 课模板）
 int lastRaw = HIGH, stableState = HIGH;
 unsigned long lastChange = 0;
+const unsigned long DEBOUNCE_MS = 25;
 
 // —— 控制页（内嵌 HTML，"前后端一体"的最小形态）——
 String page() {
@@ -152,9 +152,9 @@ String page() {
   html += "<h1>ESP32 智能灯</h1>";
   html += "<button class='btn on' onclick=\"location.href='/led?state=on'\">开灯</button>";
   html += "<button class='btn off' onclick=\"location.href='/led?state=off'\">关灯</button>";
-  html += "<div class='st'>当前状态：";
+  html += "<div class='st'>当前状态：<span id='s'>";
   html += ledOn ? "🟢 亮着" : "⚫ 灭了";
-  html += "</div></body></html>";
+  html += "</span></div></body></html>";
   return html;
 }
 
@@ -177,9 +177,30 @@ void handleStatus() {            // GET /status → 纯文本状态（供 JS 轮
   server.send(200, "text/plain", ledOn ? "ON" : "OFF");
 }
 
-void maintainWiFi() { /* 上节的重连函数，原样放这里 */ }
+void maintainWiFi() {
+  if (WiFi.status() == WL_CONNECTED) return;
+  if (millis() - lastRetry < 10000) return;  // 每 10 秒重试一次，非阻塞
+  lastRetry = millis();
+  Serial.println("Wi-Fi 断了，重连中...");
+  WiFi.disconnect();
+  WiFi.begin(SSID, PASS);
+}
 
-void pollButton() { /* 第 10 课防抖状态机，原样放这里（触发后翻转 ledOn） */ }
+void pollButton() {
+  int raw = digitalRead(BTN_PIN);
+  if (raw != lastRaw) {
+    lastRaw = raw;
+    lastChange = millis();
+  }
+  if (millis() - lastChange >= DEBOUNCE_MS && raw != stableState) {
+    stableState = raw;
+    if (stableState == LOW) {
+      ledOn = !ledOn;
+      digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+      Serial.println(ledOn ? "BTN -> ON" : "BTN -> OFF");
+    }
+  }
+}
 
 void setup() {
   pinMode(LED_PIN, OUTPUT);
@@ -208,7 +229,7 @@ void loop() {
   server.handleClient();   // ① 有没有 HTTP 请求进门？（非阻塞，没有立刻返回）
   maintainWiFi();          // ② 断线保活
   pollButton();            // ③ 按钮防抖（第 10 课）
-  // ④ 自由：状态页每秒自刷新（页面里 meta refresh 实现）
+  // ④ 自由时间：可继续塞传感器采样、OLED 刷新等非阻塞任务
 }
 ```
 

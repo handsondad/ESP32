@@ -91,7 +91,7 @@ void app_main(void) {                    // ← IDF 的"入口"，不是 setup()
 | 1 | `setup()/loop()` 自动被调用 | **`app_main()`**，框架不接管你的循环 | **谁掌控流程**：Arduino 接管，IDF 交给你 |
 | 2 | `pinMode(4, OUTPUT)` 一句话 | `gpio_config_t` **结构体 + `gpio_config()`** | IDF 把所有选项摆在台面上——**没有隐式默认** |
 | 3 | 出错通常忽略/打印 | **`ESP_ERROR_CHECK()` 宏强制检查** | 工业级：**每个返回值都要负责** |
-| 4 | `delay(500)` 纯等待 | **`vTaskDelay(500)` 让出 CPU** | 关键差异，下节展开 |
+| 4 | `delay(500)` 纯等待 | **`vTaskDelay(pdMS_TO_TICKS(500))` 让出 CPU** | 关键差异，下节展开 |
 | 5 | 引脚号写 `4` | **`GPIO_NUM_4`** 枚举 | 类型安全，防止把 999 传进去 |
 
 **核心气质差异一句话**：**Arduino 帮你做决定（快），IDF 要求你做所有决定（准）**。写 Arduino 是"点菜"，写 IDF 是"进后厨"。
@@ -116,8 +116,10 @@ L14 FreeRTOS 任务      —— 每个任务一个独立栈，CPU 真·切换（
 ```c
 // 任务 A：闪灯（独立执行流）
 void task_led(void *arg) {
+    int level = 0;                        // 用变量维护电平（OUTPUT 模式下读引脚恒为 0）
     while (1) {
-        gpio_set_level(LED_GPIO, !gpio_get_level(LED_GPIO));
+        level = !level;
+        gpio_set_level(LED_GPIO, level);
         vTaskDelay(pdMS_TO_TICKS(500));
     }
 }
@@ -226,7 +228,7 @@ monitor_speed = 115200
 | `app_main` 没被调用 | 文件不是 `main.c` / 放错目录 | 确认 `src/main.c`；入口名必须是 `app_main` |
 | `undefined reference to gpio_config` | 没声明组件依赖 | `idf.py` 工程需在 `CMakeLists.txt`/`Kconfig` 声明 driver 组件；PIO 检查 `sdkconfig` |
 | `ESP_ERROR_CHECK` 停机打印断言 | **真的出错了**（配置非法） | 看它打印的错误码与文件行号——**这是特性不是 bug** |
-| `.ino 文件在 espidf 下编译失败** | 框架切换后语言/入口都不兼容 | IDF 用 `.c` + `app_main`；或切回 `arduino` 环境 |
+| `.ino` 文件在 espidf 下编译失败 | 框架切换后语言/入口都不兼容 | IDF 用 `.c` + `app_main`；或切回 `arduino` 环境 |
 | `vTaskDelay` 不生效/任务不跑 | 没进 FreeRTOS 调度（写在了启动早期） | 放在 `app_main` 里 `app_main` 本身是任务，可直接用 |
 | 任务栈溢出（Stack overflow） | `xTaskCreate` 栈给太小（默认常不够） | 从 4096 起步；printf/浮点运算要更多 |
 | 找不到 `sdkconfig`/分区表 | 工程不是完整 IDF 结构 | 用 `pio init` 生成 IDF 骨架，或参考模板 |

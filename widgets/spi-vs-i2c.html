@@ -4,10 +4,10 @@
   <div class="wgt-body">
     <!-- 任务选择 -->
     <div class="wg-race-tasks" id="wg-race-tasks">
-      <button data-bits="8192" class="active">小图标（8 KB）</button>
-      <button data-bits="81920">单色 OLED 整屏（80 KB）</button>
-      <button data-bits="327680">彩屏一帧（320 KB）</button>
-      <button data-bits="2621440">彩屏 8 帧动画（2.5 MB）</button>
+      <button data-bits="1024">小图标（128 B）</button>
+      <button data-bits="8192">单色 OLED 整屏（1 KB）</button>
+      <button data-bits="327680" class="active">彩屏一帧（40 KB）</button>
+      <button data-bits="2621440">彩屏 8 帧动画（320 KB）</button>
     </div>
 
     <!-- 赛道 -->
@@ -83,7 +83,7 @@
   const RATE_I2C = 400e3 / 1e6;   // MHz → 每毫秒 bit 数 = 400 bit/ms
   const RATE_SPI = 40e6 / 1e6;    // 40000 bit/ms
 
-  let bits = 8192;
+  let bits = 327680;
   let running = false;
 
   function fmtTime(bitCount, ratePerMs) {
@@ -133,8 +133,9 @@
       }
       if (pI >= 1 && flagI2C.textContent === '—') {
         flagI2C.textContent = '到达';
-        const ratio = (tI2C / tSPI).toFixed(0);
-        status.textContent = `🏁 完成：同一任务 SPI 快约 ${ratio} 倍——彩屏只能属于 SPI！`;
+        const realI2C = fmtTime(bits, RATE_I2C);
+        const realSPI = fmtTime(bits, RATE_SPI);
+        status.textContent = `🏁 完成：理论耗时 SPI ${realSPI} vs I2C ${realI2C}（快整整 100 倍）——彩屏只能属于 SPI！`;
         btn.disabled = false;
         running = false;
         return;

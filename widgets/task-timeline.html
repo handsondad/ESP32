@@ -112,7 +112,8 @@
       else if (i % 13 === 0) lanes.hb.appendChild(cell('hb', '发送 ST'));
       else lanes.hb.appendChild(cell('idle'));
       // loop 行
-      lanes.idle.appendChild(cell('ok'));
+      if (stall) lanes.idle.appendChild(cell('stall', 'loop 被 delay 卡死，无法空转轮询'));
+      else lanes.idle.appendChild(cell('ok', 'loop 高速轮询中'));
     }
 
     if (isDelay) {

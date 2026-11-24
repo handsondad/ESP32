@@ -54,14 +54,7 @@
     // 固定画 3 个周期，缩放显示
     const x0 = 30, x1 = 600, yH = 30, yL = 90;
     const cycles = 3, seg = (x1 - x0) / (cycles * 2);
-    let d = `M ${x0} ${yH}`;
-    for (let i = 0; i < cycles * 2; i++) {
-      const x = x0 + seg * (i + 1);
-      d += ` L ${x} ${i % 2 === 0 ? yH : yL}`.replace(`L ${x} ${yH}`, i % 2 === 1 ? `L ${x} ${yL}` : `L ${x} ${yH}`);
-      // 手动构造：先保持，再跳变
-    }
-    // 更清晰的构造
-    d = `M ${x0} ${yL} L ${x0} ${yH}`;
+    let d = `M ${x0} ${yL} L ${x0} ${yH}`;
     for (let i = 0; i < cycles; i++) {
       const xa = x0 + (seg * 2) * i;          // 高电平开始
       const xb = xa + seg;                     // 高电平结束
