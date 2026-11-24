@@ -1,0 +1,157 @@
+<!-- 组件：delay vs millis 呼吸灯对比 · 用于第 3 课扔掉 delay 节 -->
+<div class="wgt wgt-breath" id="wg-breath">
+  <div class="wgt-head"><span>⏱️ 交互演示：delay 抽搐 vs millis 丝滑</span><span class="wgt-badge">点按钮切换两种实现</span></div>
+  <div class="wgt-body">
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+      <button id="wg-b-millis" class="active">✅ millis 非阻塞版（本课代码）</button>
+      <button id="wg-b-delay">❌ delay 阻塞版（反面教材）</button>
+    </div>
+    <!-- 两个 LED + 状态 -->
+    <div style="display:flex;gap:24px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:10px">
+      <div style="text-align:center">
+        <div id="wg-b-led" class="wg-b-led"></div>
+        <div style="font-size:.8em;color:#6b6b6b;margin-top:6px" id="wg-b-mode">millis 版：亮度 0 → 255 平滑往返</div>
+      </div>
+      <div style="flex:1;min-width:250px;max-width:420px">
+        <!-- 亮度曲线图 -->
+        <svg viewBox="0 0 420 120" style="width:100%;height:auto;display:block">
+          <line x1="25" y1="15" x2="410" y2="15" stroke="#e5e2dc"/>
+          <line x1="25" y1="100" x2="410" y2="100" stroke="#e5e2dc"/>
+          <text x="20" y="19" text-anchor="end" fill="#6b6b6b" font-size="10">255</text>
+          <text x="20" y="104" text-anchor="end" fill="#6b6b6b" font-size="10">0</text>
+          <polyline id="wg-b-curve" fill="none" stroke="#0b6e4f" stroke-width="3" points=""/>
+          <!-- 自由时间带 -->
+          <rect id="wg-b-free" x="25" y="103" width="385" height="12" fill="#3fa67a" opacity="0.35"/>
+          <text id="wg-b-freetag" x="217" y="113" text-anchor="middle" fill="#0b6e4f" font-size="9.5" font-weight="bold">loop 自由运转区</text>
+        </svg>
+      </div>
+    </div>
+    <!-- 任务占用条 -->
+    <div style="font-size:.85em;color:#333;margin-top:4px">
+      <b>这 3 秒里，芯片在干什么？</b>
+      <div id="wg-b-bar" style="display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--border);margin-top:6px">
+        <!-- 由 JS 填充分段 -->
+      </div>
+      <div id="wg-b-barlabel" style="font-size:.82em;color:#6b6b6b;margin-top:5px"></div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">切到 delay 版：任务条会被"罚站"塞满，按钮/串口全部失联；millis 版里绿色自由区永远畅通——<b>第 10 课蓝牙断线的案发现场，就是这张图</b>。</p>
+  </div>
+</div>
+<style>
+.wg-b-led { width: 74px; height: 74px; border-radius: 50%; background: #e8e4dc; border: 4px solid #c8c2b6; transition: none; margin: 0 auto; }
+.wgt-breath .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-breath');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const led = document.getElementById('wg-b-led');
+  const curve = document.getElementById('wg-b-curve');
+  const bar = document.getElementById('wg-b-bar');
+  const barLabel = document.getElementById('wg-b-barlabel');
+  const modeEl = document.getElementById('wg-b-mode');
+  const bMillis = document.getElementById('wg-b-millis');
+  const bDelay = document.getElementById('wg-b-delay');
+  const freeTag = document.getElementById('wg-b-freetag');
+
+  let mode = 'millis';
+  let t = 0;               // 动画相位 0..1
+  let raf = null;
+  let lastFrame = 0;
+
+  // 任务条：millis 版 = 空闲为主；delay 版 = 罚站塞满
+  function renderBar() {
+    bar.innerHTML = '';
+    if (mode === 'millis') {
+      // 95% 自由 + 5% 工作
+      const segs = [
+        { w: 4, c: '#e67e22', label: '计算+输出' },
+        { w: 96, c: '#3fa67a', label: '自由' }
+      ];
+      segs.forEach(s => {
+        const d = document.createElement('div');
+        d.style.cssText = `width:${s.w}%;background:${s.c};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:bold`;
+        d.textContent = s.w > 10 ? s.label : '';
+        bar.appendChild(d);
+      });
+      barLabel.innerHTML = '🟧 极短计算 → 🟩 <b>96% 时间自由</b>：读按钮、发串口、跑蓝牙都来得及';
+      freeTag.setAttribute('opacity', '1');
+    } else {
+      const segs = [];
+      for (let i = 0; i < 6; i++) {
+        segs.push({ w: 14, c: '#c0392b', label: '' });
+        segs.push({ w: 3, c: '#e67e22', label: '' });
+      }
+      segs.forEach(s => {
+        const d = document.createElement('div');
+        d.style.cssText = `width:${s.w}%;background:${s.c}`;
+        bar.appendChild(d);
+      });
+      barLabel.innerHTML = '🟥 <b>delay 罚站占 84%</b>：每次 10ms 冻结，循环里按钮/串口/蓝牙全部无人应答';
+      freeTag.setAttribute('opacity', '0');
+    }
+  }
+
+  function ledStyle(b) {
+    const g = Math.pow(b / 255, 0.45);
+    if (b < 3) {
+      led.style.background = '#e8e4dc'; led.style.boxShadow = 'none'; led.style.borderColor = '#c8c2b6';
+    } else {
+      led.style.background = 'radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)';
+      led.style.boxShadow = `0 0 ${5 + 34 * g}px rgba(255,210,77,${0.2 + 0.7 * g})`;
+      led.style.borderColor = '#e6a700';
+    }
+  }
+
+  // 生成曲线点：三角波往返
+  function curvePoints(jitter) {
+    const pts = [];
+    const N = 80;
+    for (let i = 0; i <= N; i++) {
+      const x = 25 + (385 * i / N);
+      // 一个完整往返
+      const ph = i / N;
+      let b = ph < 0.5 ? ph * 2 : (1 - ph) * 2;
+      // delay 版：量化成粗糙台阶 + 抖动
+      if (jitter) {
+        b = Math.round(b * 12) / 12;               // 只有 13 个台阶
+        b += (Math.sin(i * 7.3) * 0.045);          // 节奏不匀的抖动
+        b = Math.max(0, Math.min(1, b));
+      }
+      const y = 100 - 85 * b;
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    return pts.join(' ');
+  }
+
+  function setMode(m) {
+    mode = m;
+    bMillis.classList.toggle('active', m === 'millis');
+    bDelay.classList.toggle('active', m === 'delay');
+    modeEl.textContent = m === 'millis'
+      ? 'millis 版：亮度 0 → 255 平滑往返'
+      : 'delay 版：13 级粗糙台阶 + 节奏抖动（抽搐爬楼梯）';
+    curve.setAttribute('points', curvePoints(m === 'delay'));
+    curve.setAttribute('stroke', m === 'millis' ? '#0b6e4f' : '#c0392b');
+    renderBar();
+  }
+
+  function animate(now) {
+    if (!lastFrame) lastFrame = now;
+    const dt = now - lastFrame;
+    lastFrame = now;
+    t += dt / 2500;                       // 2.5s 一个往返
+    if (t > 1) t -= 1;
+    let b = t < 0.5 ? t * 2 : (1 - t) * 2;
+    if (mode === 'delay') b = Math.round(b * 12) / 12;   // delay 版卡台阶
+    ledStyle(b * 255);
+    raf = requestAnimationFrame(animate);
+  }
+
+  bMillis.onclick = () => setMode('millis');
+  bDelay.onclick = () => setMode('delay');
+
+  setMode('millis');
+  raf = requestAnimationFrame(animate);
+})();
+</script>

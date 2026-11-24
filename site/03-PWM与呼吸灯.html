@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 3 课：PWM 与呼吸灯——扔掉 delay 的第一次</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 3 课：PWM 与呼吸灯——扔掉 delay 的第一次</h1>
+<blockquote>
+<p><strong>阶段一 · 破冰与建立信心</strong> ｜ 难度：★★★☆☆ ｜ 预计用时：45–60 分钟</p>
+<p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、LED ×1、220Ω 电阻 ×1、杜邦线若干（沿用第 2 课的接线）
+<strong>无硬件替代</strong>：Wokwi 模拟器方案见文末，代码与实物完全相同</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson03-hero.svg" alt="第 3 课效果预告：LED 呼吸灯平滑渐明渐暗"></p>
+<blockquote>
+<p>你将做出：<strong>面包板上的 LED 像睡着的人一样呼吸——亮度从全灭平滑升到全亮，再平滑降回，循环往复，没有一丝卡顿。</strong></p>
+</blockquote>
+<p>上一课的灯只有&quot;全亮 / 全灭&quot;两档，像开关；这一课它有了&quot;半亮&quot;，像调光旋钮。而实现它的方式，会彻底改变你写程序的方式。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 理解 PWM——芯片如何用&quot;快速开关&quot;骗过眼睛，得到连续亮度</li>
+<li>✅ 掌握 <code>analogWrite()</code> 与占空比（Duty Cycle），亲手画出呼吸曲线</li>
+<li>✅ <strong>扔掉 <code>delay()</code></strong>：用&quot;记录时间&quot;代替&quot;原地罚站&quot;，程序在等待时也能干活</li>
+<li>✅ 亲眼对比：<code>delay</code> 版呼吸灯的抽搐 vs 非阻塞版的丝滑</li>
+<li>✅ 回收第 1 课伏笔&quot;为什么不能输出 1.5V&quot;——答案就在本课</li>
+</ol>
+<hr>
+<h2>🔁 开课先回收：为什么不能直接输出 1.5V？</h2>
+<p>第 1 课拆解 <code>digitalWrite</code> 时留了个问题：<strong>数字信号只有 0 和 1 两档，为什么不能输出 1.5V 让灯半亮？</strong></p>
+<p>现在你能得到完整答案：</p>
+<ol>
+<li><strong><code>digitalWrite</code> 的硬件本质是个开关</strong>——它只能接通 3.3V 或接通 0V，没有&quot;接通一半&quot;的物理状态。就像水龙头只能全开或全关，没法停在&quot;半开的某个精确位置&quot;。</li>
+<li>那怎么得到&quot;中间值&quot;？<strong>换个思路：不调电压，调时间。</strong></li>
+</ol>
+<h3>PWM：用速度换连续</h3>
+<p><strong>PWM（Pulse Width Modulation，脉冲宽度调制）</strong> 的想法极其巧妙：</p>
+<blockquote>
+<p>与其输出一个&quot;半吊子电压&quot;，不如<strong>全速开关很多次</strong>——高电平占的时间多，平均下来就&quot;显得&quot;电压高。</p>
+</blockquote>
+<pre><code>占空比 25%： ██░░░░░░  亮 1/4 时间 → 平均亮度 ≈ 25%
+占空比 50%： ████░░░░  亮一半时间 → 平均亮度 ≈ 50%
+占空比 75%： ██████░░  亮 3/4 时间 → 平均亮度 ≈ 75%
+占空比100%： ████████  常亮        → 亮度 100%
+
+（█ = 高电平 3.3V，░ = 低电平 0V）
+</code></pre>
+<p><strong>关键在&quot;快&quot;</strong>：ESP32 的 PWM 频率默认约 5kHz（每秒开关 5000 次），人眼完全分辨不出闪烁，只看到<strong>平均亮度</strong>。LED 还来不及暗下去，下一个脉冲又来了——于是它&quot;以为&quot;自己一直亮着，只是没那么亮。</p>
+<blockquote>
+<p>💡 <strong>回到第 1 课的问题</strong>：所以&quot;输出 1.5V&quot;的正确姿势不是找一个 1.5V 档位，而是 <strong>50% 占空比的 PWM</strong>。你每次拧台灯调光、手机滑动亮度条，背后全是这套把戏。</p>
+</blockquote>
+<p><!-- 组件：PWM 占空比交互 · 用于第 3 课 0.1 节 -->
+<div class="wgt wgt-pwm" id="wg-pwm">
+  <div class="wgt-head"><span>⚡ 交互演示：占空比如何"骗"出中间亮度</span><span class="wgt-badge">拖动滑杆改变占空比</span></div>
+  <div class="wgt-body">
+    <div class="wg-pwm-grid">
+      <div class="wg-pwm-left">
+        <label style="font-size:.95em;color:#333">占空比 Duty Cycle = <b id="wg-pwm-val">50</b>%
+          <input type="range" id="wg-pwm-slider" min="0" max="100" step="1" value="50">
+        </label>
+        <!-- 方波图 -->
+        <svg viewBox="0 0 420 130" style="width:100%;height:auto;display:block" id="wg-pwm-svg">
+          <line x1="20" y1="30" x2="410" y2="30" stroke="#e5e2dc"/>
+          <line x1="20" y1="100" x2="410" y2="100" stroke="#e5e2dc"/>
+          <text x="15" y="34" text-anchor="end" fill="#6b6b6b" font-size="11">3.3V</text>
+          <text x="15" y="104" text-anchor="end" fill="#6b6b6b" font-size="11">0V</text>
+          <path id="wg-pwm-wave" fill="none" stroke="#0b6e4f" stroke-width="3"/>
+          <!-- 平均线 -->
+          <line id="wg-pwm-avg" x1="20" y1="65" x2="410" y2="65" stroke="#c0392b" stroke-width="2" stroke-dasharray="7 5"/>
+          <text id="wg-pwm-avglabel" x="404" y="60" text-anchor="end" fill="#c0392b" font-size="11" font-weight="bold">平均电压 = 1.65V</text>
+          <text x="215" y="124" text-anchor="middle" fill="#9aa0a6" font-size="11">一个 PWM 周期（5kHz，0.2ms）→ 重复无数次</text>
+        </svg>
+      </div>
+      <div class="wg-pwm-right">
+        <div id="wg-pwm-led" class="wg-pwm-led"></div>
+        <div class="wg-pwm-readout">
+          analogWrite(<b id="wg-pwm-analog">128</b>)<br>
+          平均电压 <b id="wg-pwm-volt">1.65</b>V
+        </div>
+      </div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">红色虚线是<b>平均电压</b>——LED 真正"感受到"的值。占空比 50% 时方波上下对称，平均恰好 1.65V：这就是"输出 1.5V 半亮"的正确实现方式。试试 0% 和 100%，对照第 1 课的 <code>digitalWrite(LOW/HIGH)</code>。</p>
+  </div>
+</div>
+<style>
+.wg-pwm-grid { display: grid; grid-template-columns: 1fr 150px; gap: 18px; align-items: center; }
+#wg-pwm-slider { width: 100%; margin-top: 8px; accent-color: #0b6e4f; }
+.wg-pwm-left b { color: #0b6e4f; }
+.wg-pwm-right { text-align: center; }
+.wg-pwm-led { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto; background: #e8e4dc; border: 4px solid #c8c2b6; transition: all .12s; }
+.wg-pwm-readout { font-size: .85em; color: #6b6b6b; margin-top: 10px; line-height: 1.7; }
+.wg-pwm-readout b { color: #c0392b; }
+.wgt-pwm .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 560px) { .wg-pwm-grid { grid-template-columns: 1fr; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-pwm');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const slider = document.getElementById('wg-pwm-slider');
+  const val = document.getElementById('wg-pwm-val');
+  const wave = document.getElementById('wg-pwm-wave');
+  const avg = document.getElementById('wg-pwm-avg');
+  const avgLabel = document.getElementById('wg-pwm-avglabel');
+  const led = document.getElementById('wg-pwm-led');
+  const analog = document.getElementById('wg-pwm-analog');
+  const volt = document.getElementById('wg-pwm-volt');
+
+  const X0 = 20, X1 = 410, YH = 30, YL = 100;
+  const CYCLES = 4;   // 画 4 个周期更直观
+
+  function draw(duty) { // duty: 0-100
+    const seg = (X1 - X0) / CYCLES;
+    let d = `M ${X0} ${YL}`;
+    for (let i = 0; i < CYCLES; i++) {
+      const xs = X0 + seg * i;              // 周期起点
+      const xh = xs + seg * duty / 100;     // 高电平结束
+      const xe = xs + seg;                  // 周期结束
+      if (duty > 0) d += ` L ${xs} ${YH} L ${xh} ${YH}`;
+      if (duty < 100) d += ` L ${xh} ${YL} L ${xe} ${YL}`;
+      else d += ` L ${xe} ${YH}`;
+    }
+    wave.setAttribute('d', d);
+    // 平均线：y 从 YL(0V) 到 YH(3.3V)
+    const avgY = YL - (YL - YH) * duty / 100;
+    avg.setAttribute('y1', avgY); avg.setAttribute('y2', avgY);
+    avgLabel.setAttribute('y', Math.max(avgY - 5, 14));
+    const v = (3.3 * duty / 100);
+    avgLabel.textContent = `平均电压 = ${v.toFixed(2)}V`;
+    // 读数
+    val.textContent = duty;
+    analog.textContent = Math.round(255 * duty / 100);
+    volt.textContent = v.toFixed(2);
+    // LED：亮度非线性（gamma 2.2 更接近人眼）
+    const b = Math.pow(duty / 100, 0.45);
+    if (duty === 0) {
+      led.style.background = '#e8e4dc'; led.style.boxShadow = 'none'; led.style.borderColor = '#c8c2b6';
+    } else {
+      led.style.background = 'radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)';
+      led.style.boxShadow = `0 0 ${6 + 36 * b}px rgba(255,210,77,${0.25 + 0.65 * b})`;
+      led.style.borderColor = '#e6a700';
+    }
+  }
+
+  slider.oninput = () => draw(parseInt(slider.value, 10));
+  draw(50);
+})();
+</script>
+</p>
+<hr>
+<h2>📡 新知识：<code>analogWrite()</code>——名字骗人，写的是&quot;占空比&quot;</h2>
+<p>Arduino 的 API 名字起得有历史包袱：<code>analogWrite</code> 听起来像&quot;输出模拟电压&quot;，实际是<strong>设置 PWM 占空比</strong>：</p>
+<pre><code class="language-cpp">analogWrite(LED_PIN, 0);      // 占空比 0%   → 全灭
+analogWrite(LED_PIN, 64);     // 占空比 25%  → 微亮（64/255）
+analogWrite(LED_PIN, 128);    // 占空比 50%  → 半亮（约 128/255）
+analogWrite(LED_PIN, 255);    // 占空比 100% → 全亮
+</code></pre>
+<p><strong>取值范围 0–255</strong>（8 位），255 是全亮。记住这个映射：</p>
+<pre><code>analogWrite 的值        占空比         直观感受
+    0      ────────────  0%          全灭
+    64     ────────────  25%         隐约可见
+    128    ────────────  50%         半亮
+    255    ────────────  100%        最亮
+</code></pre>
+<p>第 2 课的 <code>digitalWrite(HIGH/LOW)</code> 其实就是 <code>analogWrite(255)</code> 和 <code>analogWrite(0)</code> 的特例——<strong>数字输出是 PWM 的两个极端</strong>。</p>
+<hr>
+<h2>🎭 本课的重头戏：把 delay 扔掉</h2>
+<h3>先看 delay 版呼吸灯为什么不行</h3>
+<p>最直觉的写法（也是新手必经之路）：</p>
+<pre><code class="language-cpp">// ❌ delay 版：每一档亮度之间罚站 10ms
+for (int b = 0; b &lt;= 255; b++) {
+  analogWrite(LED_PIN, b);
+  delay(10);        // 等 10ms 再升一档
+}
+</code></pre>
+<p>它能亮，但有两个致命伤：</p>
+<ol>
+<li><strong>呼吸变成抽搐</strong>：<code>delay(10)</code> 期间程序完全冻结，时间精度受中断干扰，每档实际耗时忽长忽短——亮度台阶不均匀，眼睛看到的是&quot;卡顿的爬楼梯&quot;而不是&quot;丝滑的斜坡&quot;。</li>
+<li><strong>罚站期间全世界停摆</strong>：这 255 × 10ms ≈ 2.5 秒里，串口不响应、按钮读不了、任何事都干不了。第 1 课你已经知道 delay 是原地罚站——<strong>呼吸灯只是让它第一次&quot;疼&quot;到你</strong>。</li>
+</ol>
+<h3>换个思路：不&quot;等时间&quot;，&quot;记时间&quot;</h3>
+<p>非阻塞的秘诀只有一句话：</p>
+<blockquote>
+<p><strong>不去&quot;等 10ms&quot;，而是&quot;记住上次变化是什么时候，现在看看够不够 10ms&quot;。</strong></p>
+</blockquote>
+<pre><code class="language-cpp">// ✅ millis() 版：程序永远在跑，只在&quot;该变的时候&quot;才变
+unsigned long lastChange = 0;      // 上次改变亮度的时刻
+int brightness = 0;                // 当前亮度
+int step = 5;                      // 每次变化量
+
+void loop() {
+  unsigned long now = millis();    // 读当前开机毫秒数
+
+  if (now - lastChange &gt;= 10) {    // 距上次变化已过 10ms？
+    lastChange = now;              // 记下这次的时刻
+    brightness += step;            // 亮度进一档
+    if (brightness &gt;= 255 || brightness &lt;= 0) step = -step;  // 到头反向
+    analogWrite(LED_PIN, brightness);
+  }
+
+  // —— 等待期间，这里可以随便干别的：读按钮、发串口、喂看门狗 ——
+}
+</code></pre>
+<p>逐行拆解这三个新朋友：</p>
+<p><strong><code>unsigned long now = millis();</code></strong>
+<code>millis()</code> 返回<strong>程序上电以来经过的毫秒数</strong>，只增不减的时钟。它不阻塞——读它的瞬间就返回，程序继续跑。</p>
+<p><strong><code>now - lastChange &gt;= 10</code></strong>
+时间差够不够 10ms？够了才执行变化。<strong>这是&quot;检查&quot;，不是&quot;等待&quot;</strong>——没到 10ms 时 <code>if</code> 不成立，<code>loop</code> 立刻转下一圈，什么都不耽误。</p>
+<p><strong><code>step = -step</code>（到头反向）</strong>
+亮度升到 255 就把步长变负开始下降，降到 0 再变正——一个变量实现来回往返，呼吸就此循环。</p>
+<blockquote>
+<p>🔑 <strong>心智模型切换</strong>：</p>
+<ul>
+<li><code>delay</code> 思维 = &quot;<strong>我要等 10ms</strong>&quot; → 程序停下来</li>
+<li><code>millis</code> 思维 = &quot;<strong>到点了吗？没到我先干别的</strong>&quot; → 程序一直活着</li>
+</ul>
+<p>这是嵌入式编程最重要的一次思维升级。<strong>从今天起，所有&quot;定时&quot;都用 millis 记时间，delay 只许出现在&quot;我真的什么都不能做&quot;的场合（比如烧录后短暂稳定）。</strong></p>
+</blockquote>
+<p><!-- 组件：delay vs millis 呼吸灯对比 · 用于第 3 课扔掉 delay 节 -->
+<div class="wgt wgt-breath" id="wg-breath">
+  <div class="wgt-head"><span>⏱️ 交互演示：delay 抽搐 vs millis 丝滑</span><span class="wgt-badge">点按钮切换两种实现</span></div>
+  <div class="wgt-body">
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap">
+      <button id="wg-b-millis" class="active">✅ millis 非阻塞版（本课代码）</button>
+      <button id="wg-b-delay">❌ delay 阻塞版（反面教材）</button>
+    </div>
+    <!-- 两个 LED + 状态 -->
+    <div style="display:flex;gap:24px;align-items:center;justify-content:center;flex-wrap:wrap;margin-bottom:10px">
+      <div style="text-align:center">
+        <div id="wg-b-led" class="wg-b-led"></div>
+        <div style="font-size:.8em;color:#6b6b6b;margin-top:6px" id="wg-b-mode">millis 版：亮度 0 → 255 平滑往返</div>
+      </div>
+      <div style="flex:1;min-width:250px;max-width:420px">
+        <!-- 亮度曲线图 -->
+        <svg viewBox="0 0 420 120" style="width:100%;height:auto;display:block">
+          <line x1="25" y1="15" x2="410" y2="15" stroke="#e5e2dc"/>
+          <line x1="25" y1="100" x2="410" y2="100" stroke="#e5e2dc"/>
+          <text x="20" y="19" text-anchor="end" fill="#6b6b6b" font-size="10">255</text>
+          <text x="20" y="104" text-anchor="end" fill="#6b6b6b" font-size="10">0</text>
+          <polyline id="wg-b-curve" fill="none" stroke="#0b6e4f" stroke-width="3" points=""/>
+          <!-- 自由时间带 -->
+          <rect id="wg-b-free" x="25" y="103" width="385" height="12" fill="#3fa67a" opacity="0.35"/>
+          <text id="wg-b-freetag" x="217" y="113" text-anchor="middle" fill="#0b6e4f" font-size="9.5" font-weight="bold">loop 自由运转区</text>
+        </svg>
+      </div>
+    </div>
+    <!-- 任务占用条 -->
+    <div style="font-size:.85em;color:#333;margin-top:4px">
+      <b>这 3 秒里，芯片在干什么？</b>
+      <div id="wg-b-bar" style="display:flex;height:22px;border-radius:6px;overflow:hidden;border:1px solid var(--border);margin-top:6px">
+        <!-- 由 JS 填充分段 -->
+      </div>
+      <div id="wg-b-barlabel" style="font-size:.82em;color:#6b6b6b;margin-top:5px"></div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">切到 delay 版：任务条会被"罚站"塞满，按钮/串口全部失联；millis 版里绿色自由区永远畅通——<b>第 10 课蓝牙断线的案发现场，就是这张图</b>。</p>
+  </div>
+</div>
+<style>
+.wg-b-led { width: 74px; height: 74px; border-radius: 50%; background: #e8e4dc; border: 4px solid #c8c2b6; transition: none; margin: 0 auto; }
+.wgt-breath .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-breath');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const led = document.getElementById('wg-b-led');
+  const curve = document.getElementById('wg-b-curve');
+  const bar = document.getElementById('wg-b-bar');
+  const barLabel = document.getElementById('wg-b-barlabel');
+  const modeEl = document.getElementById('wg-b-mode');
+  const bMillis = document.getElementById('wg-b-millis');
+  const bDelay = document.getElementById('wg-b-delay');
+  const freeTag = document.getElementById('wg-b-freetag');
+
+  let mode = 'millis';
+  let t = 0;               // 动画相位 0..1
+  let raf = null;
+  let lastFrame = 0;
+
+  // 任务条：millis 版 = 空闲为主；delay 版 = 罚站塞满
+  function renderBar() {
+    bar.innerHTML = '';
+    if (mode === 'millis') {
+      // 95% 自由 + 5% 工作
+      const segs = [
+        { w: 4, c: '#e67e22', label: '计算+输出' },
+        { w: 96, c: '#3fa67a', label: '自由' }
+      ];
+      segs.forEach(s => {
+        const d = document.createElement('div');
+        d.style.cssText = `width:${s.w}%;background:${s.c};display:flex;align-items:center;justify-content:center;color:#fff;font-size:10px;font-weight:bold`;
+        d.textContent = s.w > 10 ? s.label : '';
+        bar.appendChild(d);
+      });
+      barLabel.innerHTML = '🟧 极短计算 → 🟩 <b>96% 时间自由</b>：读按钮、发串口、跑蓝牙都来得及';
+      freeTag.setAttribute('opacity', '1');
+    } else {
+      const segs = [];
+      for (let i = 0; i < 6; i++) {
+        segs.push({ w: 14, c: '#c0392b', label: '' });
+        segs.push({ w: 3, c: '#e67e22', label: '' });
+      }
+      segs.forEach(s => {
+        const d = document.createElement('div');
+        d.style.cssText = `width:${s.w}%;background:${s.c}`;
+        bar.appendChild(d);
+      });
+      barLabel.innerHTML = '🟥 <b>delay 罚站占 84%</b>：每次 10ms 冻结，循环里按钮/串口/蓝牙全部无人应答';
+      freeTag.setAttribute('opacity', '0');
+    }
+  }
+
+  function ledStyle(b) {
+    const g = Math.pow(b / 255, 0.45);
+    if (b < 3) {
+      led.style.background = '#e8e4dc'; led.style.boxShadow = 'none'; led.style.borderColor = '#c8c2b6';
+    } else {
+      led.style.background = 'radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)';
+      led.style.boxShadow = `0 0 ${5 + 34 * g}px rgba(255,210,77,${0.2 + 0.7 * g})`;
+      led.style.borderColor = '#e6a700';
+    }
+  }
+
+  // 生成曲线点：三角波往返
+  function curvePoints(jitter) {
+    const pts = [];
+    const N = 80;
+    for (let i = 0; i <= N; i++) {
+      const x = 25 + (385 * i / N);
+      // 一个完整往返
+      const ph = i / N;
+      let b = ph < 0.5 ? ph * 2 : (1 - ph) * 2;
+      // delay 版：量化成粗糙台阶 + 抖动
+      if (jitter) {
+        b = Math.round(b * 12) / 12;               // 只有 13 个台阶
+        b += (Math.sin(i * 7.3) * 0.045);          // 节奏不匀的抖动
+        b = Math.max(0, Math.min(1, b));
+      }
+      const y = 100 - 85 * b;
+      pts.push(`${x.toFixed(1)},${y.toFixed(1)}`);
+    }
+    return pts.join(' ');
+  }
+
+  function setMode(m) {
+    mode = m;
+    bMillis.classList.toggle('active', m === 'millis');
+    bDelay.classList.toggle('active', m === 'delay');
+    modeEl.textContent = m === 'millis'
+      ? 'millis 版：亮度 0 → 255 平滑往返'
+      : 'delay 版：13 级粗糙台阶 + 节奏抖动（抽搐爬楼梯）';
+    curve.setAttribute('points', curvePoints(m === 'delay'));
+    curve.setAttribute('stroke', m === 'millis' ? '#0b6e4f' : '#c0392b');
+    renderBar();
+  }
+
+  function animate(now) {
+    if (!lastFrame) lastFrame = now;
+    const dt = now - lastFrame;
+    lastFrame = now;
+    t += dt / 2500;                       // 2.5s 一个往返
+    if (t > 1) t -= 1;
+    let b = t < 0.5 ? t * 2 : (1 - t) * 2;
+    if (mode === 'delay') b = Math.round(b * 12) / 12;   // delay 版卡台阶
+    ledStyle(b * 255);
+    raf = requestAnimationFrame(animate);
+  }
+
+  bMillis.onclick = () => setMode('millis');
+  bDelay.onclick = () => setMode('delay');
+
+  setMode('millis');
+  raf = requestAnimationFrame(animate);
+})();
+</script>
+</p>
+<p>上图左边是 delay 版的&quot;抽搐爬楼梯&quot;，右边是 millis 版的平滑斜坡——点按钮切换看差别。</p>
+<hr>
+<h2>🔌 接线（沿用第 2 课，零改动）</h2>
+<p>本课不需要动任何线：LED 仍在 GPIO4（经 220Ω 电阻），按钮（GPIO23）本课用不上但留着无妨。</p>
+<blockquote>
+<p><strong>Wokwi 方案</strong>：沿用第 2 课项目，只换代码，点 Start 即可。</p>
+</blockquote>
+<hr>
+<h2>💡 完整代码（直接复制）</h2>
+<pre><code class="language-cpp">// ============================================
+// 第 3 课：呼吸灯 —— PWM + millis 非阻塞
+// ============================================
+const int LED_PIN = 4;           // 外接 LED（沿用第 2 课接线）
+
+int brightness = 0;              // 当前亮度 0–255
+int step = 5;                    // 每次变化量（负值 = 变暗）
+unsigned long lastChange = 0;    // 上次变化的时刻（millis 记录）
+
+const unsigned long INTERVAL = 10;  // 每 10ms 变一档
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  Serial.begin(115200);
+  Serial.println(&quot;呼吸灯启动（millis 非阻塞版）&quot;);
+}
+
+void loop() {
+  unsigned long now = millis();          // ① 读当前时刻
+
+  if (now - lastChange &gt;= INTERVAL) {    // ② 够 10ms 了吗？
+    lastChange = now;                    // ③ 记下这次时刻
+    brightness += step;                  // ④ 亮度进一档
+
+    if (brightness &gt;= 255 || brightness &lt;= 0) {
+      step = -step;                      // ⑤ 到头反向，开始呼吸
+    }
+
+    analogWrite(LED_PIN, brightness);    // ⑥ 输出新亮度
+    Serial.println(brightness);          // ⑦ 串口输出，画曲线用
+  }
+
+  // ⑧ 这里是&quot;自由时间&quot;——delay 版里它是不存在的
+}
+</code></pre>
+<h3>逐段拆解</h3>
+<p><strong>① <code>unsigned long now = millis();</code></strong>
+拿到程序运行时钟。<code>unsigned long</code> 是它的固定类型（32 位无符号，约 49.7 天后溢出归零——工业上要处理，入门先知道有这回事）。</p>
+<p><strong>② <code>now - lastChange &gt;= INTERVAL</code></strong>
+核心判断：时间差够了吗。注意用<strong>减法</strong>而不是&quot;now &gt;= lastChange + INTERVAL&quot;——减法天然免疫溢出问题（只要差值小于 2^32），这是嵌入式老手的肌肉记忆。</p>
+<p><strong>③ <code>lastChange = now;</code></strong>
+更新基准时刻。<strong>必须写成 <code>now</code> 而不是重新读一次 <code>millis()</code></strong>——保证节奏稳定，不累积漂移。</p>
+<p><strong>④⑤ <code>brightness += step</code> + 到头反向</strong>
+状态机的最小形态：一个变量记录&quot;往哪走&quot;，到边界自动掉头。第 2 课的 <code>ledOn = !ledOn</code> 是两态翻转，这里是<strong>连续量的往返</strong>——同一个思想的放大版。</p>
+<p>**⑥ <code>analogWrite(LED_PIN, brightness);</code>
+0–255 的值 → 占空比 → 平均亮度。值变一点，亮度就动一点，255 级灰度足够画出人眼无感的平滑曲线。</p>
+<p><strong>⑦ <code>Serial.println(brightness);</code>
+每档都打印。打开串口监视器右上角的</strong>串口绘图器（Serial Plotter）**，你会直接看到一条锯齿状的三角波——<strong>代码里的数字变成了屏幕上的曲线</strong>，这就是工程师的&quot;示波器视角&quot;。</p>
+<p><strong>⑧ 自由时间</strong>
+<code>if</code> 不成立时 loop 立刻转圈。你可以在这塞任何东西——本课留白，第 10 课你会往里塞蓝牙，然后亲手验证 delay 是怎么把它搞断线的。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 上传代码无报错，LED 开始呼吸（约 2.5 秒一个来回，丝滑无卡顿）</li>
+<li><input disabled="" type="checkbox"> 用手机摄像头对着 LED 拍照：<strong>屏幕上看不到滚动的黑色条纹</strong>（证明 PWM 频率够快；delay 版有时能看到）</li>
+<li><input disabled="" type="checkbox"> 打开串口绘图器（115200），看到平滑的三角波曲线</li>
+<li><input disabled="" type="checkbox"> 代码中找不到任何 <code>delay(</code> ——本课的硬性要求</li>
+<li><input disabled="" type="checkbox"> 在 ⑧ 处临时插入 <code>if (digitalRead(23) == LOW) Serial.println(&quot;按钮被按了&quot;);</code>，呼吸照常进行的同时能打印——证明&quot;等待期间程序还活着&quot;</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①PWM 是什么 ②为什么 millis 比 delay 好 ③占空比 50% 是什么意思</li>
+</ul>
+<p><strong>全部打勾 → 你完成了嵌入式最重要的思维升级（非阻塞编程）。进入第 4 课。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>调速</strong>：把 <code>INTERVAL</code> 改成 2、10、40，观察呼吸快慢。思考：为什么改一个常量就能改物理世界的节奏？</li>
+<li><strong>改行程</strong>：让亮度只在 30–200 之间往返（不全灭也不全亮），改哪两处？</li>
+<li><strong>心跳灯（选做）</strong>：在 ⑧ 处加入板载 LED（GPIO2）以 1Hz 闪烁的逻辑——用 millis 实现，<strong>不许用 delay</strong>。呼吸 + 心跳同时进行，这就是&quot;多任务&quot;的雏形。</li>
+<li><strong>拆雷实验（重点）</strong>：把本课代码暂时改成 delay 版（用 for + delay(10)），快速连按 20 次第 2 课的按钮，数一数打印乱不乱——把&quot;delay 期间程序冻结&quot;的证据记进笔记本，第 10 课蓝牙断线时我们对证。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>灯常亮不呼吸，串口也没输出</td>
+<td>代码没上传成功 / COM 口选错</td>
+<td>重新上传；工具 → 端口确认；仍失败按住 BOOT 再上传</td>
+</tr>
+<tr>
+<td>灯在两三个亮度间跳变，不平滑</td>
+<td>① 用了 delay 版 ② <code>brightness += step</code> 的 step 太大</td>
+<td>确认代码是 millis 版；step 改成 2–5</td>
+</tr>
+<tr>
+<td>呼吸方向不对（亮起后卡住不动）</td>
+<td>反向逻辑写错，<code>step</code> 没取负</td>
+<td>检查 <code>if (brightness &gt;= 255 || brightness &lt;= 0) step = -step;</code> 是否完整</td>
+</tr>
+<tr>
+<td>串口绘图器一片乱码</td>
+<td>波特率不匹配</td>
+<td>监视器/绘图器右下角改 115200</td>
+</tr>
+<tr>
+<td><code>error: &#39;analogWrite&#39; was not declared</code></td>
+<td>板子型号选错</td>
+<td>工具 → 开发板确认 <code>ESP32 Dev Module</code></td>
+</tr>
+<tr>
+<td>灯完全不亮但程序在跑（串口有输出）</td>
+<td>LED 引脚接错或电阻虚插</td>
+<td>核对接线（GPIO4 → 220Ω → LED），重新压实</td>
+</tr>
+<tr>
+<td>摄像头拍到滚动黑条</td>
+<td>PWM 频率与快门同步的正常光学现象</td>
+<td>低占位比时可能出现，不影响实物观感；串口曲线才是准绳</td>
+</tr>
+<tr>
+<td>呼吸到头后不回头</td>
+<td>反向判断的边界值写反</td>
+<td>确认是 <code>||</code>（或关系）不是 <code>&amp;&amp;</code></td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>呼吸灯让你第一次拥有了&quot;连续量&quot;——但它的亮度值是你<strong>写死在代码里</strong>的。<strong>第 4 课：模拟世界——ADC 与电位器</strong>：你会接一个真实的旋钮（电位器），把&quot;手拧的位置&quot;读成 0–4055 的数字，<strong>用旋转来控制呼吸灯的亮度</strong>——输出的连续量接上输入的连续量，闭环就此形成。同时你会第一次见识 ESP32 模拟输入的两个坑（12 位分辨率、ADC2 与 Wi-Fi 冲突），第 6 课引脚清算前先攒两个新证据。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

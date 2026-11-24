@@ -1,0 +1,97 @@
+<!-- 组件：PWM 占空比交互 · 用于第 3 课 0.1 节 -->
+<div class="wgt wgt-pwm" id="wg-pwm">
+  <div class="wgt-head"><span>⚡ 交互演示：占空比如何"骗"出中间亮度</span><span class="wgt-badge">拖动滑杆改变占空比</span></div>
+  <div class="wgt-body">
+    <div class="wg-pwm-grid">
+      <div class="wg-pwm-left">
+        <label style="font-size:.95em;color:#333">占空比 Duty Cycle = <b id="wg-pwm-val">50</b>%
+          <input type="range" id="wg-pwm-slider" min="0" max="100" step="1" value="50">
+        </label>
+        <!-- 方波图 -->
+        <svg viewBox="0 0 420 130" style="width:100%;height:auto;display:block" id="wg-pwm-svg">
+          <line x1="20" y1="30" x2="410" y2="30" stroke="#e5e2dc"/>
+          <line x1="20" y1="100" x2="410" y2="100" stroke="#e5e2dc"/>
+          <text x="15" y="34" text-anchor="end" fill="#6b6b6b" font-size="11">3.3V</text>
+          <text x="15" y="104" text-anchor="end" fill="#6b6b6b" font-size="11">0V</text>
+          <path id="wg-pwm-wave" fill="none" stroke="#0b6e4f" stroke-width="3"/>
+          <!-- 平均线 -->
+          <line id="wg-pwm-avg" x1="20" y1="65" x2="410" y2="65" stroke="#c0392b" stroke-width="2" stroke-dasharray="7 5"/>
+          <text id="wg-pwm-avglabel" x="404" y="60" text-anchor="end" fill="#c0392b" font-size="11" font-weight="bold">平均电压 = 1.65V</text>
+          <text x="215" y="124" text-anchor="middle" fill="#9aa0a6" font-size="11">一个 PWM 周期（5kHz，0.2ms）→ 重复无数次</text>
+        </svg>
+      </div>
+      <div class="wg-pwm-right">
+        <div id="wg-pwm-led" class="wg-pwm-led"></div>
+        <div class="wg-pwm-readout">
+          analogWrite(<b id="wg-pwm-analog">128</b>)<br>
+          平均电压 <b id="wg-pwm-volt">1.65</b>V
+        </div>
+      </div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">红色虚线是<b>平均电压</b>——LED 真正"感受到"的值。占空比 50% 时方波上下对称，平均恰好 1.65V：这就是"输出 1.5V 半亮"的正确实现方式。试试 0% 和 100%，对照第 1 课的 <code>digitalWrite(LOW/HIGH)</code>。</p>
+  </div>
+</div>
+<style>
+.wg-pwm-grid { display: grid; grid-template-columns: 1fr 150px; gap: 18px; align-items: center; }
+#wg-pwm-slider { width: 100%; margin-top: 8px; accent-color: #0b6e4f; }
+.wg-pwm-left b { color: #0b6e4f; }
+.wg-pwm-right { text-align: center; }
+.wg-pwm-led { width: 84px; height: 84px; border-radius: 50%; margin: 0 auto; background: #e8e4dc; border: 4px solid #c8c2b6; transition: all .12s; }
+.wg-pwm-readout { font-size: .85em; color: #6b6b6b; margin-top: 10px; line-height: 1.7; }
+.wg-pwm-readout b { color: #c0392b; }
+.wgt-pwm .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 560px) { .wg-pwm-grid { grid-template-columns: 1fr; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-pwm');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const slider = document.getElementById('wg-pwm-slider');
+  const val = document.getElementById('wg-pwm-val');
+  const wave = document.getElementById('wg-pwm-wave');
+  const avg = document.getElementById('wg-pwm-avg');
+  const avgLabel = document.getElementById('wg-pwm-avglabel');
+  const led = document.getElementById('wg-pwm-led');
+  const analog = document.getElementById('wg-pwm-analog');
+  const volt = document.getElementById('wg-pwm-volt');
+
+  const X0 = 20, X1 = 410, YH = 30, YL = 100;
+  const CYCLES = 4;   // 画 4 个周期更直观
+
+  function draw(duty) { // duty: 0-100
+    const seg = (X1 - X0) / CYCLES;
+    let d = `M ${X0} ${YL}`;
+    for (let i = 0; i < CYCLES; i++) {
+      const xs = X0 + seg * i;              // 周期起点
+      const xh = xs + seg * duty / 100;     // 高电平结束
+      const xe = xs + seg;                  // 周期结束
+      if (duty > 0) d += ` L ${xs} ${YH} L ${xh} ${YH}`;
+      if (duty < 100) d += ` L ${xh} ${YL} L ${xe} ${YL}`;
+      else d += ` L ${xe} ${YH}`;
+    }
+    wave.setAttribute('d', d);
+    // 平均线：y 从 YL(0V) 到 YH(3.3V)
+    const avgY = YL - (YL - YH) * duty / 100;
+    avg.setAttribute('y1', avgY); avg.setAttribute('y2', avgY);
+    avgLabel.setAttribute('y', Math.max(avgY - 5, 14));
+    const v = (3.3 * duty / 100);
+    avgLabel.textContent = `平均电压 = ${v.toFixed(2)}V`;
+    // 读数
+    val.textContent = duty;
+    analog.textContent = Math.round(255 * duty / 100);
+    volt.textContent = v.toFixed(2);
+    // LED：亮度非线性（gamma 2.2 更接近人眼）
+    const b = Math.pow(duty / 100, 0.45);
+    if (duty === 0) {
+      led.style.background = '#e8e4dc'; led.style.boxShadow = 'none'; led.style.borderColor = '#c8c2b6';
+    } else {
+      led.style.background = 'radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)';
+      led.style.boxShadow = `0 0 ${6 + 36 * b}px rgba(255,210,77,${0.25 + 0.65 * b})`;
+      led.style.borderColor = '#e6a700';
+    }
+  }
+
+  slider.oninput = () => draw(parseInt(slider.value, 10));
+  draw(50);
+})();
+</script>
