@@ -1,0 +1,119 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg11" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7faf8"/>
+      <stop offset="1" stop-color="#e8f1ec"/>
+    </linearGradient>
+    <filter id="ds11" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0b3d30" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="440" fill="url(#bg11)"/>
+
+  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">手机浏览器 → 路由器 → ESP32：不装 App，网页即控</text>
+
+  <!-- ===== 左：手机 ===== -->
+  <g transform="translate(70 80)" filter="url(#ds11)">
+    <rect width="170" height="290" rx="20" fill="#1a1a1a" stroke="#000" stroke-width="4"/>
+    <rect x="9" y="32" width="152" height="228" rx="5" fill="#eaf4ff"/>
+    <rect x="56" y="12" width="58" height="11" rx="5" fill="#333"/>
+    <!-- 浏览器地址栏 -->
+    <rect x="17" y="42" width="136" height="24" rx="12" fill="#fff" stroke="#c8cdd2"/>
+    <text x="85" y="58" fill="#555" font-size="11" text-anchor="middle" font-family="Consolas, monospace">192.168.1.57</text>
+    <!-- 网页 -->
+    <text x="85" y="96" fill="#0b6e4f" font-size="15" font-weight="bold" text-anchor="middle">ESP32 智能灯</text>
+    <rect x="26" y="112" width="56" height="34" rx="8" fill="#27ae60"/>
+    <text x="54" y="134" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">开灯</text>
+    <rect x="92" y="112" width="56" height="34" rx="8" fill="#95a5a6"/>
+    <text x="120" y="134" fill="#fff" font-size="14" font-weight="bold" text-anchor="middle">关灯</text>
+    <text x="85" y="176" fill="#27ae60" font-size="14" font-weight="bold" text-anchor="middle">🟢 亮着</text>
+    <text x="85" y="204" fill="#9aa0a6" font-size="11" text-anchor="middle">任何设备的浏览器</text>
+    <text x="85" y="222" fill="#9aa0a6" font-size="11" text-anchor="middle">都能打开这个页面</text>
+    <!-- 手指点击动画 -->
+    <g transform="translate(120 130)">
+      <circle r="14" fill="#0b6e4f" opacity="0.35">
+        <animate attributeName="r" values="8;20;8" dur="1.6s" repeatCount="indefinite"/>
+        <animate attributeName="opacity" values="0.5;0;0.5" dur="1.6s" repeatCount="indefinite"/>
+      </circle>
+    </g>
+  </g>
+
+  <!-- ===== 中：路由器 ===== -->
+  <g transform="translate(370 150)" filter="url(#ds11)">
+    <rect width="220" height="130" rx="12" fill="#123a5c" stroke="#0b2740" stroke-width="4"/>
+    <text x="110" y="38" fill="#aed6f1" font-size="16" font-weight="bold" text-anchor="middle">家里的 Wi-Fi 路由器</text>
+    <text x="110" y="64" fill="#5dade2" font-size="13" text-anchor="middle">2.4GHz · DHCP 分 IP</text>
+    <!-- 天线波 -->
+    <g stroke="#5dade2" stroke-width="3" fill="none" opacity="0.8">
+      <path d="M40 90 Q 55 74, 70 90">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="1.2s" repeatCount="indefinite"/>
+      </path>
+      <path d="M150 90 Q 165 74, 180 90">
+        <animate attributeName="opacity" values="1;0.3;1" dur="1.2s" repeatCount="indefinite"/>
+      </path>
+    </g>
+    <text x="110" y="116" fill="#8fd6bd" font-size="12" text-anchor="middle" font-family="Consolas, monospace">AP Isolation: OFF ✓</text>
+  </g>
+
+  <!-- ===== 右：ESP32 ===== -->
+  <g transform="translate(760 70)" filter="url(#ds11)">
+    <rect width="210" height="300" rx="14" fill="#0f3d2e" stroke="#0a2c21" stroke-width="4"/>
+    <rect x="32" y="24" width="146" height="84" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="105" y="58" fill="#4a5057" font-size="18" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="105" y="84" fill="#6b7280" font-size="12" text-anchor="middle">STA · WebServer</text>
+    <!-- IP 徽章 -->
+    <rect x="20" y="122" width="170" height="34" rx="8" fill="#1c5140" stroke="#3fa67a" stroke-width="2"/>
+    <text x="105" y="145" fill="#8fd6bd" font-size="15" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">IP: 192.168.1.57</text>
+    <!-- 路由表 -->
+    <g font-size="12" font-family="Consolas, monospace">
+      <rect x="20" y="168" width="170" height="30" rx="6" fill="#123f33"/>
+      <text x="105" y="188" fill="#f5b041" text-anchor="middle">GET / → 首页 HTML</text>
+      <rect x="20" y="204" width="170" height="30" rx="6" fill="#123f33"/>
+      <text x="105" y="224" fill="#f5b041" text-anchor="middle">GET /led?state=on</text>
+      <rect x="20" y="240" width="170" height="30" rx="6" fill="#123f33"/>
+      <text x="105" y="260" fill="#f5b041" text-anchor="middle">GET /status → ON</text>
+    </g>
+    <text x="105" y="292" fill="#8fd6bd" font-size="12" font-weight="bold" text-anchor="middle">loop: handleClient() 非阻塞</text>
+    <!-- 板上 LED -->
+    <circle cx="185" cy="130" r="12" fill="#ffd24d" stroke="#e6a700" stroke-width="3">
+      <animate attributeName="opacity" values="1;1;0.4;1" dur="2s" repeatCount="indefinite"/>
+    </circle>
+  </g>
+
+  <!-- ===== 连线 ===== -->
+  <!-- 手机 ↔ 路由器 -->
+  <path d="M240 200 C 300 200, 320 215, 370 215" stroke="#e67e22" stroke-width="4" fill="none"/>
+  <text x="300" y="192" fill="#e67e22" font-size="13" font-weight="bold" text-anchor="middle">HTTP GET</text>
+  <rect x="240" y="193" width="22" height="13" rx="3" fill="#e67e22">
+    <animate attributeName="x" values="240;348" dur="1s" repeatCount="indefinite"/>
+  </rect>
+  <!-- 路由器 ↔ ESP32 -->
+  <path d="M590 215 C 660 215, 700 200, 760 200" stroke="#2980b9" stroke-width="4" fill="none"/>
+  <text x="675" y="192" fill="#2980b9" font-size="13" font-weight="bold" text-anchor="middle">转发到内网 IP</text>
+  <rect x="590" y="208" width="22" height="13" rx="3" fill="#2980b9">
+    <animate attributeName="x" values="590;738" dur="1s" begin="0.4s" repeatCount="indefinite"/>
+  </rect>
+
+  <!-- ===== 右上：STA 模式卡 ===== -->
+  <g transform="translate(1000 80)">
+    <rect width="180" height="132" rx="10" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+    <text x="90" y="28" fill="#0b6e4f" font-size="15" font-weight="bold" text-anchor="middle">STA 站点模式</text>
+    <text x="16" y="56" fill="#333" font-size="12">✓ 板子加入你家路由器</text>
+    <text x="16" y="80" fill="#333" font-size="12">✓ 局域网设备全能访问</text>
+    <text x="16" y="104" fill="#333" font-size="12">✓ 浏览器即客户端</text>
+    <text x="16" y="126" fill="#c0392b" font-size="11">⚠ 必须 2.4GHz 频段</text>
+  </g>
+
+  <!-- ===== 右下：ADC2 雷引爆 ===== -->
+  <g transform="translate(1000 236)">
+    <rect width="180" height="132" rx="10" fill="#fff" stroke="#c0392b" stroke-width="3"/>
+    <text x="90" y="28" fill="#c0392b" font-size="15" font-weight="bold" text-anchor="middle">💥 L6 雷引爆</text>
+    <text x="16" y="56" fill="#333" font-size="12">Wi-Fi 开 → ADC2 全废</text>
+    <text x="16" y="80" fill="#333" font-size="12">模拟输入只能用</text>
+    <text x="16" y="104" fill="#0b6e4f" font-size="14" font-weight="bold">GPIO32–39（ADC1）</text>
+    <text x="16" y="126" fill="#9aa0a6" font-size="11">L4 电位器接 34 的伏笔兑现</text>
+  </g>
+
+  <!-- 底部标语 -->
+  <text x="600" y="424" fill="#0b6e4f" font-size="17" font-weight="bold" text-anchor="middle">请求-响应的 HTTP + 非阻塞的 loop：你的板子成了局域网里一台真正的服务器</text>
+</svg>

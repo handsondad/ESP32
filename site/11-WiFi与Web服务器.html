@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 11 课：Wi-Fi 与 Web 服务器——手机浏览器控灯</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 11 课：Wi-Fi 与 Web 服务器——手机浏览器控灯</h1>
+<blockquote>
+<p><strong>阶段四 · 无线物联</strong> ｜ 难度：★★★★★ ｜ 预计用时：60 分钟</p>
+<p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、LED（GPIO4 经 220Ω）×1、按钮（GPIO23）×1（沿用第 2 课接线）、<strong>2.4GHz Wi-Fi 路由器</strong>（必须是 2.4G，ESP32 不支持 5G）
+<strong>无硬件替代</strong>：Wokwi 不支持真实 Wi-Fi 联网——本课在 Wokwi 里跑&quot;代码结构版&quot;（串口模拟 HTTP 请求），真机按文档联网实测</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson11-hero.svg" alt="第 11 课效果预告：手机浏览器打开网页控制 LED"></p>
+<blockquote>
+<p>你将做出：<strong>ESP32 连上你家 Wi-Fi，手机浏览器输入一个 IP 地址——出现一个自己写的控制页面，点按钮灯立刻亮灭，页面还会实时显示灯的状态</strong>。不装 App、不连蓝牙，<strong>任何有浏览器的设备都能控制它</strong>。</p>
+</blockquote>
+<p>第 10 课的蓝牙是&quot;十米内、要装 App、一对一&quot;。这一课跨过门槛：<strong>板子上网了</strong>——它有了 IP 地址，成了局域网里一台平等的小服务器。这是&quot;物联网（IoT）&quot;的真正起点。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 掌握 STA 模式：ESP32 连路由器、拿 IP、保活连接</li>
+<li>✅ 跑起 <code>WebServer</code>，处理 GET 请求，实现 <code>/led?state=on</code> 这样的控制接口</li>
+<li>✅ 手写一个 HTML 控制页（内嵌在代码里），理解&quot;前后端&quot;的最小闭环</li>
+<li>✅ <strong>引爆第 6 课的雷</strong>：开 Wi-Fi 后 ADC2 全废——模拟输入必须换 ADC1</li>
+<li>✅ 面对新敌人：<strong>断线重连</strong>——无线链路不可靠，millis 结构再立功</li>
+</ol>
+<hr>
+<h2>🔁 开课先接棒：从&quot;点对点&quot;到&quot;上网&quot;</h2>
+<p>对比一下你现在拥有的三种&quot;无线&quot;：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>蓝牙（L10）</th>
+<th>Wi-Fi STA（本课）</th>
+<th>Wi-Fi AP（本课选做）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>拓扑</td>
+<td>手机 ↔ 板子</td>
+<td>板子 ↔ <strong>路由器</strong> ↔ 任何设备</td>
+<td>板子自己当路由器</td>
+</tr>
+<tr>
+<td>距离</td>
+<td>~10 米</td>
+<td><strong>整个局域网，经路由器可跨房间</strong></td>
+<td>~30 米</td>
+</tr>
+<tr>
+<td>谁能控制</td>
+<td>只有配对的手机</td>
+<td><strong>局域网里任何设备</strong>（手机/电脑/平板）</td>
+<td>直连板子的设备</td>
+</tr>
+<tr>
+<td>要 App 吗</td>
+<td>通常要</td>
+<td><strong>不要，浏览器就行</strong></td>
+<td>不要</td>
+</tr>
+<tr>
+<td>需要什么</td>
+<td>板子+手机</td>
+<td><strong>板子+你家 2.4G 路由器</strong></td>
+<td>只要板子</td>
+</tr>
+</tbody></table>
+<p><strong>本课主路线 = STA（Station，站点模式）</strong>：ESP32 像你的手机一样&quot;加入&quot;路由器，获得一个内网 IP（比如 <code>192.168.1.57</code>）。<strong>局域网内任何设备访问这个 IP，就是在访问你的板子</strong>——HTTP 请求进门，板子响应网页。</p>
+<blockquote>
+<p>💡 <strong>AP 模式（热点模式）是什么？</strong> 板子自己发射 Wi-Fi 热点（如 <code>ESP32-Setup</code>），手机直连它进行配网。<strong>两种模式可以共存（AP+STA）</strong>——很多产品&quot;先开热点配网、再连路由&quot;就是这个套路。本课挑战里你试配网的基础版。</p>
+</blockquote>
+<hr>
+<h2>📡 新知识一：连上网要几步？</h2>
+<pre><code class="language-cpp">WiFi.begin(&quot;你的SSID&quot;, &quot;你的密码&quot;);   // ① 发起连接（异步！立刻返回）
+// ② 轮询等待连接完成（不能 delay 死等）
+while (WiFi.status() != WL_CONNECTED) { delay(500); Serial.print(&quot;.&quot;); }
+// ③ 拿到 IP
+Serial.println(WiFi.localIP());       // 比如 192.168.1.57
+</code></pre>
+<p>三个点必须讲透：</p>
+<p><strong>① <code>WiFi.begin()</code> 是异步的</strong>——它只是&quot;发出加入请求&quot;，立刻返回。连接要经过扫描、认证、DHCP 拿 IP，<strong>通常要 2~5 秒</strong>。所以 ② 必须<strong>轮询状态</strong>。</p>
+<p><strong>② 连接阶段的 <code>delay(500)</code> 是合法的</strong>——还记得第 3、7、10 课的规矩吗？&quot;delay 只许出现在我真的什么都不能做的场合&quot;。<strong>连接 Wi-Fi 的这 2~5 秒，板子确实没别的事可做</strong>（还没开服务器），所以这里的 delay 和第 7 课初始化失败死等一样，属于合法使用。<strong>规矩是&quot;多任务运行时不许罚站&quot;，不是&quot;delay 是禁词&quot;</strong>——这个分寸感，是第 3 课到第 10 课一路养出来的。</p>
+<p><strong>③ IP 是路由器分的（DHCP）</strong>——每次重启可能变！<code>Serial.println(WiFi.localIP())</code> 打印出来再在手机浏览器输入。<strong>&quot;IP 会变&quot;这个烦恼，第 12 课 MQTT/云平台会彻底解决</strong>（云端有固定域名）。</p>
+<h3>连接断了怎么办？——无线链路不可靠（第 10 课挑战 5 的呼应）</h3>
+<p>第 10 课你观察过蓝牙断线；Wi-Fi 更常见（路由器重启、信号干扰）。<strong>millis 结构第三次立功</strong>：</p>
+<pre><code class="language-cpp">void maintainWiFi() {
+  if (WiFi.status() == WL_CONNECTED) return;   // 连着，走人
+  if (millis() - lastRetry &lt; 10000) return;    // 10 秒重试一次，别疯狂重连
+  lastRetry = millis();
+  Serial.println(&quot;Wi-Fi 断了，重连中...&quot;);
+  WiFi.disconnect();
+  WiFi.begin(SSID, PASS);                     // 重新发起
+}
+</code></pre>
+<p><strong>每圈 loop 检查一次状态，断了就按节奏重连</strong>——这就是&quot;看门狗式保活&quot;的雏形。<strong>无线系统的第一条军规：永远假设链路会断，把重连写进主循环。</strong></p>
+<hr>
+<h2>📡 新知识二：HTTP——网页是怎么&quot;送&quot;过来的</h2>
+<p>你的手机浏览器访问 <code>http://192.168.1.57/</code> 时，发生了一次最朴素的 HTTP 对话：</p>
+<pre><code>手机 → 板子：
+GET / HTTP/1.1
+Host: 192.168.1.57        ← 我要首页
+
+板子 → 手机：
+HTTP/1.1 200 OK
+Content-Type: text/html
+                          ← 空一行
+&lt;html&gt;...你的控制页...&lt;/html&gt;
+</code></pre>
+<p><strong>要点三条</strong>：</p>
+<ol>
+<li><strong>HTTP 是&quot;请求-响应&quot;</strong>：浏览器发一行 <code>GET 路径</code>，服务器回一段内容，然后<strong>连接关闭</strong>。它不保持对话——每次点击都是新的一轮（第 12 课 MQTT 会反过来：<strong>长连接</strong>）。</li>
+<li><strong>路径（URL）就是路由</strong>：<code>/</code> 给首页，<code>/led?state=on</code> 是&quot;控制灯&quot;的动作。<strong>服务器按路径分发到不同处理函数</strong>——这就是&quot;路由（Router）&quot;。</li>
+<li><strong><code>?state=on</code> 叫查询参数</strong>：问号后面是键值对，板子解析出来决定动作。<strong>你手机点的每个按钮，本质是浏览器发了一个 GET 请求</strong>。</li>
+</ol>
+<hr>
+<h2>🔌 接线</h2>
+<p><strong>零新接线</strong>——沿用第 2/10 课：LED=GPIO4（220Ω）、按钮=GPIO23（INPUT_PULLUP）。本课的战场全在代码与网络。</p>
+<blockquote>
+<p>⚠️ <strong>第 6 课的雷，现在引爆</strong>：
+本课如果你还想读电位器（第 4 课）——<strong>Wi-Fi 开启后，ADC2 引脚（GPIO0/2/4/12–15/25–27）的 <code>analogRead</code> 全部变成垃圾</strong>，因为射频校准征用了 ADC2。</p>
+<p><strong>规则兑现：开 Wi-Fi 的项目，模拟输入只许用 ADC1（GPIO32–39）</strong>。好消息：本课的 LED 在 GPIO4、按钮在 GPIO23——<strong>都是数字脚，不走 ADC，完全不受影响</strong>。但如果你把第 4 课电位器（GPIO34）搬来，它在 ADC1，<strong>依然安全</strong>——当初第 4 课特意接 34 的伏笔，此刻显出价值。</p>
+</blockquote>
+<hr>
+<h2>💡 完整代码（直接复制）</h2>
+<pre><code class="language-cpp">// ============================================
+// 第 11 课：Wi-Fi + WebServer 手机浏览器控灯
+// ============================================
+#include &lt;WiFi.h&gt;
+
+const char* SSID = &quot;你的WiFi名&quot;;        // ← 改成你家的
+const char* PASS = &quot;你的WiFi密码&quot;;      // ← 改成你家的
+
+const int LED_PIN = 4;
+const int BTN_PIN = 23;
+
+WebServer server(80);        // 80 = HTTP 默认端口
+bool ledOn = false;
+unsigned long lastStatus = 0;
+unsigned long lastRetry = 0;
+unsigned long lastBtnStable = 0;   // 防抖状态机（第 10 课模板）
+int lastRaw = HIGH, stableState = HIGH;
+unsigned long lastChange = 0;
+
+// —— 控制页（内嵌 HTML，&quot;前后端一体&quot;的最小形态）——
+String page() {
+  String html = &quot;&lt;!DOCTYPE html&gt;&lt;html&gt;&lt;head&gt;&quot;;
+  html += &quot;&lt;meta charset=&#39;utf-8&#39;&gt;&quot;;
+  html += &quot;&lt;meta name=&#39;viewport&#39; content=&#39;width=device-width,initial-scale=1&#39;&gt;&quot;;
+  html += &quot;&lt;title&gt;ESP32 灯控&lt;/title&gt;&quot;;
+  html += &quot;&lt;style&gt;body{font-family:sans-serif;text-align:center;margin-top:12vh}&quot;;
+  html += &quot;h1{color:#0b6e4f}&quot;;
+  html += &quot;.btn{padding:18px 44px;font-size:22px;margin:10px;border:none;&quot;;
+  html += &quot;border-radius:12px;color:#fff;cursor:pointer}&quot;;
+  html += &quot;.on{background:#27ae60}.off{background:#95a5a6}&quot;;
+  html += &quot;.st{font-size:26px;margin-top:24px}&lt;/style&gt;&lt;/head&gt;&lt;body&gt;&quot;;
+  html += &quot;&lt;h1&gt;ESP32 智能灯&lt;/h1&gt;&quot;;
+  html += &quot;&lt;button class=&#39;btn on&#39; onclick=\&quot;location.href=&#39;/led?state=on&#39;\&quot;&gt;开灯&lt;/button&gt;&quot;;
+  html += &quot;&lt;button class=&#39;btn off&#39; onclick=\&quot;location.href=&#39;/led?state=off&#39;\&quot;&gt;关灯&lt;/button&gt;&quot;;
+  html += &quot;&lt;div class=&#39;st&#39;&gt;当前状态：&quot;;
+  html += ledOn ? &quot;🟢 亮着&quot; : &quot;⚫ 灭了&quot;;
+  html += &quot;&lt;/div&gt;&lt;/body&gt;&lt;/html&gt;&quot;;
+  return html;
+}
+
+void handleRoot() {              // GET / → 首页
+  server.send(200, &quot;text/html&quot;, page());
+}
+
+void handleLed() {               // GET /led?state=on|off
+  if (server.hasArg(&quot;state&quot;)) {
+    String s = server.arg(&quot;state&quot;);
+    if (s == &quot;on&quot;)  ledOn = true;
+    if (s == &quot;off&quot;) ledOn = false;
+    digitalWrite(LED_PIN, ledOn ? HIGH : LOW);
+  }
+  server.sendHeader(&quot;Location&quot;, &quot;/&quot;);   // 重定向回首页（按钮即刷新）
+  server.send(303);
+}
+
+void handleStatus() {            // GET /status → 纯文本状态（供 JS 轮询）
+  server.send(200, &quot;text/plain&quot;, ledOn ? &quot;ON&quot; : &quot;OFF&quot;);
+}
+
+void maintainWiFi() { /* 上节的重连函数，原样放这里 */ }
+
+void pollButton() { /* 第 10 课防抖状态机，原样放这里（触发后翻转 ledOn） */ }
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  Serial.begin(115200);
+
+  // —— 连接 Wi-Fi（合法 delay：连接期无事可做）——
+  Serial.print(&quot;连接 Wi-Fi &quot;);
+  WiFi.begin(SSID, PASS);
+  while (WiFi.status() != WL_CONNECTED) {
+    delay(500);
+    Serial.print(&quot;.&quot;);
+  }
+  Serial.println();
+  Serial.print(&quot;已连接！IP: &quot;);
+  Serial.println(WiFi.localIP());    // ← 手机浏览器输入这个
+
+  // —— 注册路由 ——
+  server.on(&quot;/&quot;, handleRoot);
+  server.on(&quot;/led&quot;, handleLed);
+  server.on(&quot;/status&quot;, handleStatus);
+  server.begin();
+}
+
+void loop() {
+  server.handleClient();   // ① 有没有 HTTP 请求进门？（非阻塞，没有立刻返回）
+  maintainWiFi();          // ② 断线保活
+  pollButton();            // ③ 按钮防抖（第 10 课）
+  // ④ 自由：状态页每秒自刷新（页面里 meta refresh 实现）
+}
+</code></pre>
+<h3>逐段拆解</h3>
+<p><strong><code>WebServer server(80);</code> + <code>server.handleClient()</code></strong>
+和 <code>SerialBT.available()</code> 同一个骨架：<strong><code>handleClient()</code> 每圈 loop 查一次&quot;有请求吗&quot;，有就调用注册的处理函数，没有立刻返回</strong>——HTTP 服务器也活在 millis 非阻塞结构里。<strong>第 10 课的三任务，本课换成&quot;HTTP + 保活 + 按钮&quot;三任务</strong>，结构一模一样。</p>
+<p><strong><code>server.on(&quot;/&quot;, handleRoot)</code>——路由注册</strong>
+路径 → 函数的映射表。<code>/</code> 首页、<code>/led</code> 控灯、<code>/status</code> 查状态。<strong>以后加功能就是加一行 <code>server.on</code></strong>——这就是&quot;接口（API）&quot;的最小形态，第 12 课 MQTT 的&quot;主题&quot;、云端 REST API 都是这个思想的延伸。</p>
+<p><strong><code>page()</code> 返回 <code>String</code>——HTML 藏在代码里</strong>
+新手项目不需要单独的 HTML 文件：<strong>服务器要什么，现拼现给</strong>。你写的 <code>&lt;button onclick=&quot;location.href=&#39;/led?state=on&#39;&quot;&gt;</code> 是关键：</p>
+<pre><code>点按钮 → 浏览器跳转到 /led?state=on → 板子 handleLed() 执行 → 303 重定向回 / → 页面刷新显示新状态
+</code></pre>
+<p><strong>一个按钮 = 一次 HTTP 往返</strong>。<code>303</code> 状态码的含义是&quot;去别处（首页）&quot;——<strong>用重定向实现&quot;操作后自动刷新&quot;</strong>，比写 AJAX 还简单。</p>
+<p><strong><code>server.sendHeader(&quot;Location&quot;, &quot;/&quot;); server.send(303);</code></strong>
+控制类请求的标准姿势：<strong>执行动作后不返回内容，让浏览器回首页</strong>——否则用户连点&quot;开灯&quot;，浏览器会停在空白响应页。</p>
+<p><strong><code>handleStatus()</code> 与&quot;前后端分离&quot;的种子</strong>
+它只返回 <code>ON/OFF</code> 纯文本——<strong>这是给程序看的接口</strong>。如果你在页面里加一段 <code>fetch(&#39;/status&#39;)</code> 轮询，就能不刷新页面实时更新状态——<strong>那已经是现代 Web App（AJAX/前端渲染）的雏形</strong>。本课用 303 重定向保持简单，挑战 2 让你亲手升级。</p>
+<p><strong><code>maintainWiFi()</code>——断线保活进了主循环</strong>
+和蓝牙断线（第 10 课挑战 5）同一个观察结论：<strong>链路会断，重连必须写在 loop 里</strong>。Wi-Fi 的重连更频繁，所以加了 10 秒节奏限制（<strong>重连也要防抖——millis 节奏无处不在</strong>）。</p>
+<hr>
+<h2>🎯 动手流程：从上传到点亮</h2>
+<ol>
+<li>改代码里的 <code>SSID</code>/<code>PASS</code> 为你家 Wi-Fi（<strong>必须 2.4GHz</strong>；5G 的名字改了也没用）</li>
+<li>上传，打开串口监视器（115200）</li>
+<li>等 <code>已连接！IP: 192.168.1.x</code> 打印出来，<strong>记下这个 IP</strong></li>
+<li>手机连同一个 Wi-Fi，浏览器输入该 IP</li>
+<li>看到控制页 → 点&quot;开灯&quot; → 板上 LED 亮、页面状态变 🟢</li>
+</ol>
+<p><!-- 组件：HTTP 控灯闭环 · 用于第 11 课 -->
+<div class="wgt wgt-http" id="wg-http">
+  <div class="wgt-head"><span>🌐 交互演示：点一下按钮，到底发生了什么</span><span class="wgt-badge">点页面上的按钮看请求流动</span></div>
+  <div class="wgt-body">
+    <div class="wg-http-grid">
+      <!-- 左：手机浏览器 -->
+      <div class="wg-http-phone">
+        <div class="wg-http-browser">
+          <div class="wg-http-url">http://192.168.1.57/</div>
+          <div class="wg-http-page">
+            <div class="wg-http-title">ESP32 智能灯</div>
+            <div class="wg-http-btns">
+              <button id="wg-http-on" class="on">开灯</button>
+              <button id="wg-http-off" class="off">关灯</button>
+            </div>
+            <div class="wg-http-state">当前状态：<b id="wg-http-state">⚫ 灭了</b></div>
+          </div>
+        </div>
+      </div>
+      <!-- 中：请求流动 -->
+      <div class="wg-http-mid">
+        <div class="wg-http-req" id="wg-http-req">等待点击…</div>
+        <svg viewBox="0 0 200 60" style="width:100%;height:auto">
+          <line x1="8" y1="30" x2="192" y2="30" stroke="#e5e2dc" stroke-width="3"/>
+          <circle id="wg-http-pkt" cx="8" cy="30" r="8" fill="#e67e22" opacity="0"/>
+          <text x="100" y="16" text-anchor="middle" fill="#9aa0a6" font-size="10">Wi-Fi 局域网</text>
+          <text x="100" y="54" text-anchor="middle" fill="#9aa0a6" font-size="10">HTTP 请求 / 响应</text>
+        </svg>
+        <div class="wg-http-log" id="wg-http-log">服务器空闲：handleClient() 每圈 loop 查一次，没请求立刻返回。</div>
+      </div>
+      <!-- 右：板子内部 -->
+      <div class="wg-http-board">
+        <div class="wg-http-chip">ESP32<br><small>WebServer:80</small></div>
+        <div class="wg-http-steps">
+          <div class="wg-http-step" data-k="recv">① handleClient() 收到 GET</div>
+          <div class="wg-http-step" data-k="route">② 路由 /led?state=on</div>
+          <div class="wg-http-step" data-k="exec">③ digitalWrite 执行</div>
+          <div class="wg-http-step" data-k="redir">④ 303 重定向回首页</div>
+        </div>
+        <div class="wg-http-led" id="wg-http-led"></div>
+      </div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">每次点击 = <b>一次完整的 HTTP 请求-响应往返</b>：浏览器跳转 → 板子路由分发 → 执行 → 303 让浏览器回首页刷新。全程 <b>handleClient() 非阻塞</b>——这就是第 10 课三任务结构换上 HTTP 外衣的样子。</p>
+  </div>
+</div>
+<style>
+.wg-http-grid { display: grid; grid-template-columns: 210px 1fr 210px; gap: 16px; align-items: start; }
+.wg-http-browser { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+.wg-http-url { background: #eef1f0; padding: .4em .7em; font-size: .75em; color: #555; font-family: Consolas, monospace; border-bottom: 1px solid var(--border); }
+.wg-http-page { padding: 1.1em .8em; text-align: center; }
+.wg-http-title { font-weight: bold; color: #0b6e4f; font-size: 1.05em; margin-bottom: .7em; }
+.wg-http-btns button { font-family: inherit; padding: .55em 1.3em; font-size: .95em; border: none; border-radius: 8px; color: #fff; cursor: pointer; margin: 0 4px; }
+.wg-http-btns .on { background: #27ae60; } .wg-http-btns .off { background: #95a5a6; }
+.wg-http-btns button:active { transform: scale(.95); }
+.wg-http-state { margin-top: .8em; font-size: .9em; color: #444; }
+.wg-http-mid { text-align: center; }
+.wg-http-req { font-size: .8em; font-family: Consolas, monospace; color: #e67e22; font-weight: bold; min-height: 2.4em; }
+.wg-http-log { margin-top: 6px; font-size: .74em; color: #6b6b6b; background: #f4f7f5; border-radius: 6px; padding: .5em .6em; line-height: 1.6; text-align: left; min-height: 5.2em; }
+.wg-http-board { background: #f4f7f5; border: 1px solid var(--border); border-radius: 10px; padding: .7em; text-align: center; }
+.wg-http-chip { background: #0f3d2e; color: #8fd6bd; font-weight: bold; font-size: .9em; border-radius: 8px; padding: .5em; line-height: 1.5; }
+.wg-http-chip small { color: #5f7484; font-weight: normal; font-size: .8em; }
+.wg-http-steps { margin-top: .7em; display: flex; flex-direction: column; gap: 5px; }
+.wg-http-step { font-size: .74em; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: .35em .5em; text-align: left; color: #999; transition: all .2s; }
+.wg-http-step.lit { border-color: #0b6e4f; background: #e6f3ee; color: #0b6e4f; font-weight: bold; }
+.wg-http-led { width: 44px; height: 44px; border-radius: 50%; margin: .7em auto 0; background: #e8e4dc; border: 3px solid #c8c2b6; transition: all .25s; }
+.wgt-http .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 720px) { .wg-http-grid { grid-template-columns: 1fr; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-http');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const req = document.getElementById('wg-http-req');
+  const log = document.getElementById('wg-http-log');
+  const pkt = document.getElementById('wg-http-pkt');
+  const state = document.getElementById('wg-http-state');
+  const led = document.getElementById('wg-http-led');
+  const steps = Array.from(root.querySelectorAll('.wg-http-step'));
+  let busy = false, on = false;
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function setLit(k) { steps.forEach(s => s.classList.toggle('lit', s.dataset.k === k)); }
+
+  async function click(v) {
+    if (busy) return;
+    busy = true;
+    const target = v === 'on';
+    const arg = target ? 'state=on' : 'state=off';
+    // ① 请求发出
+    req.textContent = `GET /led?${arg}`;
+    log.textContent = '浏览器跳转 → 发出 GET 请求，数据包在 Wi-Fi 上飞…';
+    pkt.setAttribute('fill', target ? '#27ae60' : '#95a5a6');
+    pkt.setAttribute('opacity', '1');
+    for (let x = 8; x <= 192; x += 8) { pkt.setAttribute('cx', x); await sleep(18); }
+    pkt.setAttribute('opacity', '0');
+    // ② 板子四步
+    setLit('recv'); log.textContent = 'handleClient() 检测到请求，调用 handleLed()。'; await sleep(430);
+    setLit('route'); log.textContent = `路由匹配 /led，解析参数 ${arg}。`; await sleep(430);
+    setLit('exec'); log.textContent = 'digitalWrite() 执行 —— 板上 LED 状态改变！';
+    on = target;
+    led.style.background = on ? 'radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)' : '#e8e4dc';
+    led.style.boxShadow = on ? '0 0 18px rgba(255,210,77,.8)' : 'none';
+    led.style.borderColor = on ? '#e6a700' : '#c8c2b6';
+    await sleep(430);
+    setLit('redir'); log.textContent = '返回 303 Location: / —— 浏览器自动跳回首页。'; await sleep(430);
+    // ③ 响应回程
+    for (let x = 192; x >= 8; x -= 8) { pkt.setAttribute('cx', x); pkt.setAttribute('opacity', '1'); await sleep(14); }
+    pkt.setAttribute('opacity', '0');
+    // ④ 首页刷新
+    state.textContent = on ? '🟢 亮着' : '⚫ 灭了';
+    state.style.color = on ? '#27ae60' : '#95a5a6';
+    req.textContent = 'GET / → 200 OK（页面刷新）';
+    log.innerHTML = '页面已刷新，状态显示最新值。<br>板子回到空闲：继续每圈 loop 查请求。';
+    setLit('');
+    busy = false;
+  }
+
+  document.getElementById('wg-http-on').onclick = () => click('on');
+  document.getElementById('wg-http-off').onclick = () => click('off');
+})();
+</script>
+</p>
+<p>上图是完整闭环：<strong>点按钮 → HTTP 请求 → 路由分发 → 动作执行 → 重定向 → 页面刷新</strong>。每一步都对应代码里的一个函数——<strong>&quot;网页控灯&quot;没有任何魔法，只是一圈圈 loop 在接请求</strong>。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 代码改好自家 SSID/密码（2.4GHz），上传无报错</li>
+<li><input disabled="" type="checkbox"> 串口打印出 IP 地址（192.168.x.x 格式）</li>
+<li><input disabled="" type="checkbox"> 手机（同一路由器下）浏览器输入 IP，<strong>看到控制页</strong></li>
+<li><input disabled="" type="checkbox"> 点&quot;开灯&quot;→ LED 亮 + 页面显示 🟢；点&quot;关灯&quot;→ 灭 + ⚫</li>
+<li><input disabled="" type="checkbox"> <strong>板上按钮也生效</strong>：按 GPIO23 的按钮，手机刷新页面看到状态变了（双向控制）</li>
+<li><input disabled="" type="checkbox"> 杀掉路由器 Wi-Fi 10 秒再开：<strong>串口看到&quot;断了，重连中&quot;并自动恢复</strong>（断线保活验证）</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①STA 模式是什么 ②点按钮到底发生了什么 ③为什么 IP 每次可能不一样</li>
+<li><input disabled="" type="checkbox"> <strong>ADC2 雷确认</strong>：说出&quot;开 Wi-Fi 后模拟输入要用哪些脚&quot;（32–39，第 6 课规则）</li>
+</ul>
+<p><strong>全部打勾 → 你的板子正式接入网络，成为局域网里的一台服务器。进入第 12 课，把它送上云端。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>加设备</strong>：注册 <code>/led?state=blink</code>，让灯以 500ms 闪 5 次（millis 写，<strong>不许 delay</strong>）——多一个路由、多一个分支。</li>
+<li><strong>免刷新状态（进阶）</strong>：页面里加 <code>&lt;script&gt;setInterval(()=&gt;fetch(&#39;/status&#39;).then(r=&gt;r.text()).then(t=&gt;document.getElementById(&#39;s&#39;).innerText=t),1000)&lt;/script&gt;</code>——<strong>从&quot;整页刷新&quot;升级到&quot;局部更新&quot;</strong>，体会前后端分离。</li>
+<li><strong>AP 模式试驾（选做）</strong>：把 <code>WiFi.begin</code> 换成 <code>WiFi.softAP(&quot;ESP32-Setup&quot;)</code>，手机直连这个热点再访问 <code>192.168.4.1</code>——<strong>没路由器也能控灯</strong>，这是产品&quot;配网模式&quot;的原型。</li>
+<li><strong>端口实验（选做）</strong>：<code>WebServer server(8080)</code>，访问要带 <code>:8080</code>——理解&quot;端口是门牌号，IP 是楼号&quot;。</li>
+<li><strong>断线压力（重点）</strong>：连接正常时，把手机 Wi-Fi 关 5 秒再开——观察浏览器重连后<strong>页面状态是否正确</strong>（靠 303+<code>ledOn</code> 变量恢复）。<strong>记录</strong>：板子重启后 LED 状态会丢（<code>ledOn</code> 归 false）——<strong>&quot;状态要持久化&quot;是第 12 课云存储的动机</strong>，把这个问题带过去。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>一直打印 <code>.....</code> 连不上</td>
+<td>① SSID/密码错 ② 是 5G 路由器 ③ 2.4G 被关闭</td>
+<td>核对账号密码；连 2.4G 的 Wi；路由器开&quot;2.4/5G 合并&quot;时试分开的名字</td>
+</tr>
+<tr>
+<td>连上了但手机访问不了 IP</td>
+<td>① 手机和板子不在同一网段（手机用流量）② 路由器开了 AP 隔离</td>
+<td>手机连同一 Wi-Fi；路由器关&quot;AP 隔离/AP Isolation&quot;</td>
+</tr>
+<tr>
+<td>浏览器一直转圈超时</td>
+<td>板子程序卡死（藏了 delay/死循环）</td>
+<td>全文搜 <code>delay(</code>；确认 <code>handleClient()</code> 在 loop 第一行</td>
+</tr>
+<tr>
+<td>页面乱码中文</td>
+<td>编码没声明</td>
+<td><code>page()</code> 里必须有 <code>&lt;meta charset=&#39;utf-8&#39;&gt;</code>（本课已带）</td>
+</tr>
+<tr>
+<td>点按钮没反应/404</td>
+<td>路径写错（大小写敏感）</td>
+<td>确认 <code>location.href=&#39;/led?state=on&#39;</code> 与 <code>server.on(&quot;/led&quot;)</code> 一致</td>
+</tr>
+<tr>
+<td>断网后再也不恢复</td>
+<td>没写重连 / 重连太频繁被路由器拉黑</td>
+<td>加 <code>maintainWiFi()</code>；10 秒节奏</td>
+</tr>
+<tr>
+<td>重启后 IP 变了找不到板子</td>
+<td>DHCP 分配的地址不固定</td>
+<td>串口重新看 IP；路由器做 DHCP 静态绑定（挑战级）</td>
+</tr>
+<tr>
+<td>上传成功但串口无 Wi-Fi 输出</td>
+<td>监视器波特率错 / COM 口错</td>
+<td>115200；选对端口</td>
+</tr>
+<tr>
+<td>电位器读数在本课变垃圾</td>
+<td><strong>ADC2 + Wi-Fi 冲突（第 6 课的雷）</strong></td>
+<td>模拟输入换 ADC1（32–39），或本课不读模拟量</td>
+</tr>
+<tr>
+<td>内存崩溃 / 重启（Guru Meditation）</td>
+<td>String 拼接碎片化</td>
+<td>本课页面小没事；大页面用 <code>FPSTR</code>/PROGMEM（进阶话题）</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>网页控灯虽好，但它有个天花板：<strong>你的板子和手机必须在同一个局域网</strong>——出了家门就摸不到它了。<strong>第 12 课：MQTT 与云平台</strong>：你会把板子连上真正的互联网（MQTT 服务器），<strong>人在外面用手机流量也能收到传感器数据、发控制命令</strong>。你会学到发布/订阅模式（和 HTTP 的请求-响应完全是另一个世界观）、主题（Topic）设计，以及为什么物联网都用 MQTT——同时第 10 课的&quot;心跳&quot;和&quot;回执&quot;思想将在云上以 QoS 的形式重生。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

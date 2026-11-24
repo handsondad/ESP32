@@ -1,0 +1,121 @@
+<!-- 组件：HTTP 控灯闭环 · 用于第 11 课 -->
+<div class="wgt wgt-http" id="wg-http">
+  <div class="wgt-head"><span>🌐 交互演示：点一下按钮，到底发生了什么</span><span class="wgt-badge">点页面上的按钮看请求流动</span></div>
+  <div class="wgt-body">
+    <div class="wg-http-grid">
+      <!-- 左：手机浏览器 -->
+      <div class="wg-http-phone">
+        <div class="wg-http-browser">
+          <div class="wg-http-url">http://192.168.1.57/</div>
+          <div class="wg-http-page">
+            <div class="wg-http-title">ESP32 智能灯</div>
+            <div class="wg-http-btns">
+              <button id="wg-http-on" class="on">开灯</button>
+              <button id="wg-http-off" class="off">关灯</button>
+            </div>
+            <div class="wg-http-state">当前状态：<b id="wg-http-state">⚫ 灭了</b></div>
+          </div>
+        </div>
+      </div>
+      <!-- 中：请求流动 -->
+      <div class="wg-http-mid">
+        <div class="wg-http-req" id="wg-http-req">等待点击…</div>
+        <svg viewBox="0 0 200 60" style="width:100%;height:auto">
+          <line x1="8" y1="30" x2="192" y2="30" stroke="#e5e2dc" stroke-width="3"/>
+          <circle id="wg-http-pkt" cx="8" cy="30" r="8" fill="#e67e22" opacity="0"/>
+          <text x="100" y="16" text-anchor="middle" fill="#9aa0a6" font-size="10">Wi-Fi 局域网</text>
+          <text x="100" y="54" text-anchor="middle" fill="#9aa0a6" font-size="10">HTTP 请求 / 响应</text>
+        </svg>
+        <div class="wg-http-log" id="wg-http-log">服务器空闲：handleClient() 每圈 loop 查一次，没请求立刻返回。</div>
+      </div>
+      <!-- 右：板子内部 -->
+      <div class="wg-http-board">
+        <div class="wg-http-chip">ESP32<br><small>WebServer:80</small></div>
+        <div class="wg-http-steps">
+          <div class="wg-http-step" data-k="recv">① handleClient() 收到 GET</div>
+          <div class="wg-http-step" data-k="route">② 路由 /led?state=on</div>
+          <div class="wg-http-step" data-k="exec">③ digitalWrite 执行</div>
+          <div class="wg-http-step" data-k="redir">④ 303 重定向回首页</div>
+        </div>
+        <div class="wg-http-led" id="wg-http-led"></div>
+      </div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">每次点击 = <b>一次完整的 HTTP 请求-响应往返</b>：浏览器跳转 → 板子路由分发 → 执行 → 303 让浏览器回首页刷新。全程 <b>handleClient() 非阻塞</b>——这就是第 10 课三任务结构换上 HTTP 外衣的样子。</p>
+  </div>
+</div>
+<style>
+.wg-http-grid { display: grid; grid-template-columns: 210px 1fr 210px; gap: 16px; align-items: start; }
+.wg-http-browser { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+.wg-http-url { background: #eef1f0; padding: .4em .7em; font-size: .75em; color: #555; font-family: Consolas, monospace; border-bottom: 1px solid var(--border); }
+.wg-http-page { padding: 1.1em .8em; text-align: center; }
+.wg-http-title { font-weight: bold; color: #0b6e4f; font-size: 1.05em; margin-bottom: .7em; }
+.wg-http-btns button { font-family: inherit; padding: .55em 1.3em; font-size: .95em; border: none; border-radius: 8px; color: #fff; cursor: pointer; margin: 0 4px; }
+.wg-http-btns .on { background: #27ae60; } .wg-http-btns .off { background: #95a5a6; }
+.wg-http-btns button:active { transform: scale(.95); }
+.wg-http-state { margin-top: .8em; font-size: .9em; color: #444; }
+.wg-http-mid { text-align: center; }
+.wg-http-req { font-size: .8em; font-family: Consolas, monospace; color: #e67e22; font-weight: bold; min-height: 2.4em; }
+.wg-http-log { margin-top: 6px; font-size: .74em; color: #6b6b6b; background: #f4f7f5; border-radius: 6px; padding: .5em .6em; line-height: 1.6; text-align: left; min-height: 5.2em; }
+.wg-http-board { background: #f4f7f5; border: 1px solid var(--border); border-radius: 10px; padding: .7em; text-align: center; }
+.wg-http-chip { background: #0f3d2e; color: #8fd6bd; font-weight: bold; font-size: .9em; border-radius: 8px; padding: .5em; line-height: 1.5; }
+.wg-http-chip small { color: #5f7484; font-weight: normal; font-size: .8em; }
+.wg-http-steps { margin-top: .7em; display: flex; flex-direction: column; gap: 5px; }
+.wg-http-step { font-size: .74em; background: #fff; border: 1px solid var(--border); border-radius: 6px; padding: .35em .5em; text-align: left; color: #999; transition: all .2s; }
+.wg-http-step.lit { border-color: #0b6e4f; background: #e6f3ee; color: #0b6e4f; font-weight: bold; }
+.wg-http-led { width: 44px; height: 44px; border-radius: 50%; margin: .7em auto 0; background: #e8e4dc; border: 3px solid #c8c2b6; transition: all .25s; }
+.wgt-http .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 720px) { .wg-http-grid { grid-template-columns: 1fr; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-http');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const req = document.getElementById('wg-http-req');
+  const log = document.getElementById('wg-http-log');
+  const pkt = document.getElementById('wg-http-pkt');
+  const state = document.getElementById('wg-http-state');
+  const led = document.getElementById('wg-http-led');
+  const steps = Array.from(root.querySelectorAll('.wg-http-step'));
+  let busy = false, on = false;
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+  function setLit(k) { steps.forEach(s => s.classList.toggle('lit', s.dataset.k === k)); }
+
+  async function click(v) {
+    if (busy) return;
+    busy = true;
+    const target = v === 'on';
+    const arg = target ? 'state=on' : 'state=off';
+    // ① 请求发出
+    req.textContent = `GET /led?${arg}`;
+    log.textContent = '浏览器跳转 → 发出 GET 请求，数据包在 Wi-Fi 上飞…';
+    pkt.setAttribute('fill', target ? '#27ae60' : '#95a5a6');
+    pkt.setAttribute('opacity', '1');
+    for (let x = 8; x <= 192; x += 8) { pkt.setAttribute('cx', x); await sleep(18); }
+    pkt.setAttribute('opacity', '0');
+    // ② 板子四步
+    setLit('recv'); log.textContent = 'handleClient() 检测到请求，调用 handleLed()。'; await sleep(430);
+    setLit('route'); log.textContent = `路由匹配 /led，解析参数 ${arg}。`; await sleep(430);
+    setLit('exec'); log.textContent = 'digitalWrite() 执行 —— 板上 LED 状态改变！';
+    on = target;
+    led.style.background = on ? 'radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)' : '#e8e4dc';
+    led.style.boxShadow = on ? '0 0 18px rgba(255,210,77,.8)' : 'none';
+    led.style.borderColor = on ? '#e6a700' : '#c8c2b6';
+    await sleep(430);
+    setLit('redir'); log.textContent = '返回 303 Location: / —— 浏览器自动跳回首页。'; await sleep(430);
+    // ③ 响应回程
+    for (let x = 192; x >= 8; x -= 8) { pkt.setAttribute('cx', x); pkt.setAttribute('opacity', '1'); await sleep(14); }
+    pkt.setAttribute('opacity', '0');
+    // ④ 首页刷新
+    state.textContent = on ? '🟢 亮着' : '⚫ 灭了';
+    state.style.color = on ? '#27ae60' : '#95a5a6';
+    req.textContent = 'GET / → 200 OK（页面刷新）';
+    log.innerHTML = '页面已刷新，状态显示最新值。<br>板子回到空闲：继续每圈 loop 查请求。';
+    setLit('');
+    busy = false;
+  }
+
+  document.getElementById('wg-http-on').onclick = () => click('on');
+  document.getElementById('wg-http-off').onclick = () => click('off');
+})();
+</script>
