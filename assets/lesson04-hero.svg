@@ -1,0 +1,114 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg4" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7faf8"/>
+      <stop offset="1" stop-color="#e8f1ec"/>
+    </linearGradient>
+    <radialGradient id="ledGlow4" cx="0.5" cy="0.5" r="0.5">
+      <stop offset="0" stop-color="#fff3c4" stop-opacity="1"/>
+      <stop offset="0.4" stop-color="#ffd24d" stop-opacity="0.55"/>
+      <stop offset="1" stop-color="#ffd24d" stop-opacity="0"/>
+    </radialGradient>
+    <filter id="ds4" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0b3d30" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="440" fill="url(#bg4)"/>
+
+  <!-- ===== 左：ESP32 ===== -->
+  <g transform="translate(150 215)" filter="url(#ds4)">
+    <rect x="-100" y="-155" width="200" height="310" rx="13" fill="#0f3d2e" stroke="#0a2c21" stroke-width="4"/>
+    <g fill="#c9ccd1">
+      <rect x="-120" y="-128" width="28" height="10" rx="3"/><rect x="-120" y="-104" width="28" height="10" rx="3"/>
+      <rect x="-120" y="-80" width="28" height="10" rx="3"/><rect x="-120" y="-56" width="28" height="10" rx="3"/>
+      <rect x="-120" y="-32" width="28" height="10" rx="3"/><rect x="-120" y="-8" width="28" height="10" rx="3"/>
+      <rect x="-120" y="16" width="28" height="10" rx="3"/><rect x="-120" y="40" width="28" height="10" rx="3"/>
+      <rect x="-120" y="64" width="28" height="10" rx="3"/><rect x="-120" y="88" width="28" height="10" rx="3"/>
+      <rect x="92" y="-128" width="28" height="10" rx="3"/><rect x="92" y="-104" width="28" height="10" rx="3"/>
+      <rect x="92" y="-80" width="28" height="10" rx="3"/><rect x="92" y="-56" width="28" height="10" rx="3"/>
+      <rect x="92" y="-32" width="28" height="10" rx="3"/><rect x="92" y="-8" width="28" height="10" rx="3"/>
+      <rect x="92" y="16" width="28" height="10" rx="3"/><rect x="92" y="40" width="28" height="10" rx="3"/>
+      <rect x="92" y="64" width="28" height="10" rx="3"/><rect x="92" y="88" width="28" height="10" rx="3"/>
+    </g>
+    <rect x="-64" y="-130" width="128" height="100" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="0" y="-92" fill="#4a5057" font-size="17" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="0" y="-66" fill="#6b7280" font-size="12" text-anchor="middle">analogRead()</text>
+    <rect x="-80" y="68" width="40" height="21" rx="4" fill="#d9dee2" stroke="#9aa0a6" stroke-width="2"/>
+    <text x="-60" y="82" fill="#4a5057" font-size="10.5" font-weight="bold" text-anchor="middle">BOOT</text>
+    <rect x="40" y="68" width="40" height="21" rx="4" fill="#d9dee2" stroke="#9aa0a6" stroke-width="2"/>
+    <text x="60" y="82" fill="#4a5057" font-size="10.5" font-weight="bold" text-anchor="middle">EN</text>
+    <rect x="-25" y="130" width="50" height="25" rx="5" fill="#b8bcc2" stroke="#8a9099" stroke-width="3"/>
+    <text x="108" y="-50" fill="#7ec8ff" font-size="13" font-weight="bold">GPIO34</text>
+    <text x="108" y="-32" fill="#9fb6c4" font-size="11">模拟输入</text>
+    <text x="108" y="30" fill="#ffd24d" font-size="13" font-weight="bold">GPIO4</text>
+    <text x="108" y="48" fill="#9fb6c4" font-size="11">PWM 输出</text>
+  </g>
+
+  <!-- ===== 中：信号流水线 ===== -->
+  <g transform="translate(265 70)">
+    <!-- 步骤 1：手旋 -->
+    <g transform="translate(0 0)">
+      <circle cx="55" cy="70" r="40" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+      <line x1="55" y1="70" x2="55" y2="40" stroke="#0b6e4f" stroke-width="5" stroke-linecap="round">
+        <animateTransform attributeName="transform" type="rotate" values="-50 55 70;50 55 70;-50 55 70" dur="3s" repeatCount="indefinite"/>
+      </line>
+      <circle cx="55" cy="70" r="6" fill="#0b6e4f"/>
+      <text x="55" y="132" fill="#0b6e4f" font-size="14" font-weight="bold" text-anchor="middle">① 手拧旋钮</text>
+    </g>
+    <path d="M105 70 L145 70" stroke="#9aa0a6" stroke-width="3" marker-end="url(#a4)"/>
+    <!-- 步骤 2：电压 -->
+    <g transform="translate(155 0)">
+      <rect x="0" y="30" width="90" height="80" rx="8" fill="#fff" stroke="#c0392b" stroke-width="3"/>
+      <line x1="15" y1="95" x2="75" y2="95" stroke="#e5e2dc" stroke-width="2"/>
+      <line x1="15" y1="45" x2="75" y2="45" stroke="#e5e2dc" stroke-width="2"/>
+      <!-- 上升的电压条 -->
+      <rect x="40" y="45" width="14" height="50" fill="#c0392b">
+        <animate attributeName="height" values="8;50;8" dur="3s" repeatCount="indefinite"/>
+        <animate attributeName="y" values="87;45;87" dur="3s" repeatCount="indefinite"/>
+      </rect>
+      <text x="45" y="128" fill="#c0392b" font-size="14" font-weight="bold" text-anchor="middle">② 分压 V</text>
+      <text x="45" y="148" fill="#6b6b6b" font-size="11" text-anchor="middle">0 → 3.3V 连续</text>
+    </g>
+    <path d="M255 70 L295 70" stroke="#9aa0a6" stroke-width="3" marker-end="url(#a4)"/>
+    <!-- 步骤 3：数字 -->
+    <g transform="translate(305 0)">
+      <rect x="0" y="30" width="95" height="80" rx="8" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+      <text x="47" y="78" fill="#0b6e4f" font-size="24" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">
+        <tspan id="wg4-raw">2048</tspan>
+        <animate attributeName="opacity" values="1;1" dur="1s"/>
+      </text>
+      <text x="47" y="128" fill="#0b6e4f" font-size="14" font-weight="bold" text-anchor="middle">③ ADC 12位</text>
+      <text x="47" y="148" fill="#6b6b6b" font-size="11" text-anchor="middle">0 – 4095 整数</text>
+    </g>
+    <path d="M405 70 L445 70" stroke="#9aa0a6" stroke-width="3" marker-end="url(#a4)"/>
+    <!-- 步骤 4：LED -->
+    <g transform="translate(455 0)">
+      <circle cx="45" cy="65" r="34" fill="url(#ledGlow4)">
+        <animate attributeName="opacity" values="0.3;1;0.3" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <circle cx="45" cy="65" r="20" fill="#ffd24d" stroke="#e6a700" stroke-width="3">
+        <animate attributeName="fill" values="#5a5140;#ffd24d;#5a5140" dur="3s" repeatCount="indefinite"/>
+      </circle>
+      <text x="45" y="128" fill="#8a8378" font-size="14" font-weight="bold" text-anchor="middle">④ 亮度</text>
+      <text x="45" y="148" fill="#6b6b6b" font-size="11" text-anchor="middle">map → 0–255</text>
+    </g>
+    <defs>
+      <marker id="a4" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+        <path d="M0 0 L10 5 L0 10 z" fill="#9aa0a6"/>
+      </marker>
+    </defs>
+  </g>
+
+  <!-- ===== 右下：数字流装饰 ===== -->
+  <g transform="translate(860 300)" font-family="Consolas, monospace" font-size="15" fill="#3fa67a" opacity="0.85">
+    <text x="0" y="0">analogRead(34)</text>
+    <text x="0" y="26" fill="#0b6e4f" font-weight="bold">→ 2048</text>
+    <text x="0" y="52">map(2048,0,4095,0,255)</text>
+    <text x="0" y="78" fill="#0b6e4f" font-weight="bold">→ 127</text>
+    <text x="0" y="104">analogWrite(4, 127)</text>
+    <text x="0" y="130" fill="#e67e22" font-weight="bold">→ 半亮 🟡</text>
+  </g>
+
+  <!-- 底部标语 -->
+  <text x="600" y="424" fill="#0b6e4f" font-size="18" font-weight="bold" text-anchor="middle">模拟进（ADC 0–4095）→ 数字处理 → 模拟出（PWM 0–255）：你的第一个完整控制闭环</text>
+</svg>

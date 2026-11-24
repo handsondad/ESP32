@@ -1,0 +1,442 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 4 课：模拟世界——ADC 与电位器</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 4 课：模拟世界——ADC 与电位器</h1>
+<blockquote>
+<p><strong>阶段二 · 输入与输出</strong> ｜ 难度：★★★☆☆ ｜ 预计用时：45–60 分钟</p>
+<p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、电位器（10kΩ 三脚旋钮）×1、杜邦线 3 根
+<strong>无硬件替代</strong>：Wokwi 模拟器加 <code>Potentiometer</code> 元件，代码完全相同</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson04-hero.svg" alt="第 4 课效果预告：旋转电位器旋钮实时控制 LED 亮度"></p>
+<blockquote>
+<p>你将做出：<strong>手指转动旋钮，面包板上的 LED 从全灭平滑亮到全亮——旋钮就是你的调光台。</strong> 同时串口监视器里 0–4095 的数字随手指跳动。</p>
+</blockquote>
+<p>上一课的亮度是代码里写死的三角波；这一课，<strong>物理世界的连续量（旋转角度）第一次流进程序</strong>，再由程序驱动另一个连续量（亮度）。输入连续 + 输出连续 = 真正的&quot;模拟闭环&quot;。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 理解 ADC——芯片如何把&quot;连续电压&quot;翻译成&quot;离散数字&quot;</li>
+<li>✅ 掌握 <code>analogRead()</code>、12 位分辨率（0–4095）与 <code>map()</code> 映射</li>
+<li>✅ 接好电位器三根脚，用旋钮实时控制呼吸灯亮度上限</li>
+<li>✅ 攒下两个新证据：<strong>ADC2 与 Wi-Fi 冲突</strong>、模拟引脚的脾气（第 6 课、第 11 课回收）</li>
+<li>✅ 巩固 millis 非阻塞——本课代码依然零 <code>delay</code></li>
+</ol>
+<hr>
+<h2>🔁 开课先接棒：从&quot;写死的曲线&quot;到&quot;手里的旋钮&quot;</h2>
+<p>第 3 课的呼吸灯，亮度公式是 <code>brightness += step</code>——节奏、行程全由程序员决定。但真实世界里，控制量来自<strong>外面</strong>：温度多高、声音多大、旋钮拧到哪。</p>
+<p>要接住这些量，芯片需要一种新能力：<strong>读连续电压</strong>。而 ESP32 的引脚天生只会读 0 和 1（第 2 课学的数字输入）。矛盾怎么解？</p>
+<h3>ADC：把连续切成台阶</h3>
+<p><strong>ADC（Analog-to-Digital Converter，模数转换器）</strong> 的思路和 PWM 正好相反：</p>
+<blockquote>
+<p>PWM 用&quot;快速开关&quot;把<strong>数字时间平均</strong>成模拟感；ADC 用<strong>一把足够密的尺子</strong>把模拟电压量成数字。</p>
+</blockquote>
+<pre><code>真实电压（连续）:  0V ——————●—————————————— 3.3V
+                          ↑ 旋钮拧到这
+ADC 读数（离散）:  ┌──┬──┬──┬──┬──┬──┬──┬──┐  ESP32 把 0–3.3V
+                  0  512 1024 ...      4095  切成 4096 个台阶
+</code></pre>
+<p><strong>ESP32 的 ADC 是 12 位的</strong>——2¹² = <strong>4096 级</strong>（0–4095）。比 Arduino Uno 的 10 位（0–1025…准确说是 0–1023）细腻 4 倍：</p>
+<table>
+<thead>
+<tr>
+<th>读数</th>
+<th>对应电压（约）</th>
+<th>直观</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>0</td>
+<td>0V</td>
+<td>旋钮拧到底（逆时针）</td>
+</tr>
+<tr>
+<td>2048</td>
+<td>1.65V</td>
+<td>正中间</td>
+</tr>
+<tr>
+<td>4095</td>
+<td>3.3V</td>
+<td>拧到头（顺时针）</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>⚠️ <strong>分辨率 ≠ 精度</strong>：4096 级是&quot;尺子的刻度数&quot;，实际电压噪声会让读数在几个刻度间抖（第 6 课讲模拟引脚的坑时细算）。先记住换算公式：</p>
+<p><strong>电压 = 读数 ÷ 4095 × 3.3V</strong></p>
+</blockquote>
+<p><!-- 组件：ADC 采样与分压交互 · 用于第 4 课 -->
+<div class="wgt wgt-adc" id="wg-adc">
+  <div class="wgt-head"><span>🎛️ 交互演示：旋钮 → 电压 → 数字 → 亮度</span><span class="wgt-badge">拖动旋钮（滑杆）</span></div>
+  <div class="wgt-body">
+    <div class="wg-adc-grid">
+      <!-- 左：电位器接线与电压 -->
+      <div class="wg-adc-pot">
+        <svg viewBox="0 0 240 230" style="width:100%;height:auto;display:block" id="wg-adc-svg">
+          <!-- 3.3V 轨 -->
+          <line x1="30" y1="30" x2="210" y2="30" stroke="#c0392b" stroke-width="3"/>
+          <text x="30" y="22" fill="#c0392b" font-size="13" font-weight="bold">3.3V</text>
+          <!-- GND 轨 -->
+          <line x1="30" y1="200" x2="210" y2="200" stroke="#4a5b66" stroke-width="3"/>
+          <text x="30" y="220" fill="#4a5b66" font-size="13" font-weight="bold">GND</text>
+          <!-- 电阻体 -->
+          <rect x="95" y="45" width="50" height="140" rx="6" fill="#e8dcc8" stroke="#b0a48c" stroke-width="3"/>
+          <text x="120" y="120" fill="#8a8378" font-size="12" font-weight="bold" text-anchor="middle" transform="rotate(90 120 116)">10kΩ</text>
+          <!-- 上下引线 -->
+          <line x1="120" y1="30" x2="120" y2="45" stroke="#c0392b" stroke-width="3"/>
+          <line x1="120" y1="185" x2="120" y2="200" stroke="#4a5b66" stroke-width="3"/>
+          <!-- 滑动触点（随 slider 移动） -->
+          <g id="wg-adc-wiper">
+            <line x1="70" y1="115" x2="120" y2="115" stroke="#0b6e4f" stroke-width="4"/>
+            <polygon points="120,108 134,115 120,122" fill="#0b6e4f"/>
+            <!-- 输出线 -->
+            <path d="M70 115 L45 115 L45 160 L200 160" stroke="#0b6e4f" stroke-width="3" fill="none"/>
+            <text x="205" y="164" fill="#0b6e4f" font-size="12" font-weight="bold" text-anchor="end" dy="4">→ GPIO34</text>
+          </g>
+          <!-- 电压读数 -->
+          <text id="wg-adc-vlabel" x="185" y="105" fill="#c0392b" font-size="15" font-weight="bold" text-anchor="end">1.65V</text>
+        </svg>
+      </div>
+      <!-- 右：换算链 -->
+      <div class="wg-adc-chain">
+        <label style="font-size:.95em;color:#333">旋钮位置 = <b id="wg-adc-pos">50</b>%
+          <input type="range" id="wg-adc-slider" min="0" max="100" step="1" value="50">
+        </label>
+        <div class="wg-adc-steps">
+          <div class="wg-adc-step"><span>① 分压电压</span><b id="wg-adc-v">1.65</b>V</div>
+          <div class="wg-adc-step"><span>② analogRead()</span><b id="wg-adc-raw">2048</b></div>
+          <div class="wg-adc-step"><span>③ map() → 亮度</span><b id="wg-adc-bri">127</b>/255</div>
+          <div class="wg-adc-step wg-adc-ledrow">
+            <span>④ LED</span>
+            <div id="wg-adc-led" class="wg-adc-led"></div>
+          </div>
+        </div>
+        <div class="wg-adc-formula">V = 读数 ÷ 4095 × 3.3V　｜　亮度 = map(读数, 0, 4095, 0, 255)</div>
+      </div>
+    </div>
+    <p class="wgt-hint" style="text-align:center">四步流水线：<b>机械位置 → 分压电压 → 12 位数字 → 8 位亮度</b>。每一步都是上一步的确定函数——这就是"传感"的本质。注意 ①② 只在两端有轻微非线性，入门先接受理想值。</p>
+  </div>
+</div>
+<style>
+.wg-adc-grid { display: grid; grid-template-columns: 240px 1fr; gap: 20px; align-items: center; }
+.wg-adc-chain label { display: block; }
+#wg-adc-slider { width: 100%; margin-top: 6px; accent-color: #0b6e4f; }
+.wg-adc-chain b { color: #0b6e4f; font-size: 1.05em; }
+.wg-adc-steps { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 12px; }
+.wg-adc-step { background: #f4f7f5; border: 1px solid var(--border); border-radius: 8px; padding: .5em .7em; font-size: .88em; }
+.wg-adc-step span { display: block; color: #6b6b6b; font-size: .85em; }
+.wg-adc-step b { color: #c0392b; font-size: 1.25em; }
+.wg-adc-ledrow { display: flex; align-items: center; justify-content: space-between; }
+.wg-adc-led { width: 42px; height: 42px; border-radius: 50%; background: #e8e4dc; border: 3px solid #c8c2b6; }
+.wg-adc-formula { margin-top: 10px; font-size: .8em; color: #6b6b6b; font-family: Consolas, monospace; text-align: center; }
+.wgt-adc .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 560px) { .wg-adc-grid { grid-template-columns: 1fr; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-adc');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const slider = document.getElementById('wg-adc-slider');
+  const pos = document.getElementById('wg-adc-pos');
+  const vLabel = document.getElementById('wg-adc-vlabel');
+  const vEl = document.getElementById('wg-adc-v');
+  const rawEl = document.getElementById('wg-adc-raw');
+  const briEl = document.getElementById('wg-adc-bri');
+  const led = document.getElementById('wg-adc-led');
+  const wiper = document.getElementById('wg-adc-wiper');
+
+  function update() {
+    const p = parseInt(slider.value, 10);        // 0-100
+    const v = 3.3 * p / 100;
+    const raw = Math.round(4095 * p / 100);
+    const bri = Math.round(255 * p / 100);
+    pos.textContent = p;
+    vEl.textContent = v.toFixed(2);
+    rawEl.textContent = raw;
+    briEl.textContent = bri;
+    vLabel.textContent = v.toFixed(2) + 'V';
+    // 触点上下移动：y 从 45(顶,3.3V) 到 185(底,GND)
+    const wy = 45 + (185 - 45) * (1 - p / 100);
+    wiper.setAttribute('transform', `translate(0 ${wy - 115})`);
+    // LED
+    const g = Math.pow(p / 100, 0.45);
+    if (p === 0) {
+      led.style.background = '#e8e4dc'; led.style.boxShadow = 'none'; led.style.borderColor = '#c8c2b6';
+    } else {
+      led.style.background = 'radial-gradient(circle at 35% 35%, #fff8d6, #ffd24d 60%, #e6a700)';
+      led.style.boxShadow = `0 0 ${4 + 26 * g}px rgba(255,210,77,${0.25 + 0.65 * g})`;
+      led.style.borderColor = '#e6a700';
+    }
+  }
+  slider.oninput = update;
+  update();
+})();
+</script>
+</p>
+<hr>
+<h2>🎚️ 新知识一：电位器——三根脚的&quot;分压器&quot;</h2>
+<p>电位器（Potentiometer）就是你台灯上的调光旋钮：<strong>一颗被旋钮刮着走的电阻</strong>。它有 3 个脚：</p>
+<pre><code>        旋钮轴
+          ↻
+   ┌─────[R]─────┐   ← 整颗电阻（两端固定，比如 10kΩ）
+   │      ↑      │
+  脚1   滑动触点   脚3
+ （3.3V） (跟着旋钮跑) （GND）
+          │
+          脚2 ────→ 接 ESP32 引脚（读这里）
+</code></pre>
+<ul>
+<li><strong>脚 1 接 3.3V，脚 3 接 GND</strong>：整颗电阻两端建立&quot;满量程电压差&quot;</li>
+<li><strong>脚 2（滑动触点）接 GPIO</strong>：旋钮决定触点卡在电阻的哪个位置 → 分到多少电压</li>
+</ul>
+<p>旋钮拧到底时触点贴着 3.3V 那端，读 4095；拧到另一头贴着 GND，读 0——<strong>机械位置被精确翻译成数字</strong>。这就是&quot;分压（voltage divider）&quot;：第 1 课水管比喻的&quot;窄口分水压&quot;，现在成了你的输入设备。</p>
+<h3>接线（先断电！）</h3>
+<table>
+<thead>
+<tr>
+<th>从</th>
+<th>到</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>电位器<strong>左脚</strong></td>
+<td>ESP32 <strong>3V3</strong></td>
+<td>建立满量程上端</td>
+</tr>
+<tr>
+<td>电位器<strong>中脚</strong>（滑动）</td>
+<td>ESP32 <strong>GPIO34</strong></td>
+<td>模拟读数入口（⚠️ 第 1 课埋的雷！）</td>
+</tr>
+<tr>
+<td>电位器<strong>右脚</strong></td>
+<td>ESP32 <strong>GND</strong></td>
+<td>满量程下端</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>💡 <strong>注意这个精心安排</strong>：中脚我们<strong>故意接 GPIO34</strong>——第 1 课挑战里你把 LED 接 34 亮不了，第 6 课揭晓答案。现在提前让你摸到这颗雷的引信：<strong>GPIO34 是&quot;仅输入&quot;脚，不能输出，但拿来读模拟信号完全合法</strong>。同一个引脚，接 LED 是坑，接电位器是宝——第 6 课我们会把这类引脚的完整脾气一次算清。</p>
+<p><strong>Wokwi 方案</strong>：添加 <code>Potentiometer</code>，三脚分别接 3V3、GPIO34、GND。</p>
+</blockquote>
+<hr>
+<h2>📡 新知识二：<code>analogRead()</code> 与 <code>map()</code></h2>
+<pre><code class="language-cpp">int value = analogRead(34);     // 读 GPIO34，返回 0–4095
+</code></pre>
+<p>一行，同步返回，不阻塞。但 0–4095 对人不友好，对 LED 也没直接用——LED 要的是 0–255。这时需要<strong>线性映射</strong>：</p>
+<pre><code class="language-cpp">int brightness = map(value, 0, 4095, 0, 255);
+</code></pre>
+<p><code>map(x, 在哪开始, 到哪结束, 映射到哪开始, 映射到哪结束)</code> ——把一个区间的数<strong>等比例搬</strong>到另一个区间：</p>
+<pre><code>map(0,    0, 4095, 0, 255) → 0      （拧到底，全灭）
+map(2048, 0, 4095, 0, 255) → 127    （中间，半亮）
+map(4095, 0, 4095, 0, 255) → 255    （拧到头，最亮）
+</code></pre>
+<blockquote>
+<p>📌 <code>map()</code> 只是<strong>整数除法的简写</strong>，内部就是 <code>(x - in_min) * (out_max - out_min) / (out_max - in_min) + out_min</code>。理解原理比背 API 重要——哪天要非线性映射（比如对数调光），你自己就能写出公式。</p>
+</blockquote>
+<hr>
+<h2>💡 完整代码（直接复制）</h2>
+<pre><code class="language-cpp">// ============================================
+// 第 4 课：旋钮调光 —— ADC 输入 + PWM 输出
+// ============================================
+const int POT_PIN = 34;        // 电位器中脚（GPIO34，仅输入）
+const int LED_PIN = 4;         // 外接 LED（沿用第 3 课接线）
+
+unsigned long lastRead = 0;    // 上次采样时刻（millis 非阻塞）
+const unsigned long INTERVAL = 20;  // 每 20ms 采样一次（50Hz）
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  Serial.begin(115200);
+  Serial.println(&quot;旋钮调光启动&quot;);
+}
+
+void loop() {
+  unsigned long now = millis();
+
+  if (now - lastRead &gt;= INTERVAL) {     // 到点采样，绝不 delay
+    lastRead = now;
+
+    int raw = analogRead(POT_PIN);      // 0–4095 原始读数
+    int brightness = map(raw, 0, 4095, 0, 255);
+
+    analogWrite(LED_PIN, brightness);   // 亮度立刻跟上
+    Serial.print(&quot;旋钮: &quot;);
+    Serial.print(raw);
+    Serial.print(&quot;  亮度: &quot;);
+    Serial.println(brightness);
+  }
+
+  // 自由时间：第 3 课的呼吸逻辑、第 2 课的按钮，都可以塞这里
+}
+</code></pre>
+<h3>逐段拆解</h3>
+<p><strong><code>const int POT_PIN = 34;</code></strong>
+第 1 课埋的雷，现在成了宝。注意它<strong>不需要 <code>pinMode(INPUT)</code></strong>——<code>analogRead</code> 会自己配置方向，而且 GPIO34 本来就是仅输入脚。</p>
+<p><strong><code>unsigned long lastRead = 0;</code> + <code>INTERVAL = 20</code></strong>
+采样也走 millis 节奏，<strong>全课零 delay</strong>。为什么是 20ms？旋钮是慢速机械量，每秒采 50 次绰绰有余；采太快只是浪费，采太慢会感觉&quot;手快屏慢&quot;。<strong>采样率要匹配信号的物理速度</strong>——这是数字信号处理的第一直觉。</p>
+<p><strong><code>int raw = analogRead(POT_PIN);</code></strong>
+拿到 0–4095。叫 <code>raw</code>（原始值）是工程习惯：<strong>原始数据和加工后的数据分开存</strong>，调试时才能对照&quot;传感器到底给了我什么&quot;。</p>
+<p><strong><code>map(raw, 0, 4095, 0, 255)</code></strong>
+量程搬移。注意这里假设了理想线性——实际 ADC 两端有轻微非线性（第 6 课的坑之一），入门先接受。</p>
+<p><strong><code>analogWrite(LED_PIN, brightness);</code></strong>
+输入的连续量 → 输出的连续量。<strong>第 3 课你让亮度动起来，第 4 课你让&quot;动&quot;由手决定</strong>——控制环闭上了。</p>
+<p><strong><code>Serial.print</code> 分行打印</strong>
+与 <code>println</code> 的区别：<code>print</code> 不换行，拼完一整行再 <code>println</code> 换行。串口打印从此有了&quot;格式&quot;。</p>
+<hr>
+<h2>🎯 进阶玩法：旋钮 + 呼吸（合体挑战的预演）</h2>
+<p>把第 3 课的呼吸逻辑塞进 <code>// 自由时间</code>处，用旋钮控制<strong>呼吸速度</strong>——两个 millis 定时器并行，互不干扰：</p>
+<pre><code class="language-cpp">// 在 loop() 的自由时间处加入（INTERVAL 之外的第二个定时器）：
+// 旋钮越靠右，呼吸越快
+int speed = map(analogRead(POT_PIN), 0, 4095, 40, 4);  // 每档 4–40ms
+// ↑ 注意：这里直接读也可以，但正式代码建议同样用 millis 节奏管理
+</code></pre>
+<p><strong>两个定时器并行 = 多任务的雏形</strong>。第 10 课你会看到：当任务涨到三个、五个，手写 if 会失控——那时再引入任务调度的思想。现在先体会：<strong>millis 结构天然支持&quot;多条时间线并行&quot;，delay 结构天生做不到</strong>。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 电位器三脚接线正确（3V3 / GPIO34 / GND），通电后旋钮无发热</li>
+<li><input disabled="" type="checkbox"> 上传代码无报错</li>
+<li><input disabled="" type="checkbox"> 旋钮拧动时 LED 亮度实时平滑变化，全程无卡顿、无 delay</li>
+<li><input disabled="" type="checkbox"> 串口监视器（115200）显示 <code>旋钮: 0~4095 亮度: 0~255</code>，数值随旋钮连续变化</li>
+<li><input disabled="" type="checkbox"> 拧到两端时读数能到达（或非常接近）0 和 4095</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①ADC 干什么 ②为什么是 4096 级 ③电位器中脚的电压是怎么&quot;分&quot;出来的</li>
+<li><input disabled="" type="checkbox"> 记录现象：读数静止时是否有个位数抖动？（噪声证据，第 6 课回收）</li>
+</ul>
+<p><strong>全部打勾 → 你打通了&quot;模拟进 → 数字处理 → 模拟出&quot;的完整链路。进入第 5 课。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>改行程</strong>：让 LED 只响应旋钮的前一半行程（0–2048 → 0–255，后半程保持最亮），改哪一行？</li>
+<li><strong>电压换算</strong>：在串口同时打印换算后的电压 <code>raw / 4095.0 * 3.3</code>（注意用浮点数），拧到中间看是不是约 1.65V。</li>
+<li><strong>双灯反向（选做）</strong>：再接一颗 LED 到 GPIO25，让一颗随旋钮变亮、另一颗变暗（一个 map 出两个互补值）。</li>
+<li><strong>证据收集（重点）</strong>：把中脚改接到 <strong>GPIO36</strong>（也是模拟脚）再测；然后试着把中脚接到 <strong>GPIO25</strong> 并 <code>analogRead(25)</code>——记录读数是全 0、乱跳还是正常。<strong>把现象记进笔记本</strong>：ADC2（GPIO25 属于 ADC2）的坑，第 6 课清算引脚、第 11 课开 Wi-Fi 时我们会两次回收它。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>读数恒为 0</td>
+<td>① 中脚没接对（接到 GND 或空接）② 接到了非 ADC 引脚</td>
+<td>核对中脚 → GPIO34；浮空的 analogRead 读数不可信</td>
+</tr>
+<tr>
+<td>读数恒为 4095 或卡死不动</td>
+<td>中脚接到了 3V3，或旋钮接线脚序反了</td>
+<td>中脚应该是滑动触点；左右脚才是 3V3/GND</td>
+</tr>
+<tr>
+<td>读数乱跳幅度大（±50 以上）</td>
+<td>正常噪声 + 面包板接触不良</td>
+<td>插紧杜邦线；读数小幅抖动属正常（滤波是第 6 课话题）</td>
+</tr>
+<tr>
+<td>LED 不亮但串口数值正常变化</td>
+<td>LED 回路问题（引脚/电阻/极性）</td>
+<td>回查第 2 课接线表：GPIO4 → 220Ω → LED → GND</td>
+</tr>
+<tr>
+<td>亮度变化&quot;一段一段&quot;不连续</td>
+<td>map 用了整数除法的固有台阶</td>
+<td>属正常（256 级对肉眼足够）；追求平滑可加几行滤波，第 6 课讲</td>
+</tr>
+<tr>
+<td><code>analogRead</code> 返回值全乱或为 0（接 GPIO25/26）</td>
+<td><strong>ADC2 与 Wi-Fi 冲突</strong>的前兆</td>
+<td>本课请用 ADC1 引脚（32–39）；完整原理第 6 课、第 11 课揭晓</td>
+</tr>
+<tr>
+<td>编译报错引脚号 34 不能 OUTPUT</td>
+<td>把 34 也写了 pinMode(OUTPUT)</td>
+<td>GPIO34 仅输入——第 1 课埋的雷，第 6 课拆解</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>旋钮控制了亮度，但旋钮和灯<strong>还连在同一块板子上</strong>——它们的&quot;对话&quot;是芯片自言自语。<strong>第 5 课：串口通信与共地</strong>：你会把 ESP32 的 TX/RX 两根线接到另一个设备上（或电脑的真正串口视角），第一次让<strong>两颗芯片互相说话</strong>。第 1 课 GND 词条里那句&quot;共地是一切通讯的前提&quot;将在本课被深刻体会——你会亲手验证：忘了接 GND，数据就是一锅乱码。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>
