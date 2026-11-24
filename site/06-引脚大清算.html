@@ -1,0 +1,654 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 6 课：引脚大清算——GPIO 的脾气</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 6 课：引脚大清算——GPIO 的脾气</h1>
+<blockquote>
+<p><strong>阶段二 · 输入与输出</strong> ｜ 难度：★★★★☆ ｜ 预计用时：60 分钟（本课是&quot;理论清算课&quot;，动手少、动脑多）</p>
+<p><strong>本课材料</strong>：前 5 课的板子与接线即可（本课大部分是&quot;讲清楚&quot;，附 2 个小验证实验）
+<strong>无硬件替代</strong>：Wokwi 可复现全部验证实验</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson06-hero.svg" alt="第 6 课效果预告：引脚陷阱全景清算"></p>
+<blockquote>
+<p><strong>本课不做出新东西——它把你前 5 课攒下的所有&quot;引脚悬案&quot;一次性结案。</strong></p>
+</blockquote>
+<p>到目前为止，你在引脚上欠了 5 笔账。这节课就是清算日：</p>
+<table>
+<thead>
+<tr>
+<th>#</th>
+<th>悬案</th>
+<th>埋于</th>
+<th>本课</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>1</td>
+<td>LED 接 GPIO34 为什么不亮？</td>
+<td>第 1 课挑战 3</td>
+<td>✅ 揭晓</td>
+</tr>
+<tr>
+<td>2</td>
+<td>strapping 脚（IO0/2/5/12/15）为什么&quot;开机时不能乱拉&quot;？</td>
+<td>第 1 课三原则</td>
+<td>✅ 揭晓</td>
+</tr>
+<tr>
+<td>3</td>
+<td><code>INPUT</code> 没上拉时读数为什么乱跳？（浮空引脚）</td>
+<td>第 2 课挑战 3</td>
+<td>✅ 揭晓</td>
+</tr>
+<tr>
+<td>4</td>
+<td>电平阈值 1.65V 是怎么回事？</td>
+<td>第 2 课正文</td>
+<td>✅ 揭晓</td>
+</tr>
+<tr>
+<td>5</td>
+<td>ADC2 接 GPIO25 读数为什么诡异？</td>
+<td>第 4 课挑战 4</td>
+<td>✅ 揭晓</td>
+</tr>
+<tr>
+<td>6</td>
+<td>5V 设备能不能直接接？（第 5 课埋）</td>
+<td>第 5 课挑战 4</td>
+<td>✅ 揭晓</td>
+</tr>
+</tbody></table>
+<p><strong>学完本课，你拥有&quot;引脚安全&quot;的完整知识——后面 9 课再接任何东西，你都知道哪根能碰、哪根要小心、为什么。</strong></p>
+<hr>
+<h2>🔍 悬案一揭晓：GPIO34 为什么亮不了灯？</h2>
+<p>第 1 课你把 <code>LED_PIN</code> 改成 34，灯纹丝不动。现在真相是：</p>
+<blockquote>
+<p><strong>ESP32 的 GPIO34/35/36/39 是&quot;仅输入（Input Only）&quot;引脚——芯片内部根本没有通往外部的驱动管，<code>digitalWrite</code> 对它们是空操作。</strong></p>
+</blockquote>
+<p>普通 GPIO 的内部结构是这样（一个&quot;推挽输出&quot;）：</p>
+<pre><code>        3.3V
+         │
+        [PMOS 管]  ← 上管导通 → 输出 3.3V（HIGH）
+         │
+         ├────→ 引脚
+         │
+        [NMOS 管]  ← 下管导通 → 输出 0V（LOW）
+         │
+        GND
+</code></pre>
+<p><code>digitalWrite(HIGH/LOW)</code> 就是轮流开关这两颗管子。而 <strong>GPIO34–39 连这对管子都没装</strong>——它们只接了<strong>读取电路（比较器/ADC）</strong>，是纯粹的&quot;耳朵&quot;，没有&quot;嗓子&quot;：</p>
+<table>
+<thead>
+<tr>
+<th>引脚</th>
+<th>能读</th>
+<th>能写</th>
+<th>内部上下拉</th>
+<th>典型用途</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>GPIO0–33（多数）</td>
+<td>✅</td>
+<td>✅</td>
+<td>✅ 有</td>
+<td>万能通用</td>
+</tr>
+<tr>
+<td><strong>GPIO34/35/36/39</strong></td>
+<td>✅</td>
+<td>❌</td>
+<td>❌ <strong>没有</strong></td>
+<td>传感器模拟输入、中断输入</td>
+</tr>
+<tr>
+<td>GPIO34/35/36/39 用 analogRead</td>
+<td>✅（ADC1）</td>
+<td>—</td>
+<td>—</td>
+<td><strong>第 4 课电位器就该接这里</strong></td>
+</tr>
+</tbody></table>
+<p><strong>同一个引脚，接 LED 是坑，接电位器是宝</strong>——第 4 课我们故意让你把电位器中脚接 34，就是提前演示&quot;它的正确用法&quot;。谜底一句话：</p>
+<blockquote>
+<p><strong>GPIO34–39：只进不出，且无内部上下拉。用它读（尤其读模拟量）很好，想用它输出/点灯，永远没戏。</strong></p>
+</blockquote>
+<p><strong>验证实验（2 分钟）</strong>：把第 2 课的 LED 接到 GPIO34，上传第 1 课代码 → 不亮；换回 GPIO4 → 亮。<strong>现象与原理对上了，这个雷就永远拆了。</strong></p>
+<hr>
+<h2>🔍 悬案二揭晓：strapping 脚——开机那一瞬间的&quot;命运抽签&quot;</h2>
+<p>第 1 课三原则说过&quot;有的引脚开机时不能拉高&quot;。主角是 5 个 <strong>strapping 引脚（启动配置脚）</strong>：</p>
+<blockquote>
+<p><strong>芯片在上电复位的那一瞬间（几十毫秒），会&quot;采样&quot;这几个引脚的电平，用来决定启动模式、Flash 电压、日志开关等硬件配置。采样完，它们才变回普通 GPIO。</strong></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>引脚</th>
+<th>开机时采样决定什么</th>
+<th>风险场景</th>
+<th>你的安全垫</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>GPIO0</strong></td>
+<td>启动模式：LOW=下载模式，HIGH=运行模式</td>
+<td>外设把 0 拉低 → 板子开机进下载模式&quot;卡住&quot;</td>
+<td>板载 BOOT 键就是它，平时悬空/上拉</td>
+</tr>
+<tr>
+<td><strong>GPIO2</strong></td>
+<td>下载模式必须为 LOW 或悬空</td>
+<td>外设拉高 2 → 下载失败</td>
+<td>板上有 10kΩ 下拉（第 1 课提过）</td>
+</tr>
+<tr>
+<td><strong>GPIO5</strong></td>
+<td>SDIO 从机模式时钟</td>
+<td>一般外设无影响</td>
+<td>当普通脚用没问题</td>
+</tr>
+<tr>
+<td><strong>GPIO12 (MTDI)</strong></td>
+<td><strong>Flash 电压</strong>：1.8V / 3.3V 选择</td>
+<td>⚠️ <strong>外设把 12 拉高 → Flash 电压选错 → 芯片直接无法启动</strong></td>
+<td>接 3.3V 器件时避免用 12 当输入</td>
+</tr>
+<tr>
+<td><strong>GPIO15</strong></td>
+<td>启动时的日志打印开关</td>
+<td>拉低 → 开机日志静音（通常无害）</td>
+<td>当普通脚用没问题</td>
+</tr>
+</tbody></table>
+<p><strong>最危险的是 GPIO12</strong>——它不是&quot;偶尔抽风&quot;，而是接错了<strong>板子根本开不了机</strong>（新手以为板子烧了）。记住这条工程红线：</p>
+<blockquote>
+<p>⚠️ <strong>GPIO12：不要接&quot;开机瞬间会输出高电平&quot;的外设</strong>（比如某些模块的 INT/SDA 上拉）。要用它，确保外设开机时不驱动它为高。</p>
+</blockquote>
+<p><strong>为什么叫&quot;抽签&quot;？</strong> 因为这些引脚平时（程序跑起来后）就是普通 GPIO——<strong>只有上电那几十毫秒有双重身份</strong>。你的外设如果恰好在那几十毫秒输出高/低电平，就可能&quot;劫持&quot;启动配置。这就是第 1 课原则 3&quot;不确定的引脚先查表&quot;的深层原因。</p>
+<hr>
+<h2>🔍 悬案三揭晓：浮空引脚——<code>INPUT</code> 为什么乱跳</h2>
+<p>第 2 课挑战 3 你把 <code>INPUT_PULLUP</code> 改成 <code>INPUT</code>，按钮读数变幽灵。原因：</p>
+<blockquote>
+<p><strong>高阻输入的引脚像一根天线。</strong> 没有上拉/下拉电阻把它&quot;锚&quot;在确定电平上，引脚上的微小电荷会被空气中的电磁噪声（50Hz 市电、USB、Wi-Fi 射频）推来推去——<code>digitalRead</code> 读到的是<strong>随机数</strong>。</p>
+</blockquote>
+<pre><code>有上拉：  3.3V ──[10kΩ]──┬── 引脚        松开时被拽到 HIGH，稳定
+                          │
+                        [按钮]
+                          │
+                         GND
+
+浮空：                   └── 引脚        谁都不管 → 噪声说了算 → 0/1 乱蹦
+</code></pre>
+<p><strong>三条铁律</strong>（背下来）：</p>
+<ol>
+<li><strong>任何输入引脚，要么内部上拉/下拉，要么外部接电阻</strong>——不允许&quot;裸奔&quot;</li>
+<li><code>INPUT_PULLUP</code> 是 90% 场景的默认选择（按钮接 GND，松开读 HIGH）</li>
+<li><strong>读数疯狂乱跳 ≠ 代码 bug，是物理现象</strong>——先查有没有锚定电阻，再查代码</li>
+</ol>
+<p>顺带解释第 4 课遗留的小尾巴：<strong>为什么模拟读数静止时也小幅抖动？</strong> 同理——噪声 + ADC 量化误差。工程上用<strong>软件滤波</strong>压制（比如连续采 8 次取平均），第 11 课读传感器时我们正式用上。</p>
+<hr>
+<h2>🔍 悬案四揭晓：1.65V——数字世界的&quot;楚河汉界&quot;</h2>
+<p>第 2 课说&quot;阈值大约 1.65V，低于判低、高于判高&quot;。现在补完这张图：</p>
+<pre><code>                 ESP32 输入判决
+   0V ────────────┬──────────────── 3.3V
+                  │
+              ≈1.65V（VDD/2，CMOS 中点）
+                  │
+        判 LOW    │    判 HIGH
+     （但 &lt;0.8V   │   （但 &gt;2.0V
+       才保险）    │     才保险）
+                  │
+        ┌─────────┴─────────┐
+        │  0.8V ~ 2.0V 是   │  ← &quot;模糊区/过渡区&quot;
+        │  危险的灰色地带！  │    电压停在这里 → 输出不确定
+        └───────────────────┘
+</code></pre>
+<p>三个实用结论：</p>
+<ol>
+<li><strong>不要让信号停在过渡区</strong>：浮空引脚的读数乱跳，部分原因就是它在模糊区里晃。锚定电阻把它推到确定的一侧。</li>
+<li><strong>0.8V / 2.0V 是保证值</strong>（3.3V CMOS 电平标准）：低于 0.8V 一定读 0，高于 2.0V 一定读 1，中间不保证——所以<strong>设计时要留裕量</strong>，别贴着边沿给信号。</li>
+<li><strong>这引出下一个大雷——电平兼容</strong>：</li>
+</ol>
+<hr>
+<h2>🔍 悬案五揭晓：5V 设备，能不能直接接？（第 5 课埋）</h2>
+<blockquote>
+<p><strong>绝对不行（绝大多数情况）。ESP32 引脚不耐 5V。</strong></p>
+</blockquote>
+<p>第 1 课原则 1&quot;别碰 5V&quot;的技术细节：</p>
+<table>
+<thead>
+<tr>
+<th>项目</th>
+<th>数值</th>
+<th>含义</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>VIH（输入高电平门限）</strong></td>
+<td>2.0V（规范值）</td>
+<td>超过它判高 ✅</td>
+</tr>
+<tr>
+<td><strong>VDD + 0.3V（输入绝对最大值）</strong></td>
+<td><strong>≈3.6V</strong></td>
+<td><strong>超过就可能烧毁引脚！</strong></td>
+</tr>
+<tr>
+<td>5V 信号打进来</td>
+<td>5V ≫ 3.6V</td>
+<td><strong>超出绝对最大额定 → 长期必损，可能立即损坏</strong></td>
+</tr>
+</tbody></table>
+<p>所以：</p>
+<ul>
+<li>❌ 老 Arduino（5V 逻辑）的 TX 直连 ESP32 RX → <strong>危险</strong>，长期会烧</li>
+<li>❌ 5V 传感器输出直连 → <strong>危险</strong></li>
+<li>✅ 正确姿势：<strong>电平转换（Level Shifter）</strong>——便宜的模块（几块钱）或电阻分压（低速信号凑合）</li>
+<li>✅ 部分引脚<strong>标记为&quot;5V 耐受&quot;的变体板</strong>要看具体型号，<strong>别默认</strong></li>
+</ul>
+<blockquote>
+<p>📌 <strong>第 5 课挑战 4 的答案</strong>：接 5V 设备前先问&quot;它的输出是 5V 吗？&quot;，是 → 加电平转换。<strong>&quot;3.3V 系统 + 5V 外设&quot;是嵌入式第一大烧片事故源</strong>，比忘串电阻还常见。</p>
+</blockquote>
+<hr>
+<h2>🔍 悬案六揭晓：ADC2 与 Wi-Fi 的&quot;地盘之争&quot;（第 4 课埋）</h2>
+<p>第 4 课挑战 4 你可能发现：<strong>GPIO25/26/27/4 等 ADC2 引脚的模拟读数诡异</strong>。完整原因：</p>
+<blockquote>
+<p><strong>ESP32 有两组 ADC：ADC1（GPIO32–39）和 ADC2（GPIO0/2/4/12–15/25–27）。而 Wi-Fi 射频工作时，硬件会&quot;征用&quot; ADC2 做射频校准——这期间你的 <code>analogRead(ADC2)</code> 读到的是垃圾。</strong></p>
+</blockquote>
+<table>
+<thead>
+<tr>
+<th>场景</th>
+<th>ADC1（32–39）</th>
+<th>ADC2（0/2/4/12–15/25–27）</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>Wi-Fi <strong>关闭</strong></td>
+<td>✅ 正常</td>
+<td>✅ 正常</td>
+</tr>
+<tr>
+<td>Wi-Fi <strong>开启</strong></td>
+<td>✅ <strong>正常</strong></td>
+<td>❌ <strong>读数不可用</strong></td>
+</tr>
+</tbody></table>
+<p><strong>工程红线</strong>：</p>
+<blockquote>
+<p>⚠️ <strong>只要程序会开 Wi-Fi（第 11 课起！），所有模拟输入必须用 ADC1（GPIO32–39）。</strong></p>
+</blockquote>
+<p>这就是为什么第 4 课电位器<strong>特意接 GPIO34</strong>（ADC1）——当时是埋雷，现在拆掉：<strong>模拟输入永远优先 32–39</strong>。</p>
+<hr>
+<h2>📋 全景速查表（本课毕业证，存进笔记）</h2>
+<table>
+<thead>
+<tr>
+<th>引脚类别</th>
+<th>成员</th>
+<th>能输出</th>
+<th>能模拟输入</th>
+<th>内部上下拉</th>
+<th>注意</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>万能通用 GPIO</strong></td>
+<td>0,1,3,4,5,12,13,14,15,16,17,18,19,21,22,23,25,26,27,32,33</td>
+<td>✅</td>
+<td>部分（见下）</td>
+<td>✅</td>
+<td>最安全</td>
+</tr>
+<tr>
+<td><strong>仅输入</strong></td>
+<td><strong>34,35,36,39</strong></td>
+<td>❌</td>
+<td>✅（ADC1）</td>
+<td>❌</td>
+<td>读模拟/中断专用</td>
+</tr>
+<tr>
+<td><strong>strapping</strong></td>
+<td>0,2,5,12,15</td>
+<td>✅</td>
+<td>部分</td>
+<td>✅</td>
+<td>开机采样；<strong>12 最危险</strong></td>
+</tr>
+<tr>
+<td><strong>ADC1</strong></td>
+<td>32,33,34,35,36,39</td>
+<td>32/33 可输出</td>
+<td>✅</td>
+<td>32/33 有</td>
+<td><strong>Wi-Fi 下唯一安全的模拟区</strong></td>
+</tr>
+<tr>
+<td><strong>ADC2</strong></td>
+<td>0,2,4,12,13,14,15,25,26,27</td>
+<td>✅</td>
+<td>⚠️ Wi-Fi 下不可用</td>
+<td>✅</td>
+<td>开 Wi-Fi 别用</td>
+</tr>
+<tr>
+<td><strong>TX0/RX0</strong></td>
+<td>1,3</td>
+<td>✅</td>
+<td>—</td>
+<td>✅</td>
+<td>串口监视器专用，别接外设</td>
+</tr>
+<tr>
+<td><strong>电源</strong></td>
+<td>3V3, VIN, GND</td>
+<td>—</td>
+<td>—</td>
+<td>—</td>
+<td>3V3 别超 500mA；VIN=5V</td>
+</tr>
+</tbody></table>
+<p><strong>接任何引脚前的三连问</strong>（把第 1 课三原则升级成专家版）：</p>
+<ol>
+<li><strong>它是仅输入吗？</strong>（34–39 → 不能输出）</li>
+<li><strong>它是 strapping 吗？</strong>（0/2/5/12/15 → 开机瞬间别被拉到危险电平，12 尤其）</li>
+<li><strong>我要读模拟吗？</strong>（要 → 必须 ADC1 的 32–39；且以后开 Wi-Fi 也安全）</li>
+</ol>
+<p><!-- 组件：引脚陷阱交互测验 · 用于第 6 课 -->
+<div class="wgt wgt-quiz" id="wg-quiz">
+  <div class="wgt-head"><span>🧠 交互测验：这根脚能干什么？</span><span class="wgt-badge">点引脚 → 选判断</span></div>
+  <div class="wgt-body">
+    <!-- 题目区 -->
+    <div class="wg-quiz-prompt">
+      <div class="wg-quiz-qs" id="wg-quiz-qs">点击下方任意引脚开始</div>
+      <div class="wg-quiz-pin" id="wg-quiz-pin">?</div>
+    </div>
+    <!-- 答案按钮 -->
+    <div class="wg-quiz-opts" id="wg-quiz-opts">
+      <button data-k="out">✅ 能输出（可点灯）</button>
+      <button data-k="in">👂 只能输入（读不了灯）</button>
+      <button data-k="adc1">🌡️ 能模拟输入，且 Wi-Fi 下也安全</button>
+      <button data-k="strap">⚠️ strapping，开机瞬间有讲究</button>
+    </div>
+    <!-- 反馈 -->
+    <div class="wg-quiz-fb" id="wg-quiz-fb">每题可能有多个正确属性——<b>把所有符合的按钮都点一遍</b>，全对才算过。</div>
+    <!-- 进度 -->
+    <div class="wg-quiz-score">已结案：<b id="wg-quiz-done">0</b>/8　正确率：<b id="wg-quiz-rate">—</b></div>
+    <!-- 引脚选择板 -->
+    <svg viewBox="0 0 620 120" style="width:100%;height:auto;display:block;margin-top:8px" id="wg-quiz-svg">
+      <text x="310" y="18" text-anchor="middle" fill="#9aa0a6" font-size="12">选一根引脚出题</text>
+      <g id="wg-quiz-pins"></g>
+    </svg>
+    <p class="wgt-hint" style="text-align:center">出题范围就是本课 6 大悬案的主角。答错不扣分——把每个引脚的脾气都想明白，第 9–12 课接外设时你会感谢自己。</p>
+  </div>
+</div>
+<style>
+.wg-quiz-prompt { display: flex; align-items: center; gap: 16px; background: #f4f7f5; border: 1px solid var(--border); border-radius: 10px; padding: .8em 1em; }
+.wg-quiz-qs { flex: 1; font-size: .95em; color: #333; }
+.wg-quiz-pin { font-size: 1.5em; font-weight: bold; color: #0b6e4f; background: #fff; border: 2px solid #0b6e4f; border-radius: 8px; padding: .1em .6em; min-width: 76px; text-align: center; }
+.wg-quiz-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.wg-quiz-opts button { font-family: inherit; font-size: .88em; padding: .5em 1em; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s; }
+.wg-quiz-opts button:hover { border-color: #0b6e4f; }
+.wg-quiz-opts button.ok { background: #0b6e4f; border-color: #0b6e4f; color: #fff; }
+.wg-quiz-opts button.bad { background: #fdecea; border-color: #e74c3c; color: #c0392b; }
+.wg-quiz-opts button:disabled { opacity: .55; cursor: default; }
+.wg-quiz-fb { margin-top: 10px; font-size: .9em; line-height: 1.6; color: #444; background: #fffdf5; border-left: 4px solid #e0b84b; padding: .55em .8em; border-radius: 0 6px 6px 0; min-height: 3.2em; }
+.wg-quiz-score { margin-top: 10px; font-size: .85em; color: #6b6b6b; text-align: right; }
+.wg-quiz-score b { color: #0b6e4f; }
+.wgt-quiz .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-quiz');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // 题库：pin → 正确属性集合 + 解释
+  const PINS = {
+    'IO34': { tags: ['in', 'adc1'], ok: '仅输入 + ADC1：能读模拟/中断，<b>不能输出</b>（无驱动管），且无内部上下拉。悬案一主角！' },
+    'IO25': { tags: ['out', 'adc1-fail', 'strap-no'], ok: '能输出（DAC1），属 <b>ADC2</b>——Wi-Fi 开启后模拟读数不可用（悬案六）。' },
+    'IO12': { tags: ['out', 'strap'], ok: '普通 GPIO 可输出，但它是 <b>strapping 且最危险</b>：开机被拉高 → Flash 电压选错 → 板子不启动（悬案二）！' },
+    'IO2':  { tags: ['out', 'strap'], ok: '可输出（板载 LED 在这），也是 strapping：开机若被拉高可能进下载模式，板上 10kΩ 下拉护着。' },
+    'IO36': { tags: ['in', 'adc1'], ok: 'SENSOR_VP：<b>仅输入 + ADC1</b>，无上下拉。模拟传感器的理想入口（第 4 课电位器的兄弟脚）。' },
+    'IO23': { tags: ['out'], ok: '万能通用 GPIO：可输入可输出，有内部上下拉。第 2 课按钮就接这类脚。' },
+    'IO1':  { tags: ['out', 'uart'], ok: '可输出，但它是 <b>UART0 TX</b>（串口监视器专用）——接外设会干扰烧录和日志，别碰。' },
+    'IO32': { tags: ['out', 'adc1'], ok: '全能选手：<b>可输出 + ADC1 模拟输入</b>（Wi-Fi 下也安全）+ 内部上下拉。模拟输入首选之一。' }
+  };
+  const OPT_LABEL = { out: '输出', in: '仅输入', adc1: 'ADC1 模拟', strap: 'strapping' };
+
+  let current = null;      // 当前引脚
+  let remaining = new Set(); // 本题尚未答对的 tag
+  const answered = new Set(); // 已结案引脚
+  let correctPicks = 0, totalPicks = 0;
+
+  const qs = document.getElementById('wg-quiz-qs');
+  const pinEl = document.getElementById('wg-quiz-pin');
+  const fb = document.getElementById('wg-quiz-fb');
+  const opts = document.getElementById('wg-quiz-opts');
+  const doneEl = document.getElementById('wg-quiz-done');
+  const rateEl = document.getElementById('wg-quiz-rate');
+  const gPins = document.getElementById('wg-quiz-pins');
+
+  // 造引脚按钮
+  const pinNames = Object.keys(PINS);
+  pinNames.forEach((name, i) => {
+    const x = 30 + i * 74;
+    const g = document.createElementNS(NS, 'g');
+    g.style.cursor = 'pointer';
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', 42);
+    r.setAttribute('width', 64); r.setAttribute('height', 40);
+    r.setAttribute('rx', 8);
+    r.setAttribute('fill', '#fff'); r.setAttribute('stroke', '#0b6e4f'); r.setAttribute('stroke-width', 2);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x + 32); t.setAttribute('y', 68);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('fill', '#0b6e4f'); t.setAttribute('font-size', '15'); t.setAttribute('font-weight', 'bold');
+    t.textContent = name;
+    g.appendChild(r); g.appendChild(t);
+    g.addEventListener('click', () => pick(name, r, t));
+    gPins.appendChild(g);
+  });
+
+  function pick(name, rect, text) {
+    current = name;
+    remaining = new Set(PINS[name].tags.filter(t => t !== 'out' || true));
+    // 只保留"选项按钮里有的"tag
+    const valid = new Set();
+    PINS[name].tags.forEach(t => {
+      if (opts.querySelector(`[data-k="${t}"]`)) valid.add(t);
+    });
+    // IO25 的特殊标记映射
+    if (PINS[name].tags.includes('adc1-fail')) { /* 不作为可点选项，只在解释里说 */ }
+    remaining = valid;
+    pinEl.textContent = name;
+    qs.textContent = `「${name}」有哪些属性？把符合的全点出来（可多选）`;
+    fb.innerHTML = '逐个点击右侧按钮——点错会变红并给出提示，全对后揭示完整档案。';
+    // 重置按钮
+    opts.querySelectorAll('button').forEach(b => {
+      b.className = ''; b.disabled = false;
+    });
+    // 高亮当前
+    gPins.querySelectorAll('rect').forEach(r2 => { r2.setAttribute('fill', '#fff'); r2.setAttribute('stroke', '#0b6e4f'); });
+    rect.setAttribute('fill', '#e6f3ee'); rect.setAttribute('stroke', '#0b6e4f'); rect.setAttribute('stroke-width', 3);
+  }
+
+  opts.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!current) { fb.textContent = '先点上面的引脚选题！'; return; }
+      if (btn.disabled) return;
+      const k = btn.dataset.k;
+      totalPicks++;
+      if (remaining.has(k)) {
+        remaining.delete(k);
+        correctPicks++;
+        btn.classList.add('ok'); btn.disabled = true;
+        if (remaining.size === 0) {
+          answered.add(current);
+          fb.innerHTML = `🎉 <b>${current} 结案！</b> ${PINS[current].ok}`;
+          doneEl.textContent = answered.size;
+          rateEl.textContent = Math.round(100 * correctPicks / totalPicks) + '%';
+          opts.querySelectorAll('button').forEach(b => b.disabled = true);
+        } else {
+          fb.innerHTML = `✅ 正确！还有 <b>${remaining.size}</b> 个属性没找全…`;
+        }
+      } else {
+        btn.classList.add('bad'); btn.disabled = true;
+        fb.innerHTML = `❌ 「${OPT_LABEL[k] || k}」不符合 ${current}——再想想它的脾气。`;
+      }
+    });
+  });
+})();
+</script>
+</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 能不看笔记说出 GPIO34 不亮灯的原因（仅输入、无驱动管）</li>
+<li><input disabled="" type="checkbox"> 能说出 5 个 strapping 引脚，以及 GPIO12 的特殊危险</li>
+<li><input disabled="" type="checkbox"> 能解释浮空引脚为什么乱跳、<code>INPUT_PULLUP</code> 如何解决</li>
+<li><input disabled="" type="checkbox"> 能说出 5V 设备为什么不能直连（VIH/VDD+0.3V），正确接法是什么</li>
+<li><input disabled="" type="checkbox"> 能解释 ADC2 与 Wi-Fi 的冲突，以及&quot;模拟输入永远用 ADC1&quot;的规则</li>
+<li><input disabled="" type="checkbox"> 完成 2 个验证实验：①LED 接 34 不亮、接 4 亮 ②<code>INPUT</code> vs <code>INPUT_PULLUP</code> 读数对比</li>
+<li><input disabled="" type="checkbox"> 把&quot;全景速查表&quot;抄进自己的笔记（这张表第 9–12 课会反复回来查）</li>
+</ul>
+<p><strong>全部打勾 → 你已经拥有&quot;引脚安全&quot;完整知识体系，成为本系列第一个&quot;专家级小里程碑&quot;。进入第 7 课，开始通信大部头。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>危险实验（Wokwi 里做）</strong>：把按钮接 GPIO12，一端接 3V3（开机时拉高），观察板子还能不能正常启动——<strong>这是 GPIO12 事故的最小复现</strong>，Wokwi 里做零风险。</li>
+<li><strong>滤波实战（选做）</strong>：读第 4 课电位器，连续采 8 次取平均（写个 for 循环），对比原始值和滤波值的抖动幅度——第 11 课传感器读数直接复用这段代码。</li>
+<li><strong>查表练习（选做）</strong>：随机抽 3 个引脚（比如 25、36、12），说出它的类别、能干什么、接外设要注意什么——30 秒内答对算过关。</li>
+<li><strong>给第 5 课补课</strong>：如果你真有 5V 的 Arduino，画一张&quot;加电平转换&quot;的接线草图（TX/RX/GND/3.3V 各怎么走）。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>引脚 <code>digitalWrite</code> 无效</td>
+<td>接了 34/35/36/39（仅输入）</td>
+<td>换到通用脚；本课悬案一</td>
+</tr>
+<tr>
+<td>板子上电不启动/反复重启</td>
+<td>① GPIO12 被外设拉高 ② 电源不稳</td>
+<td>断开 12 上的外设再试；查供电（第 1 课 brownout）</td>
+</tr>
+<tr>
+<td><code>INPUT</code> 读数随机乱跳</td>
+<td>浮空引脚</td>
+<td>改 <code>INPUT_PULLUP</code> 或加外部电阻；本课悬案三</td>
+</tr>
+<tr>
+<td>模拟读数在 Wi-Fi 启动后变垃圾</td>
+<td>用了 ADC2 引脚</td>
+<td>模拟输入换到 32–39；本课悬案六</td>
+</tr>
+<tr>
+<td>接 5V 外设后引脚发烫/失效</td>
+<td>超过 VDD+0.3V 绝对最大值</td>
+<td>立即断电，换电平转换；本课悬案五</td>
+</tr>
+<tr>
+<td>进下载模式失败（一直 Waiting for upload）</td>
+<td>GPIO0 被外设拉低</td>
+<td>断开 0 上的外设，按住 BOOT 重试</td>
+</tr>
+<tr>
+<td>开机日志莫名消失</td>
+<td>GPIO15 被拉低</td>
+<td>属正常（strapping），不用管或查外设</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>引脚的地基终于打牢——现在开始&quot;让芯片互相说话&quot;的正式篇章。<strong>第 7 课：I2C 总线入门</strong>：只用两根线（SDA/SCL）+ 上拉电阻，就能挂上一整排传感器和屏幕；你会学到<strong>寻址</strong>（多设备如何区分谁在说话）、<strong>应答位</strong>（对方听懂了没）、并点亮一块 OLED 显示屏打印&quot;Hello&quot;。第 1 课引脚图里&quot;IO21 = I2C SDA（第 8 课传感器主角）&quot;的伏笔，从这里开始兑现。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

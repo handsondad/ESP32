@@ -1,0 +1,146 @@
+<!-- 组件：引脚陷阱交互测验 · 用于第 6 课 -->
+<div class="wgt wgt-quiz" id="wg-quiz">
+  <div class="wgt-head"><span>🧠 交互测验：这根脚能干什么？</span><span class="wgt-badge">点引脚 → 选判断</span></div>
+  <div class="wgt-body">
+    <!-- 题目区 -->
+    <div class="wg-quiz-prompt">
+      <div class="wg-quiz-qs" id="wg-quiz-qs">点击下方任意引脚开始</div>
+      <div class="wg-quiz-pin" id="wg-quiz-pin">?</div>
+    </div>
+    <!-- 答案按钮 -->
+    <div class="wg-quiz-opts" id="wg-quiz-opts">
+      <button data-k="out">✅ 能输出（可点灯）</button>
+      <button data-k="in">👂 只能输入（读不了灯）</button>
+      <button data-k="adc1">🌡️ 能模拟输入，且 Wi-Fi 下也安全</button>
+      <button data-k="strap">⚠️ strapping，开机瞬间有讲究</button>
+    </div>
+    <!-- 反馈 -->
+    <div class="wg-quiz-fb" id="wg-quiz-fb">每题可能有多个正确属性——<b>把所有符合的按钮都点一遍</b>，全对才算过。</div>
+    <!-- 进度 -->
+    <div class="wg-quiz-score">已结案：<b id="wg-quiz-done">0</b>/8　正确率：<b id="wg-quiz-rate">—</b></div>
+    <!-- 引脚选择板 -->
+    <svg viewBox="0 0 620 120" style="width:100%;height:auto;display:block;margin-top:8px" id="wg-quiz-svg">
+      <text x="310" y="18" text-anchor="middle" fill="#9aa0a6" font-size="12">选一根引脚出题</text>
+      <g id="wg-quiz-pins"></g>
+    </svg>
+    <p class="wgt-hint" style="text-align:center">出题范围就是本课 6 大悬案的主角。答错不扣分——把每个引脚的脾气都想明白，第 9–12 课接外设时你会感谢自己。</p>
+  </div>
+</div>
+<style>
+.wg-quiz-prompt { display: flex; align-items: center; gap: 16px; background: #f4f7f5; border: 1px solid var(--border); border-radius: 10px; padding: .8em 1em; }
+.wg-quiz-qs { flex: 1; font-size: .95em; color: #333; }
+.wg-quiz-pin { font-size: 1.5em; font-weight: bold; color: #0b6e4f; background: #fff; border: 2px solid #0b6e4f; border-radius: 8px; padding: .1em .6em; min-width: 76px; text-align: center; }
+.wg-quiz-opts { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+.wg-quiz-opts button { font-family: inherit; font-size: .88em; padding: .5em 1em; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s; }
+.wg-quiz-opts button:hover { border-color: #0b6e4f; }
+.wg-quiz-opts button.ok { background: #0b6e4f; border-color: #0b6e4f; color: #fff; }
+.wg-quiz-opts button.bad { background: #fdecea; border-color: #e74c3c; color: #c0392b; }
+.wg-quiz-opts button:disabled { opacity: .55; cursor: default; }
+.wg-quiz-fb { margin-top: 10px; font-size: .9em; line-height: 1.6; color: #444; background: #fffdf5; border-left: 4px solid #e0b84b; padding: .55em .8em; border-radius: 0 6px 6px 0; min-height: 3.2em; }
+.wg-quiz-score { margin-top: 10px; font-size: .85em; color: #6b6b6b; text-align: right; }
+.wg-quiz-score b { color: #0b6e4f; }
+.wgt-quiz .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-quiz');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const NS = 'http://www.w3.org/2000/svg';
+
+  // 题库：pin → 正确属性集合 + 解释
+  const PINS = {
+    'IO34': { tags: ['in', 'adc1'], ok: '仅输入 + ADC1：能读模拟/中断，<b>不能输出</b>（无驱动管），且无内部上下拉。悬案一主角！' },
+    'IO25': { tags: ['out', 'adc1-fail', 'strap-no'], ok: '能输出（DAC1），属 <b>ADC2</b>——Wi-Fi 开启后模拟读数不可用（悬案六）。' },
+    'IO12': { tags: ['out', 'strap'], ok: '普通 GPIO 可输出，但它是 <b>strapping 且最危险</b>：开机被拉高 → Flash 电压选错 → 板子不启动（悬案二）！' },
+    'IO2':  { tags: ['out', 'strap'], ok: '可输出（板载 LED 在这），也是 strapping：开机若被拉高可能进下载模式，板上 10kΩ 下拉护着。' },
+    'IO36': { tags: ['in', 'adc1'], ok: 'SENSOR_VP：<b>仅输入 + ADC1</b>，无上下拉。模拟传感器的理想入口（第 4 课电位器的兄弟脚）。' },
+    'IO23': { tags: ['out'], ok: '万能通用 GPIO：可输入可输出，有内部上下拉。第 2 课按钮就接这类脚。' },
+    'IO1':  { tags: ['out', 'uart'], ok: '可输出，但它是 <b>UART0 TX</b>（串口监视器专用）——接外设会干扰烧录和日志，别碰。' },
+    'IO32': { tags: ['out', 'adc1'], ok: '全能选手：<b>可输出 + ADC1 模拟输入</b>（Wi-Fi 下也安全）+ 内部上下拉。模拟输入首选之一。' }
+  };
+  const OPT_LABEL = { out: '输出', in: '仅输入', adc1: 'ADC1 模拟', strap: 'strapping' };
+
+  let current = null;      // 当前引脚
+  let remaining = new Set(); // 本题尚未答对的 tag
+  const answered = new Set(); // 已结案引脚
+  let correctPicks = 0, totalPicks = 0;
+
+  const qs = document.getElementById('wg-quiz-qs');
+  const pinEl = document.getElementById('wg-quiz-pin');
+  const fb = document.getElementById('wg-quiz-fb');
+  const opts = document.getElementById('wg-quiz-opts');
+  const doneEl = document.getElementById('wg-quiz-done');
+  const rateEl = document.getElementById('wg-quiz-rate');
+  const gPins = document.getElementById('wg-quiz-pins');
+
+  // 造引脚按钮
+  const pinNames = Object.keys(PINS);
+  pinNames.forEach((name, i) => {
+    const x = 30 + i * 74;
+    const g = document.createElementNS(NS, 'g');
+    g.style.cursor = 'pointer';
+    const r = document.createElementNS(NS, 'rect');
+    r.setAttribute('x', x); r.setAttribute('y', 42);
+    r.setAttribute('width', 64); r.setAttribute('height', 40);
+    r.setAttribute('rx', 8);
+    r.setAttribute('fill', '#fff'); r.setAttribute('stroke', '#0b6e4f'); r.setAttribute('stroke-width', 2);
+    const t = document.createElementNS(NS, 'text');
+    t.setAttribute('x', x + 32); t.setAttribute('y', 68);
+    t.setAttribute('text-anchor', 'middle');
+    t.setAttribute('fill', '#0b6e4f'); t.setAttribute('font-size', '15'); t.setAttribute('font-weight', 'bold');
+    t.textContent = name;
+    g.appendChild(r); g.appendChild(t);
+    g.addEventListener('click', () => pick(name, r, t));
+    gPins.appendChild(g);
+  });
+
+  function pick(name, rect, text) {
+    current = name;
+    remaining = new Set(PINS[name].tags.filter(t => t !== 'out' || true));
+    // 只保留"选项按钮里有的"tag
+    const valid = new Set();
+    PINS[name].tags.forEach(t => {
+      if (opts.querySelector(`[data-k="${t}"]`)) valid.add(t);
+    });
+    // IO25 的特殊标记映射
+    if (PINS[name].tags.includes('adc1-fail')) { /* 不作为可点选项，只在解释里说 */ }
+    remaining = valid;
+    pinEl.textContent = name;
+    qs.textContent = `「${name}」有哪些属性？把符合的全点出来（可多选）`;
+    fb.innerHTML = '逐个点击右侧按钮——点错会变红并给出提示，全对后揭示完整档案。';
+    // 重置按钮
+    opts.querySelectorAll('button').forEach(b => {
+      b.className = ''; b.disabled = false;
+    });
+    // 高亮当前
+    gPins.querySelectorAll('rect').forEach(r2 => { r2.setAttribute('fill', '#fff'); r2.setAttribute('stroke', '#0b6e4f'); });
+    rect.setAttribute('fill', '#e6f3ee'); rect.setAttribute('stroke', '#0b6e4f'); rect.setAttribute('stroke-width', 3);
+  }
+
+  opts.querySelectorAll('button').forEach(btn => {
+    btn.addEventListener('click', () => {
+      if (!current) { fb.textContent = '先点上面的引脚选题！'; return; }
+      if (btn.disabled) return;
+      const k = btn.dataset.k;
+      totalPicks++;
+      if (remaining.has(k)) {
+        remaining.delete(k);
+        correctPicks++;
+        btn.classList.add('ok'); btn.disabled = true;
+        if (remaining.size === 0) {
+          answered.add(current);
+          fb.innerHTML = `🎉 <b>${current} 结案！</b> ${PINS[current].ok}`;
+          doneEl.textContent = answered.size;
+          rateEl.textContent = Math.round(100 * correctPicks / totalPicks) + '%';
+          opts.querySelectorAll('button').forEach(b => b.disabled = true);
+        } else {
+          fb.innerHTML = `✅ 正确！还有 <b>${remaining.size}</b> 个属性没找全…`;
+        }
+      } else {
+        btn.classList.add('bad'); btn.disabled = true;
+        fb.innerHTML = `❌ 「${OPT_LABEL[k] || k}」不符合 ${current}——再想想它的脾气。`;
+      }
+    });
+  });
+})();
+</script>
