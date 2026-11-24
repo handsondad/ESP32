@@ -1,0 +1,96 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg9" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7faf8"/>
+      <stop offset="1" stop-color="#e8f1ec"/>
+    </linearGradient>
+    <filter id="ds9" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0b3d30" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="440" fill="url(#bg9)"/>
+
+  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">SPI 四线高速公路：SCK · MOSI · MISO · CS</text>
+
+  <!-- ===== 左：ESP32 主机 ===== -->
+  <g transform="translate(70 120)" filter="url(#ds9)">
+    <rect width="200" height="240" rx="13" fill="#0f3d2e" stroke="#0a2c21" stroke-width="4"/>
+    <rect x="30" y="24" width="140" height="84" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="100" y="60" fill="#4a5057" font-size="18" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="100" y="86" fill="#6b7280" font-size="12" text-anchor="middle">VSPI · 40MHz</text>
+    <text x="14" y="140" fill="#e67e22" font-size="14" font-weight="bold">SCK  GPIO18</text>
+    <text x="14" y="172" fill="#e67e22" font-size="14" font-weight="bold">MOSI GPIO23</text>
+    <text x="14" y="204" fill="#3fa67a" font-size="14" font-weight="bold">MISO GPIO19</text>
+    <text x="14" y="232" fill="#8e44ad" font-size="14" font-weight="bold">CS   GPIO5</text>
+  </g>
+
+  <!-- ===== 中：四条车道 ===== -->
+  <g>
+    <!-- SCK -->
+    <line x1="270" y1="150" x2="850" y2="150" stroke="#e67e22" stroke-width="5"/>
+    <text x="560" y="140" fill="#e67e22" font-size="14" font-weight="bold" text-anchor="middle">SCK 时钟（主机打拍子）</text>
+    <!-- 时钟脉冲动画 -->
+    <rect x="270" y="144" width="18" height="12" rx="2" fill="#f5b041">
+      <animate attributeName="x" values="270;830" dur="0.6s" repeatCount="indefinite"/>
+    </rect>
+    <!-- MOSI -->
+    <line x1="270" y1="205" x2="850" y2="205" stroke="#2980b9" stroke-width="5"/>
+    <text x="560" y="195" fill="#2980b9" font-size="14" font-weight="bold" text-anchor="middle">MOSI 主 → 从（数据下行）</text>
+    <rect x="270" y="199" width="26" height="12" rx="3" fill="#2980b9">
+      <animate attributeName="x" values="270;824" dur="0.9s" repeatCount="indefinite"/>
+    </rect>
+    <!-- MISO -->
+    <line x1="270" y1="258" x2="850" y2="258" stroke="#3fa67a" stroke-width="5"/>
+    <text x="560" y="248" fill="#3fa67a" font-size="14" font-weight="bold" text-anchor="middle">MISO 从 → 主（全双工！同时回传）</text>
+    <rect x="824" y="252" width="26" height="12" rx="3" fill="#3fa67a">
+      <animate attributeName="x" values="824;270" dur="0.9s" begin="0.45s" repeatCount="indefinite"/>
+    </rect>
+    <!-- CS -->
+    <line x1="270" y1="312" x2="850" y2="312" stroke="#8e44ad" stroke-width="5"/>
+    <text x="560" y="302" fill="#8e44ad" font-size="14" font-weight="bold" text-anchor="middle">CS 片选（拉低 = 点名喊你！）</text>
+    <!-- CS 拉低脉冲 -->
+    <path d="M270 300 L400 300 L400 312 L700 312 L700 300 L850 300" fill="none" stroke="#8e44ad" stroke-width="3" stroke-dasharray="6 4"/>
+  </g>
+
+  <!-- ===== 右：TFT 彩屏 ===== -->
+  <g transform="translate(880 118)" filter="url(#ds9)">
+    <rect width="260" height="244" rx="12" fill="#1a1a1a" stroke="#000" stroke-width="4"/>
+    <!-- 屏幕内容：色带 -->
+    <rect x="14" y="14" width="232" height="40" fill="#c0392b"/>
+    <rect x="14" y="14" width="33" height="40" fill="#e74c3c"/>
+    <rect x="47" y="14" width="33" height="40" fill="#e67e22"/>
+    <rect x="80" y="14" width="33" height="40" fill="#f1c40f"/>
+    <rect x="113" y="14" width="33" height="40" fill="#27ae60"/>
+    <rect x="146" y="14" width="33" height="40" fill="#2980b9"/>
+    <rect x="179" y="14" width="33" height="40" fill="#8e44ad"/>
+    <rect x="212" y="14" width="34" height="40" fill="#ecf0f1"/>
+    <!-- 动画色块 -->
+    <rect x="20" y="70" width="24" height="24" fill="#5dade2">
+      <animate attributeName="x" values="20;216;20" dur="2.4s" repeatCount="indefinite"/>
+    </rect>
+    <!-- 圆环 -->
+    <circle cx="130" cy="150" r="42" fill="none" stroke="#27ae60" stroke-width="5"/>
+    <circle cx="130" cy="150" r="28" fill="none" stroke="#f1c40f" stroke-width="5"/>
+    <circle cx="130" cy="150" r="12" fill="#e74c3c">
+      <animate attributeName="r" values="12;15;12" dur="1.2s" repeatCount="indefinite"/>
+    </circle>
+    <text x="130" y="222" fill="#ecf0f1" font-size="16" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">SPI 40MHz!</text>
+  </g>
+
+  <!-- 速率对比徽章 -->
+  <g transform="translate(430 350)">
+    <rect width="340" height="56" rx="12" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+    <text x="170" y="24" fill="#e67e22" font-size="15" font-weight="bold" text-anchor="middle">I2C 400kHz → 彩屏一帧 0.8 秒 💤</text>
+    <text x="170" y="46" fill="#2980b9" font-size="15" font-weight="bold" text-anchor="middle">SPI 40MHz → 彩屏一帧 8 毫秒 🚀</text>
+  </g>
+
+  <!-- CS 点名气泡 -->
+  <g transform="translate(866 60)">
+    <rect x="0" y="0" width="200" height="34" rx="17" fill="#fff" stroke="#8e44ad" stroke-width="2"/>
+    <text x="100" y="22" fill="#8e44ad" font-size="14" font-weight="bold" text-anchor="middle">CS5 拉低 → 屏幕听令！</text>
+    <animate attributeName="opacity" values="1;1;0.3;1" dur="2s" repeatCount="indefinite"/>
+  </g>
+
+  <!-- 底部标语 -->
+  <text x="600" y="430" fill="#0b6e4f" font-size="16" font-weight="bold" text-anchor="middle">点名方式换成了物理片选，双向变成两根独立线——这就是快 100 倍的代价与收获</text>
+</svg>

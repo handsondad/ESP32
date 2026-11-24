@@ -1,0 +1,602 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 9 课：SPI 高速通信——TFT 彩屏</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 9 课：SPI 高速通信——TFT 彩屏</h1>
+<blockquote>
+<p><strong>阶段三 · 通信</strong> ｜ 难度：★★★★☆ ｜ 预计用时：50–60 分钟</p>
+<p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、<strong>1.8 寸 TFT 彩屏（ST7735，SPI 接口）</strong> ×1、杜邦线若干
+<strong>无硬件替代</strong>：Wokwi 搜索 <code>TFT-ST7735</code>（或 <code>wokwi-st7735</code>），按本课接线表连线，代码完全相同</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson09-hero.svg" alt="第 9 课效果预告：TFT 彩屏显示彩色图形与动画"></p>
+<blockquote>
+<p>你将做出：<strong>一块 128×160 的彩色 TFT 屏上，色块、圆环、动画帧流畅切换——每秒刷几十帧不卡顿</strong>。你会亲手测出它比 OLED 快多少倍，并理解代价：<strong>多用两根线</strong>。</p>
+</blockquote>
+<p>第 7、8 课的 OLED 是单色的、128×64 的、I2C 的——显示几句字够用，但想画彩色图案、做动画，它的带宽瞬间见底。这一课换上<strong>高速公路：SPI</strong>。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 理解 SPI 四线结构：SCK/MOSI/MISO/CS，主机如何&quot;点名&quot;从机</li>
+<li>✅ 搞懂<strong>片选（CS）</strong>——I2C 用地址点名，SPI 用独立引脚喊人</li>
+<li>✅ 对比 SPI 与 I2C：<strong>全双工 vs 半双工、MHz vs kHz、线数 vs 速率的取舍</strong></li>
+<li>✅ 接线点亮 ST7735 彩屏，画色块、圆环与动画</li>
+<li>✅ 攒下证据：<strong>&quot;数据帧&quot;概念与位拼装</strong>（第 5 课 UART 裸数据流的对照组，第 10 课回收）</li>
+</ol>
+<hr>
+<h2>🔁 开课先接棒：为什么 I2C 不够用了？</h2>
+<p>算一笔账（第 7 课学的 I2C 一笔账还给你）：</p>
+<pre><code>OLED 128×64 单色 = 1024 字节 = 8192 bit
+I2C 快速模式 400kHz → 传一整屏 ≈ 8192 ÷ 400000 ≈ 20ms（理论最好情况）
+再算上地址、应答、字节间 ACK 的开销 → 实际 30~50ms 一帧
+→ 每秒最多 20~30 帧，且这是&quot;最好情况&quot;的单色小屏
+</code></pre>
+<p>换成 <strong>128×160 彩色屏，16 位色（RGB565）</strong>：</p>
+<pre><code>一帧 = 128 × 160 × 16 bit = 327,680 bit
+I2C 400kHz → 一帧 ≈ 0.82 秒 —— 每秒 1 帧，幻灯片都嫌慢！
+SPI 40MHz   → 一帧 ≈ 8ms      —— 每秒 100+ 帧，丝滑
+</code></pre>
+<p><strong>差了 100 倍。</strong> 所以彩屏的世界基本属于 SPI——这不是 I2C 设计得差，而是<strong>它的哲学（两根线挂一群低速设备）本来就不是为刷屏准备的</strong>。</p>
+<blockquote>
+<p>💡 <strong>选型直觉（记住这条）</strong>：</p>
+<ul>
+<li><strong>传感器、EEPROM、RTC、小 OLED</strong> → I2C（线少、够快、能挂一群）</li>
+<li><strong>彩屏、SD 卡、高速 ADC、摄像头</strong> → SPI（快，但每个设备多占引脚）</li>
+</ul>
+</blockquote>
+<hr>
+<h2>📡 新知识一：SPI 的四根线</h2>
+<p><strong>SPI（Serial Peripheral Interface，串行外设接口）</strong> 是 Motorola 在 1980 年代发明的同步总线。它的设计极其直白：</p>
+<pre><code>            ┌────────┐
+   SCK  ───→│        │───→ SCK   时钟：主机打拍子（像 I2C 的 SCL）
+   MOSI ───→│  ESP32 │───→ MOSI  主出从进：主机发数据
+   MISO ←───│ (主机) │←─── MISO  主进从出：从机回数据
+   CS1  ───→│        │───→ ┐
+   CS2  ───→│        │───→ ┤     片选：一根线喊一个从机！
+            └────────┘   ├→ 设备1
+                        └→ 设备2
+</code></pre>
+<table>
+<thead>
+<tr>
+<th>线</th>
+<th>全名</th>
+<th>方向</th>
+<th>干什么</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><strong>SCK</strong></td>
+<td>Serial Clock</td>
+<td>主机 → 所有从机</td>
+<td>时钟，每个脉冲过 1 位（<strong>同步</strong>，和 I2C 的 SCL 一样）</td>
+</tr>
+<tr>
+<td><strong>MOSI</strong></td>
+<td>Master Out Slave In</td>
+<td>主机 → 从机</td>
+<td>主机发的数据</td>
+</tr>
+<tr>
+<td><strong>MISO</strong></td>
+<td>Master In Slave Out</td>
+<td>从机 → 主机</td>
+<td>从机回的数据</td>
+</tr>
+<tr>
+<td><strong>CS / SS</strong></td>
+<td>Chip Select（片选）</td>
+<td>主机 → <strong>单个</strong>从机</td>
+<td><strong>拉低谁，谁就参与对话</strong></td>
+</tr>
+</tbody></table>
+<h3>片选（CS）——SPI 的&quot;点名&quot;方式</h3>
+<p>第 7 课 I2C 点名靠<strong>地址帧</strong>（数据里带 7 位编号）；SPI 点名靠<strong>物理引脚</strong>：</p>
+<blockquote>
+<p><strong>每个从机独占一根 CS 线。主机想和谁说话，就把谁的 CS 拉到低电平——被选中的从机才把数据放上 MISO，其他人高阻旁听（相当于闭嘴）。</strong></p>
+</blockquote>
+<p>对比着记：</p>
+<table>
+<thead>
+<tr>
+<th></th>
+<th>I2C 点名</th>
+<th>SPI 点名</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>方式</td>
+<td>数据帧里带 7 位地址</td>
+<td><strong>独立 CS 引脚拉低</strong></td>
+</tr>
+<tr>
+<td>代价</td>
+<td>零额外引脚，但要发地址+等 ACK</td>
+<td><strong>每设备 +1 根 CS</strong>，但选中即可通信</td>
+</tr>
+<tr>
+<td>谁快</td>
+<td>地址、应答挤占带宽</td>
+<td><strong>没有地址/应答开销，纯数据</strong></td>
+</tr>
+</tbody></table>
+<p><strong>这就是&quot;线数 vs 速率&quot;的取舍</strong>：I2C 把点名做进了数据里（省线费时间），SPI 把点名做成了硬件（费线省时间）。</p>
+<h3>全双工——SPI 的第二个大招</h3>
+<p>I2C 的 SDA 是<strong>一根线双向用</strong>（同一时刻只能一个方向，半双工）；SPI 的 MOSI 和 MISO 是<strong>两根独立的线</strong>：</p>
+<blockquote>
+<p><strong>主机在发的同时，从机可以在收——双向同时进行，这叫全双工（Full Duplex）。</strong> 就像两个人各拿一部电话同时说话，而不是抢一部对讲机。</p>
+</blockquote>
+<p>某些从机（比如闪存芯片 W25Q）支持&quot;发一个命令字节的同时接收一个字节&quot;——<strong>全双工让一次事务的时间几乎减半</strong>。</p>
+<hr>
+<h2>📡 新知识二：SPI 时序——比 I2C 还朴素</h2>
+<p>一次 SPI 事务（以 ST7735 为例）：</p>
+<pre><code>CS 拉低 ─┐   ┌──────────────────────────┐   ┌─ CS 拉高
+         │   │  命令字节  数据字节…      │   │
+SCK:  ───┘   └──────────────────────────┘   └────  (主机产生，几十 MHz)
+MOSI:  ══ 0x2A ══ 0x00 ══ 0x00 ══ 0x7F ══ ...   (主机 → 从机)
+MISO:  ─────────（本课从机不回话，但线留着）        (从机 → 主机)
+</code></pre>
+<p>三个和 I2C 不一样的地方，逐个拆：</p>
+<ol>
+<li><strong>没有起始/停止信号的&quot;线技巧&quot;</strong>——CS 的下降沿就是开始，上升沿就是结束。<strong>物理连线即协议</strong>，简单粗暴。</li>
+<li><strong>没有 ACK</strong>——SPI <strong>默认不检查对方是否收到</strong>。数据发出去就发出去了（哭着也要发完）。这是它快的原因之一，也是它脆弱的原因：<strong>接错线时你收到的不是&quot;错误应答&quot;，而是彻底的沉默或乱码</strong>。</li>
+<li><strong>模式（Mode 0/1/2/3）</strong>：SCK 空闲电平 + 数据在哪个沿采样，共 4 种组合。ST7735 用 <strong>Mode 0</strong>（空闲低电平、上升沿采样）。<strong>用错模式 = 数据整体错位一位 = 屏上雪花点</strong>——这是 SPI 排错第一坑。</li>
+</ol>
+<p><strong>&quot;数据帧&quot;回扣第 5 课</strong>：第 5 课说 UART 是&quot;逐字节无结构的裸数据流&quot;——SPI 更进一步，<strong>连字节边界都由 CS 定义</strong>：CS 拉低期间发的所有位是一个完整事务，拉高即分帧。<strong>&quot;帧（Frame）&quot;这个概念从本课开始，第 10 课讲蓝牙数据包时直接复用。</strong></p>
+<hr>
+<h2>🔌 接线（先断电！）</h2>
+<p>ST7735 模块常见 8 针，本课用 6 针（背光可以直连 3V3 或悬空）：</p>
+<table>
+<thead>
+<tr>
+<th>TFT 引脚</th>
+<th>ESP32 引脚</th>
+<th>说明</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>VCC</td>
+<td><strong>3V3</strong></td>
+<td>供电（有的模块标 5V 容忍，接 3V3 最稳）</td>
+</tr>
+<tr>
+<td>GND</td>
+<td><strong>GND</strong></td>
+<td>共地（第 5 课，第三次强调）</td>
+</tr>
+<tr>
+<td>SCL / SCK</td>
+<td><strong>GPIO18</strong></td>
+<td>SPI 时钟（ESP32 默认 VSPI 的 SCK）</td>
+</tr>
+<tr>
+<td>SDA / MOSI</td>
+<td><strong>GPIO23</strong></td>
+<td>SPI 主出从进（ESP32 默认 VSPI 的 MOSI）</td>
+</tr>
+<tr>
+<td>RES</td>
+<td><strong>GPIO4</strong></td>
+<td>复位（接普通 IO，代码里软件复位）</td>
+</tr>
+<tr>
+<td>DC</td>
+<td><strong>GPIO2</strong></td>
+<td>数据/命令选择（<strong>⚠️ strapping 脚，第 6 课清算过！</strong>）</td>
+</tr>
+<tr>
+<td>CS</td>
+<td><strong>GPIO5</strong></td>
+<td>片选（也是 strapping 脚，输出没问题）</td>
+</tr>
+<tr>
+<td>BL</td>
+<td>3V3 或悬空</td>
+<td>背光</td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>⚠️ <strong>第 6 课知识的第一次实战应用</strong>：</p>
+<ul>
+<li><strong>DC 接 GPIO2</strong>：GPIO2 是 strapping 脚，<strong>开机瞬间</strong>若被拉高可能影响下载模式。TFT 模块的 DC 是输入脚（ESP32 驱动它），正常不会把 2 拉高到坏事——但你要知道<strong>为什么教程敢用它</strong>：输入方向 + 模块不主动驱动 → 安全。若你的模块开机异常，把 DC 换到 GPIO13/14 等普通脚（代码改一个宏即可）。</li>
+<li><strong>本课全程不碰模拟输入</strong>，所以 Wi-Fi/ADC2 的坑不存在；21/22 仍归 I2C（如果 OLED 还挂着，<strong>SPI 和 I2C 可以同时工作</strong>，互不干扰——总线共存）。</li>
+</ul>
+<p><strong>Wokwi 方案</strong>：添加 <code>TFT-ST7735</code>，按上表接线；OLED 可以留着——本课结尾的彩蛋代码会让两块屏同时显示。</p>
+</blockquote>
+<hr>
+<h2>💡 完整代码（直接复制）</h2>
+<pre><code class="language-cpp">// ============================================
+// 第 9 课：SPI 高速通信 —— ST7735 彩屏
+// ============================================
+#include &lt;SPI.h&gt;
+#include &lt;Adafruit_ST7735.h&gt;     // 库管理器安装 Adafruit ST7735 and ST7789
+
+// —— SPI 硬件引脚（ESP32 默认 VSPI：SCK=18, MOSI=23）——
+#define TFT_SCK  18
+#define TFT_MOSI 23
+#define TFT_CS   5
+#define TFT_DC   2
+#define TFT_RST  4
+
+// Adafruit_ST7735 构造：CS, DC, RST（SCK/MOSI 走全局 SPI）
+Adafruit_ST7735 tft = Adafruit_ST7735(TFT_CS, TFT_DC, TFT_RST);
+
+unsigned long lastFrame = 0;
+int frame = 0;
+
+void setup() {
+  Serial.begin(115200);
+  Serial.println(&quot;SPI 彩屏启动&quot;);
+
+  // —— 初始化（顺序有讲究）——
+  tft.initR(INITR_BLACKTAB);    // ① 按模块型号选初始化表（见下方说明）
+  tft.setRotation(1);           // ② 横屏（0=竖，1=+90°）
+  tft.fillScreen(ST7735_BLACK); // ③ 清屏为黑
+
+  // —— 画静态测试图 ——
+  drawTestPattern();
+
+  Serial.println(&quot;初始化完成，开始动画&quot;);
+}
+
+void drawTestPattern() {
+  // 顶部色带：16 色
+  uint16_t colors[8] = {
+    ST7735_RED, ST7735_GREEN, ST7735_BLUE, ST7735_YELLOW,
+    ST7735_CYAN, ST7735_MAGENTA, ST7735_WHITE, ST7735_BLACK
+  };
+  for (int i = 0; i &lt; 8; i++) {
+    tft.fillRect(i * 20, 0, 20, 30, colors[i]);
+  }
+  // 中部圆环
+  tft.drawCircle(80, 85, 30, ST7735_GREEN);
+  tft.drawCircle(80, 85, 20, ST7735_YELLOW);
+  tft.fillCircle(80, 85, 8, ST7735_RED);
+  // 文字
+  tft.setTextColor(ST7735_WHITE, ST7735_BLACK);
+  tft.setTextSize(1);
+  tft.setCursor(4, 130);
+  tft.print(&quot;SPI 40MHz!&quot;);
+}
+
+void loop() {
+  // —— 每 100ms 一帧动画：移动的色块 ——
+  if (millis() - lastFrame &gt;= 100) {
+    lastFrame = millis();
+    frame++;
+
+    // 擦上一帧（画黑块），画这一帧（彩块）——局部刷新思维
+    int prevX = 4 + ((frame - 1) % 12) * 10;
+    int x     = 4 + (frame % 12) * 10;
+    tft.fillRect(prevX, 55, 10, 14, ST7735_BLACK);
+    tft.fillRect(x, 55, 10, 14, ST7735_CYAN);
+
+    // 每 20 帧换一次底色，展示全屏刷新速度
+    if (frame % 20 == 0) {
+      uint16_t bg = (frame % 40 == 0) ? ST7735_NAVY : ST7735_BLACK;
+      tft.drawRect(0, 120, 160, 40, bg);   // 只刷底部区域，避免整屏闪
+      Serial.print(&quot;帧 #&quot;); Serial.println(frame);
+    }
+  }
+}
+</code></pre>
+<h3>逐段拆解</h3>
+<p><strong><code>#include &lt;SPI.h&gt;</code></strong>
+SPI 是硬件外设，Arduino 自带库。<strong>Wire 对应 I2C，SPI 对应 SPI</strong>——两个总线库名就是协议名。</p>
+<p><strong><code>Adafruit_ST7735 tft(CS, DC, RST);</code></strong>
+构造时只给三根控制线——<strong>SCK/MOSI 不用写</strong>，因为它们是 ESP32 的<strong>固定硬件 SPI 引脚（18/23）</strong>。这与 I2C 的 <code>Wire.begin(21, 22)</code> 对比：SPI 有专门的硬件引脚对，速度正是从这里来的（硬件控制器直连，不经 GPIO 模拟）。</p>
+<p><strong>① <code>tft.initR(INITR_BLACKTAB)</code>——初始化表是什么？</strong>
+ST7735 有多个厂家变体（黑标/红标/绿标），<strong>上电命令序列不同</strong>（几十条寄存器写入）。选错表 → 花屏、颜色反转、区域错位。<strong>&quot;型号对不上&quot;是 SPI 屏排错第一坑</strong>（对应报错表第一行）。</p>
+<p><strong>② <code>setRotation(1)</code>——方向是&quot;逻辑旋转&quot;</strong>
+屏幕控制器的扫描方向由寄存器决定，<code>setRotation</code> 就是改它——<strong>不是把画面重画，是改扫描顺序</strong>，零成本。</p>
+<p><strong>③ <code>fillScreen</code> vs <code>fillRect</code>——全屏 vs 局部</strong>
+和第 7、8 课 OLED 的刷新策略一模一样：<strong>能局部就不全屏</strong>。注意本课动画里&quot;擦旧画新&quot;的双缓冲思维——<code>prevX</code> 擦、<code>x</code> 画，<strong>每一帧只动 10×14 个像素</strong>，所以 40MHz 的 SPI 跑起来绰绰有余。</p>
+<p><strong><code>millis()</code> 节奏（第 3 课，第三次登场）</strong>
+100ms 一帧 = 10fps 动画。<strong>零 delay</strong>——如果你用 <code>delay(100)</code>，蓝牙/串口又会瘫（第 10 课马上要你亲手验证这件事）。</p>
+<hr>
+<h2>🎯 亲眼对比：一条路 vs 一条高速公路</h2>
+<p><!-- 组件：SPI vs I2C 速率对比 · 用于第 9 课 -->
+<div class="wgt wgt-race" id="wg-race">
+  <div class="wgt-head"><span>🏁 交互对比：同一任务，I2C vs SPI 谁先到</span><span class="wgt-badge">选任务大小，点开始赛跑</span></div>
+  <div class="wgt-body">
+    <!-- 任务选择 -->
+    <div class="wg-race-tasks" id="wg-race-tasks">
+      <button data-bits="8192" class="active">小图标（8 KB）</button>
+      <button data-bits="81920">单色 OLED 整屏（80 KB）</button>
+      <button data-bits="327680">彩屏一帧（320 KB）</button>
+      <button data-bits="2621440">彩屏 8 帧动画（2.5 MB）</button>
+    </div>
+
+    <!-- 赛道 -->
+    <div class="wg-race-lane">
+      <div class="wg-race-label">
+        <b>I2C</b> 400kHz
+        <span class="wg-race-meta" id="wg-race-i2c-meta">— ms</span>
+      </div>
+      <div class="wg-race-bar-track">
+        <div class="wg-race-bar i2c" id="wg-race-i2c"></div>
+      </div>
+      <div class="wg-race-flag" id="wg-race-i2c-flag">—</div>
+    </div>
+    <div class="wg-race-lane">
+      <div class="wg-race-label">
+        <b>SPI</b> 40MHz
+        <span class="wg-race-meta" id="wg-race-spi-meta">— ms</span>
+      </div>
+      <div class="wg-race-bar-track">
+        <div class="wg-race-bar spi" id="wg-race-spi"></div>
+      </div>
+      <div class="wg-race-flag" id="wg-race-spi-flag">—</div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <button id="wg-race-btn" class="wg-race-btn">▶ 开始赛跑</button>
+      <div class="wg-race-status" id="wg-race-status">选一个任务，看两条总线跑出什么差距</div>
+    </div>
+
+    <!-- 参数解释 -->
+    <div class="wg-race-math" id="wg-race-math">
+      传输时间 ≈ 数据量 ÷ 速率。<br>
+      I2C：400,000 bit/s　｜　SPI：40,000,000 bit/s（快 100 倍，还没算 I2C 的地址/ACK 开销）
+    </div>
+    <p class="wgt-hint" style="text-align:center">注意：这是<b>理论下限</b>——I2C 实际还要加上每字节 ACK、起始/停止位，真实差距更大。<b>选型先问数据量</b>：小传感器 → I2C；刷屏/存储 → SPI。</p>
+  </div>
+</div>
+<style>
+.wg-race-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.wg-race-tasks button { font-family: inherit; font-size: .85em; padding: .45em .9em; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s; }
+.wg-race-tasks button.active { background: #0b6e4f; border-color: #0b6e4f; color: #fff; }
+.wg-race-lane { display: grid; grid-template-columns: 118px 1fr 76px; gap: 10px; align-items: center; margin-bottom: 10px; }
+.wg-race-label { font-size: .88em; color: #333; }
+.wg-race-label b { font-size: 1.05em; }
+.wg-race-lane:first-of-type .wg-race-label b { color: #e67e22; }
+.wg-race-lane:last-of-type .wg-race-label b { color: #2980b9; }
+.wg-race-meta { display: block; font-size: .78em; color: #9aa0a6; font-family: Consolas, monospace; }
+.wg-race-bar-track { height: 26px; background: #f0f2f1; border-radius: 13px; overflow: hidden; border: 1px solid var(--border); position: relative; }
+.wg-race-bar { height: 100%; width: 0%; border-radius: 13px; transition: width .1s linear; }
+.wg-race-bar.i2c { background: linear-gradient(90deg, #e67e22, #f5b041); }
+.wg-race-bar.spi { background: linear-gradient(90deg, #2980b9, #5dade2); }
+.wg-race-flag { font-size: .8em; color: #9aa0a6; text-align: right; font-family: Consolas, monospace; }
+.wg-race-btn { font-family: inherit; font-size: .9em; padding: .5em 1.3em; border-radius: 8px; border: 1px solid #0b6e4f; background: #0b6e4f; color: #fff; cursor: pointer; }
+.wg-race-btn:disabled { opacity: .5; cursor: default; }
+.wg-race-status { font-size: .85em; color: #6b6b6b; }
+.wg-race-math { margin-top: 10px; font-size: .82em; color: #6b6b6b; background: #f4f7f5; border-radius: 8px; padding: .55em .8em; font-family: Consolas, monospace; line-height: 1.7; }
+.wgt-race .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-race');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const taskBtns = Array.from(root.querySelectorAll('.wg-race-tasks button'));
+  const barI2C = document.getElementById('wg-race-i2c');
+  const barSPI = document.getElementById('wg-race-spi');
+  const metaI2C = document.getElementById('wg-race-i2c-meta');
+  const metaSPI = document.getElementById('wg-race-spi-meta');
+  const flagI2C = document.getElementById('wg-race-i2c-flag');
+  const flagSPI = document.getElementById('wg-race-spi-flag');
+  const btn = document.getElementById('wg-race-btn');
+  const status = document.getElementById('wg-race-status');
+
+  const RATE_I2C = 400e3 / 1e6;   // MHz → 每毫秒 bit 数 = 400 bit/ms
+  const RATE_SPI = 40e6 / 1e6;    // 40000 bit/ms
+
+  let bits = 8192;
+  let running = false;
+
+  function fmtTime(bitCount, ratePerMs) {
+    const ms = bitCount / ratePerMs;
+    if (ms >= 1000) return (ms / 1000).toFixed(1) + ' s';
+    if (ms >= 1) return ms.toFixed(1) + ' ms';
+    return (ms * 1000).toFixed(0) + ' µs';
+  }
+
+  function reset() {
+    barI2C.style.width = '0%';
+    barSPI.style.width = '0%';
+    flagI2C.textContent = '—';
+    flagSPI.textContent = '—';
+    metaI2C.textContent = fmtTime(bits, RATE_I2C) + '（理论）';
+    metaSPI.textContent = fmtTime(bits, RATE_SPI) + '（理论）';
+  }
+
+  taskBtns.forEach(b => b.onclick = () => {
+    if (running) return;
+    taskBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    bits = parseInt(b.dataset.bits, 10);
+    reset();
+    status.textContent = `任务 = ${b.textContent}，点开始赛跑`;
+  });
+
+  function race() {
+    if (running) return;
+    running = true;
+    btn.disabled = true;
+    reset();
+    const tI2C = Math.min(6000, Math.max(600, (bits / RATE_I2C) * 1.2));  // 动画时长（放大可视）
+    const tSPI = Math.max(280, (bits / RATE_SPI) * 1.2 + 200);
+    status.textContent = '发车！看两条进度条…';
+    const t0 = performance.now();
+
+    function frame(now) {
+      const e = now - t0;
+      const pI = Math.min(1, e / tI2C);
+      const pS = Math.min(1, e / tSPI);
+      barI2C.style.width = (pI * 100) + '%';
+      barSPI.style.width = (pS * 100) + '%';
+      if (pS >= 1 && flagSPI.textContent === '—') {
+        flagSPI.textContent = '🏆 到达';
+        status.textContent = 'SPI 已到达！I2C 还在跑…';
+      }
+      if (pI >= 1 && flagI2C.textContent === '—') {
+        flagI2C.textContent = '到达';
+        const ratio = (tI2C / tSPI).toFixed(0);
+        status.textContent = `🏁 完成：同一任务 SPI 快约 ${ratio} 倍——彩屏只能属于 SPI！`;
+        btn.disabled = false;
+        running = false;
+        return;
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  btn.onclick = race;
+  reset();
+})();
+</script>
+</p>
+<p>上图把同一个&quot;传一整屏&quot;的任务分别丢给 I2C（400kHz）和 SPI（40MHz）——<strong>看两条进度条的速度差</strong>。点按钮切换任务大小（小图标 / 单色屏 / 彩屏），体会<strong>为什么选型时先问&quot;数据量多大&quot;</strong>。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 接线正确（SCK=18、MOSI=23、CS=5、DC=2、RST=4、共地），通电屏幕背光亮</li>
+<li><input disabled="" type="checkbox"> 库安装完成：<code>Adafruit ST7735 and ST7789 Library</code>（连带 Adafruit GFX）</li>
+<li><input disabled="" type="checkbox"> 上电自检：8 色色带颜色正确（<strong>红不红、绿不绿 = 初始化表选错</strong>）</li>
+<li><input disabled="" type="checkbox"> 三圈圆环 + <code>SPI 40MHz!</code> 文字清晰显示</li>
+<li><input disabled="" type="checkbox"> 动画流畅：色块横向移动无拖影、底部区域每 20 帧变色一次</li>
+<li><input disabled="" type="checkbox"> 串口每 20 帧打印 <code>帧 #N</code>，数字连续无跳变</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①SPI 四根线各干什么 ②片选 CS 怎么&quot;点名&quot; ③为什么 SPI 比 I2C 快</li>
+<li><input disabled="" type="checkbox"> （可选彩蛋）保留第 8 课的 OLED 接线：<strong>两屏同时工作</strong>——证明 SPI 与 I2C 总线可共存</li>
+</ul>
+<p><strong>全部打勾 → 你掌握了嵌入式两大主流总线，具备&quot;按数据量选型&quot;的能力。通信篇还剩最后一块拼图：这些协议传的到底是什么&quot;内容&quot;？第 10 课揭晓——顺便清算 delay 的最后一桩罪。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>画个笑脸</strong>：用 <code>fillCircle</code> 画两个眼睛、<code>drawArc</code>（或几段圆弧）画嘴——熟悉 SPI 屏的图形原语。</li>
+<li><strong>测真实帧率</strong>：把动画间隔从 100ms 逐步降到 10ms，观察从哪一帧开始&quot;擦除残影&quot;跟不上（说明帧时间 &lt; 屏刷新时间）——找到你这块屏的性能边界。</li>
+<li><strong>换引脚（选做）</strong>：把 CS 换到 GPIO15、DC 换到 GPIO13（都是第 6 课清算过的脚），改宏重跑——<strong>验证 SPI 引脚可重映射</strong>，加深&quot;引脚是资源&quot;的理解。</li>
+<li><strong>CS 拔线实验（重点）</strong>：运行中拔掉 CS 线，观察屏幕行为（花屏/静止/乱码），插回后按 EN 复位恢复——<strong>记住这个现象：SPI 没有 ACK，接线错误的表现是&quot;沉默或疯狂&quot;，而不是明确报错</strong>。第 10 课讲蓝牙数据包的校验时，你会明白为什么上层协议必须自己加&quot;确认机制&quot;。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>全屏雪花点/颜色整体反转</td>
+<td>① 初始化表选错（INITR_BLACKTAB/REDTAB/GREENTAB）② SPI Mode 不对</td>
+<td>换 <code>initR()</code> 参数试；库一般已固定 Mode 0，查模块手册确认</td>
+</tr>
+<tr>
+<td>屏幕纯白/纯黑无反应</td>
+<td>① CS 没接或接错 ② RST 悬空 ③ SPI 引脚接错</td>
+<td>查 CS=5、RST=4、SCK=18、MOSI=23；背光单独确认</td>
+</tr>
+<tr>
+<td>显示区域错位（只占一半/条纹）</td>
+<td>分辨率初始化参数与模块不符</td>
+<td>换 <code>INITR_144TAB</code>/<code>INITR_MINI160x80</code> 等对应你屏的表</td>
+</tr>
+<tr>
+<td>文字镜像/倒置</td>
+<td><code>setRotation</code> 值不对</td>
+<td>0/1/2/3 轮着试，选正对你的方向</td>
+</tr>
+<tr>
+<td>动画有拖影、残影</td>
+<td>擦除不及时（帧间隔太短或没擦旧帧）</td>
+<td>恢复&quot;擦旧画新&quot;逻辑；或加大帧间隔</td>
+</tr>
+<tr>
+<td>编译报错 <code>SPI</code> 未定义</td>
+<td>板型选错 / 库缺失</td>
+<td>开发板选 <code>ESP32 Dev Module</code>；装 SPI（自带）</td>
+</tr>
+<tr>
+<td>接上后连第 8 课 OLED 都不工作了</td>
+<td>两总线接线短路/共用引脚冲突</td>
+<td>I2C 用 21/22，SPI 用 18/23——<strong>不重叠</strong>，逐线核对</td>
+</tr>
+<tr>
+<td>屏幕能亮但串口没输出</td>
+<td>监视器波特率不是 115200</td>
+<td>改监视器速率</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>两大总线你都拿下了——但它们传的&quot;内容&quot;还是一串串裸字节，<strong>谁来规定第一个字节是什么意思、错了一个 bit 谁负责？</strong> <strong>第 10 课：蓝牙控制与 millis——delay 的最后一桩罪</strong>：你会用手机蓝牙（BLE）控制板上的灯，然后亲手制造一次&quot;按下按钮没反应&quot;的事故——<strong>凶手正是第 3 课被你扔掉一半的 delay</strong>。那一课同时回收三颗埋了 8 课的雷：delay 断蓝牙、按键抖动根治、&quot;帧与校验&quot;的实战意义。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

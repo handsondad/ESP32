@@ -1,0 +1,150 @@
+<!-- 组件：SPI vs I2C 速率对比 · 用于第 9 课 -->
+<div class="wgt wgt-race" id="wg-race">
+  <div class="wgt-head"><span>🏁 交互对比：同一任务，I2C vs SPI 谁先到</span><span class="wgt-badge">选任务大小，点开始赛跑</span></div>
+  <div class="wgt-body">
+    <!-- 任务选择 -->
+    <div class="wg-race-tasks" id="wg-race-tasks">
+      <button data-bits="8192" class="active">小图标（8 KB）</button>
+      <button data-bits="81920">单色 OLED 整屏（80 KB）</button>
+      <button data-bits="327680">彩屏一帧（320 KB）</button>
+      <button data-bits="2621440">彩屏 8 帧动画（2.5 MB）</button>
+    </div>
+
+    <!-- 赛道 -->
+    <div class="wg-race-lane">
+      <div class="wg-race-label">
+        <b>I2C</b> 400kHz
+        <span class="wg-race-meta" id="wg-race-i2c-meta">— ms</span>
+      </div>
+      <div class="wg-race-bar-track">
+        <div class="wg-race-bar i2c" id="wg-race-i2c"></div>
+      </div>
+      <div class="wg-race-flag" id="wg-race-i2c-flag">—</div>
+    </div>
+    <div class="wg-race-lane">
+      <div class="wg-race-label">
+        <b>SPI</b> 40MHz
+        <span class="wg-race-meta" id="wg-race-spi-meta">— ms</span>
+      </div>
+      <div class="wg-race-bar-track">
+        <div class="wg-race-bar spi" id="wg-race-spi"></div>
+      </div>
+      <div class="wg-race-flag" id="wg-race-spi-flag">—</div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <button id="wg-race-btn" class="wg-race-btn">▶ 开始赛跑</button>
+      <div class="wg-race-status" id="wg-race-status">选一个任务，看两条总线跑出什么差距</div>
+    </div>
+
+    <!-- 参数解释 -->
+    <div class="wg-race-math" id="wg-race-math">
+      传输时间 ≈ 数据量 ÷ 速率。<br>
+      I2C：400,000 bit/s　｜　SPI：40,000,000 bit/s（快 100 倍，还没算 I2C 的地址/ACK 开销）
+    </div>
+    <p class="wgt-hint" style="text-align:center">注意：这是<b>理论下限</b>——I2C 实际还要加上每字节 ACK、起始/停止位，真实差距更大。<b>选型先问数据量</b>：小传感器 → I2C；刷屏/存储 → SPI。</p>
+  </div>
+</div>
+<style>
+.wg-race-tasks { display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 14px; }
+.wg-race-tasks button { font-family: inherit; font-size: .85em; padding: .45em .9em; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s; }
+.wg-race-tasks button.active { background: #0b6e4f; border-color: #0b6e4f; color: #fff; }
+.wg-race-lane { display: grid; grid-template-columns: 118px 1fr 76px; gap: 10px; align-items: center; margin-bottom: 10px; }
+.wg-race-label { font-size: .88em; color: #333; }
+.wg-race-label b { font-size: 1.05em; }
+.wg-race-lane:first-of-type .wg-race-label b { color: #e67e22; }
+.wg-race-lane:last-of-type .wg-race-label b { color: #2980b9; }
+.wg-race-meta { display: block; font-size: .78em; color: #9aa0a6; font-family: Consolas, monospace; }
+.wg-race-bar-track { height: 26px; background: #f0f2f1; border-radius: 13px; overflow: hidden; border: 1px solid var(--border); position: relative; }
+.wg-race-bar { height: 100%; width: 0%; border-radius: 13px; transition: width .1s linear; }
+.wg-race-bar.i2c { background: linear-gradient(90deg, #e67e22, #f5b041); }
+.wg-race-bar.spi { background: linear-gradient(90deg, #2980b9, #5dade2); }
+.wg-race-flag { font-size: .8em; color: #9aa0a6; text-align: right; font-family: Consolas, monospace; }
+.wg-race-btn { font-family: inherit; font-size: .9em; padding: .5em 1.3em; border-radius: 8px; border: 1px solid #0b6e4f; background: #0b6e4f; color: #fff; cursor: pointer; }
+.wg-race-btn:disabled { opacity: .5; cursor: default; }
+.wg-race-status { font-size: .85em; color: #6b6b6b; }
+.wg-race-math { margin-top: 10px; font-size: .82em; color: #6b6b6b; background: #f4f7f5; border-radius: 8px; padding: .55em .8em; font-family: Consolas, monospace; line-height: 1.7; }
+.wgt-race .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-race');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const taskBtns = Array.from(root.querySelectorAll('.wg-race-tasks button'));
+  const barI2C = document.getElementById('wg-race-i2c');
+  const barSPI = document.getElementById('wg-race-spi');
+  const metaI2C = document.getElementById('wg-race-i2c-meta');
+  const metaSPI = document.getElementById('wg-race-spi-meta');
+  const flagI2C = document.getElementById('wg-race-i2c-flag');
+  const flagSPI = document.getElementById('wg-race-spi-flag');
+  const btn = document.getElementById('wg-race-btn');
+  const status = document.getElementById('wg-race-status');
+
+  const RATE_I2C = 400e3 / 1e6;   // MHz → 每毫秒 bit 数 = 400 bit/ms
+  const RATE_SPI = 40e6 / 1e6;    // 40000 bit/ms
+
+  let bits = 8192;
+  let running = false;
+
+  function fmtTime(bitCount, ratePerMs) {
+    const ms = bitCount / ratePerMs;
+    if (ms >= 1000) return (ms / 1000).toFixed(1) + ' s';
+    if (ms >= 1) return ms.toFixed(1) + ' ms';
+    return (ms * 1000).toFixed(0) + ' µs';
+  }
+
+  function reset() {
+    barI2C.style.width = '0%';
+    barSPI.style.width = '0%';
+    flagI2C.textContent = '—';
+    flagSPI.textContent = '—';
+    metaI2C.textContent = fmtTime(bits, RATE_I2C) + '（理论）';
+    metaSPI.textContent = fmtTime(bits, RATE_SPI) + '（理论）';
+  }
+
+  taskBtns.forEach(b => b.onclick = () => {
+    if (running) return;
+    taskBtns.forEach(x => x.classList.remove('active'));
+    b.classList.add('active');
+    bits = parseInt(b.dataset.bits, 10);
+    reset();
+    status.textContent = `任务 = ${b.textContent}，点开始赛跑`;
+  });
+
+  function race() {
+    if (running) return;
+    running = true;
+    btn.disabled = true;
+    reset();
+    const tI2C = Math.min(6000, Math.max(600, (bits / RATE_I2C) * 1.2));  // 动画时长（放大可视）
+    const tSPI = Math.max(280, (bits / RATE_SPI) * 1.2 + 200);
+    status.textContent = '发车！看两条进度条…';
+    const t0 = performance.now();
+
+    function frame(now) {
+      const e = now - t0;
+      const pI = Math.min(1, e / tI2C);
+      const pS = Math.min(1, e / tSPI);
+      barI2C.style.width = (pI * 100) + '%';
+      barSPI.style.width = (pS * 100) + '%';
+      if (pS >= 1 && flagSPI.textContent === '—') {
+        flagSPI.textContent = '🏆 到达';
+        status.textContent = 'SPI 已到达！I2C 还在跑…';
+      }
+      if (pI >= 1 && flagI2C.textContent === '—') {
+        flagI2C.textContent = '到达';
+        const ratio = (tI2C / tSPI).toFixed(0);
+        status.textContent = `🏁 完成：同一任务 SPI 快约 ${ratio} 倍——彩屏只能属于 SPI！`;
+        btn.disabled = false;
+        running = false;
+        return;
+      }
+      requestAnimationFrame(frame);
+    }
+    requestAnimationFrame(frame);
+  }
+
+  btn.onclick = race;
+  reset();
+})();
+</script>
