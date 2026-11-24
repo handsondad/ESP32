@@ -1,0 +1,106 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 440" font-family="Microsoft YaHei, PingFang SC, Segoe UI, sans-serif">
+  <defs>
+    <linearGradient id="bg10" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#f7faf8"/>
+      <stop offset="1" stop-color="#e8f1ec"/>
+    </linearGradient>
+    <filter id="ds10" x="-30%" y="-30%" width="160%" height="160%">
+      <feDropShadow dx="0" dy="5" stdDeviation="8" flood-color="#0b3d30" flood-opacity="0.25"/>
+    </filter>
+  </defs>
+  <rect width="1200" height="440" fill="url(#bg10)"/>
+
+  <text x="600" y="46" fill="#1a1a1a" font-size="24" font-weight="bold" text-anchor="middle">手机 BLE 控灯：三条时间线并行，一个 delay 都不许有</text>
+
+  <!-- ===== 左：手机 ===== -->
+  <g transform="translate(80 80)" filter="url(#ds10)">
+    <rect width="180" height="300" rx="22" fill="#1a1a1a" stroke="#000" stroke-width="4"/>
+    <rect x="10" y="34" width="160" height="234" rx="6" fill="#eaf4ff"/>
+    <rect x="62" y="14" width="56" height="12" rx="6" fill="#333"/>
+    <!-- App 界面 -->
+    <rect x="20" y="46" width="140" height="30" rx="6" fill="#0b6e4f"/>
+    <text x="90" y="66" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">ESP32-Smart-Lamp</text>
+    <rect x="20" y="88" width="64" height="40" rx="8" fill="#27ae60"/>
+    <text x="52" y="113" fill="#fff" font-size="15" font-weight="bold" text-anchor="middle">ON</text>
+    <rect x="96" y="88" width="64" height="40" rx="8" fill="#95a5a6"/>
+    <text x="128" y="113" fill="#fff" font-size="15" font-weight="bold" text-anchor="middle">OFF</text>
+    <!-- 终端回执 -->
+    <rect x="20" y="140" width="140" height="112" rx="6" fill="#0d1821"/>
+    <text x="28" y="160" fill="#8fd6bd" font-size="11" font-family="Consolas, monospace">&gt; ON</text>
+    <text x="28" y="178" fill="#f5b041" font-size="11" font-family="Consolas, monospace">OK ON</text>
+    <text x="28" y="196" fill="#8fd6bd" font-size="11" font-family="Consolas, monospace">&gt; OFF</text>
+    <text x="28" y="214" fill="#f5b041" font-size="11" font-family="Consolas, monospace">OK OFF</text>
+    <text x="28" y="232" fill="#5f7484" font-size="11" font-family="Consolas, monospace">ST ON…</text>
+    <text x="28" y="246" fill="#5f7484" font-size="11" font-family="Consolas, monospace">每秒心跳</text>
+  </g>
+
+  <!-- ===== BLE 波 ===== -->
+  <g transform="translate(300 180)">
+    <path d="M0 40 Q 30 0, 60 40 T 120 40 T 180 40" fill="none" stroke="#2980b9" stroke-width="4" stroke-linecap="round">
+      <animate attributeName="opacity" values="0.4;1;0.4" dur="1.4s" repeatCount="indefinite"/>
+    </path>
+    <path d="M0 60 Q 30 20, 60 60 T 120 60 T 180 60" fill="none" stroke="#5dade2" stroke-width="3" stroke-linecap="round" stroke-dasharray="8 6">
+      <animate attributeName="stroke-dashoffset" values="0;28" dur="0.8s" repeatCount="indefinite"/>
+    </path>
+    <text x="90" y="110" fill="#2980b9" font-size="15" font-weight="bold" text-anchor="middle">BLE 无线</text>
+    <text x="90" y="132" fill="#6b6b6b" font-size="12" text-anchor="middle">ON / OFF / STATUS</text>
+    <text x="90" y="152" fill="#3fa67a" font-size="12" font-weight="bold" text-anchor="middle">← OK 回执</text>
+  </g>
+
+  <!-- ===== 右：ESP32 ===== -->
+  <g transform="translate(560 78)" filter="url(#ds10)">
+    <rect width="210" height="300" rx="14" fill="#0f3d2e" stroke="#0a2c21" stroke-width="4"/>
+    <rect x="35" y="26" width="140" height="86" rx="8" fill="#c9ccd1" stroke="#9aa0a6" stroke-width="3"/>
+    <text x="105" y="62" fill="#4a5057" font-size="18" font-weight="bold" text-anchor="middle">ESP32</text>
+    <text x="105" y="88" fill="#6b7280" font-size="12" text-anchor="middle">SerialBT</text>
+    <!-- 三任务清单 -->
+    <g font-size="13" font-weight="bold">
+      <rect x="16" y="130" width="178" height="40" rx="7" fill="#1c5140" stroke="#e67e22" stroke-width="2"/>
+      <text x="105" y="155" fill="#f5b041" text-anchor="middle">① handleBluetooth()</text>
+      <rect x="16" y="180" width="178" height="40" rx="7" fill="#1c5140" stroke="#8e44ad" stroke-width="2"/>
+      <text x="105" y="205" fill="#d7bde2" text-anchor="middle">② pollButton() 防抖</text>
+      <rect x="16" y="230" width="178" height="40" rx="7" fill="#1c5140" stroke="#2980b9" stroke-width="2"/>
+      <text x="105" y="255" fill="#aed6f1" text-anchor="middle">③ reportStatus() 心跳</text>
+    </g>
+    <text x="105" y="292" fill="#8fd6bd" font-size="13" font-weight="bold" text-anchor="middle">loop 每秒上万圈 · 零 delay</text>
+  </g>
+
+  <!-- ===== 右侧：接线 ===== -->
+  <g transform="translate(830 78)">
+    <rect width="310" height="150" rx="12" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+    <text x="155" y="28" fill="#0b6e4f" font-size="16" font-weight="bold" text-anchor="middle">接线（沿用第 2 课）</text>
+    <text x="20" y="60" fill="#333" font-size="14" font-family="Consolas, monospace">LED  → GPIO4（经 220Ω）</text>
+    <text x="20" y="88" fill="#333" font-size="14" font-family="Consolas, monospace">BTN  → GPIO23（INPUT_PULLUP）</text>
+    <text x="20" y="116" fill="#333" font-size="14" font-family="Consolas, monospace">手机 ↔ BLE ↔ SerialBT</text>
+    <text x="20" y="140" fill="#9aa0a6" font-size="12">零新接线——本课的战场在代码结构</text>
+  </g>
+
+  <!-- ===== 右下：三雷回收 ===== -->
+  <g transform="translate(830 250)">
+    <rect width="310" height="128" rx="12" fill="#fff" stroke="#c0392b" stroke-width="3"/>
+    <text x="155" y="28" fill="#c0392b" font-size="16" font-weight="bold" text-anchor="middle">三颗埋雷，本课全拆</text>
+    <text x="20" y="58" fill="#333" font-size="13">💥 L1/L3 埋：delay 断蓝牙 → ✅ 案发现场</text>
+    <text x="20" y="86" fill="#333" font-size="13">💥 L2 埋：按键抖动 → ✅ millis 状态机</text>
+    <text x="20" y="114" fill="#333" font-size="13">💥 L9 埋：无 ACK 怎么办 → ✅ OK 回执协议</text>
+  </g>
+
+  <!-- ===== 中下：时间线小图 ===== -->
+  <g transform="translate(310 370)">
+    <text x="0" y="0" fill="#6b6b6b" font-size="13" font-weight="bold">三任务时间线：</text>
+    <g transform="translate(96 -13)">
+      <rect x="0" y="0" width="380" height="8" rx="4" fill="#e67e22"/>
+      <rect x="0" y="13" width="380" height="8" rx="4" fill="#8e44ad"/>
+      <rect x="0" y="26" width="380" height="8" rx="4" fill="#2980b9"/>
+      <!-- 心跳点 -->
+      <circle cx="60" cy="30" r="5" fill="#fff" stroke="#2980b9" stroke-width="2"/>
+      <circle cx="180" cy="30" r="5" fill="#fff" stroke="#2980b9" stroke-width="2"/>
+      <circle cx="300" cy="30" r="5" fill="#fff" stroke="#2980b9" stroke-width="2"/>
+      <text x="392" y="8" fill="#e67e22" font-size="12" font-weight="bold">连续 ✓</text>
+      <text x="392" y="21" fill="#8e44ad" font-size="12" font-weight="bold">连续 ✓</text>
+      <text x="392" y="34" fill="#2980b9" font-size="12" font-weight="bold">连续 ✓</text>
+    </g>
+  </g>
+
+  <!-- 底部标语 -->
+  <text x="600" y="428" fill="#0b6e4f" font-size="17" font-weight="bold" text-anchor="middle">delay 的最后一桩罪已结案：多任务系统里，任何一处罚站都是对所有任务的全体停摆</text>
+</svg>

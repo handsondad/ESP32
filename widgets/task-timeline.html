@@ -1,0 +1,136 @@
+<!-- 组件：三任务时间线 delay vs millis · 用于第 10 课案发现场 -->
+<div class="wgt wgt-tl" id="wg-tl">
+  <div class="wgt-head"><span>⏱️ 交互实验：三条任务的时间线命运</span><span class="wgt-badge">切换 delay 版 / millis 版</span></div>
+  <div class="wgt-body">
+    <div style="display:flex;gap:10px;justify-content:center;margin-bottom:14px;flex-wrap:wrap">
+      <button id="wg-tl-delay">❌ delay 版（按钮里藏着 delay(300)）</button>
+      <button id="wg-tl-millis" class="active">✅ millis 版（本课代码）</button>
+    </div>
+
+    <!-- 三条时间线 -->
+    <div class="wg-tl-lanes">
+      <div class="wg-tl-lane">
+        <div class="wg-tl-name" style="color:#e67e22">① 蓝牙收发</div>
+        <div class="wg-tl-track"><div class="wg-tl-cells" id="wg-tl-bt"></div></div>
+      </div>
+      <div class="wg-tl-lane">
+        <div class="wg-tl-name" style="color:#8e44ad">② 按钮防抖</div>
+        <div class="wg-tl-track"><div class="wg-tl-cells" id="wg-tl-btn"></div></div>
+      </div>
+      <div class="wg-tl-lane">
+        <div class="wg-tl-name" style="color:#2980b9">③ 状态心跳</div>
+        <div class="wg-tl-track"><div class="wg-tl-cells" id="wg-tl-hb"></div></div>
+      </div>
+      <div class="wg-tl-lane">
+        <div class="wg-tl-name" style="color:#95a5a6">loop 空转</div>
+        <div class="wg-tl-track"><div class="wg-tl-cells" id="wg-tl-idle"></div></div>
+      </div>
+    </div>
+
+    <!-- 图例 -->
+    <div class="wg-tl-legend">
+      <span><i class="dot ok"></i>正常执行</span>
+      <span><i class="dot stall"></i>delay 罚站（全线停摆）</span>
+      <span><i class="dot miss"></i>错过/丢数据</span>
+      <span><i class="dot idle"></i>空转等待下一次机会</span>
+    </div>
+
+    <!-- 事故统计 -->
+    <div class="wg-tl-stats" id="wg-tl-stats">选择一个版本开始观察 3 秒</div>
+
+    <p class="wgt-hint" style="text-align:center">delay 版：每次按钮按下，<b>三条线同时被红色罚站段切断</b>——蓝牙丢包、心跳卡顿；millis 版：三条线各自连续，按钮事件只是"多执行了几圈"。<b>第 3 课扔的是呼吸灯的 delay，本课扔的是按钮的 delay——后者才是断蓝牙的真凶。</b></p>
+  </div>
+</div>
+<style>
+#wg-tl-delay, #wg-tl-millis { font-family: inherit; font-size: .88em; padding: .5em 1.1em; border-radius: 8px; border: 1px solid var(--border); background: #fff; cursor: pointer; }
+#wg-tl-delay.active { background: #c0392b; border-color: #c0392b; color: #fff; }
+#wg-tl-millis.active { background: #0b6e4f; border-color: #0b6e4f; color: #fff; }
+.wg-tl-lanes { display: flex; flex-direction: column; gap: 8px; }
+.wg-tl-lane { display: grid; grid-template-columns: 96px 1fr; gap: 10px; align-items: center; }
+.wg-tl-name { font-size: .82em; font-weight: bold; text-align: right; }
+.wg-tl-track { border: 1px solid var(--border); border-radius: 6px; overflow: hidden; background: #fafbfa; }
+.wg-tl-cells { display: flex; height: 26px; }
+.wg-tl-cell { flex: 1; border-right: 1px solid rgba(255,255,255,.6); }
+.wg-tl-cell.ok { background: #3fa67a; }
+.wg-tl-cell.stall { background: #e74c3c; }
+.wg-tl-cell.miss { background: #f5b041; }
+.wg-tl-cell.idle { background: #e8e6e1; }
+.wg-tl-cell.bt { background: #e67e22; }
+.wg-tl-cell.btn { background: #8e44ad; }
+.wg-tl-cell.hb { background: #2980b9; }
+.wg-tl-legend { display: flex; flex-wrap: wrap; gap: 14px; margin-top: 10px; font-size: .78em; color: #6b6b6b; }
+.wg-tl-legend .dot { display: inline-block; width: 11px; height: 11px; border-radius: 3px; margin-right: 4px; vertical-align: -1px; }
+.dot.ok { background: #3fa67a; } .dot.stall { background: #e74c3c; } .dot.miss { background: #f5b041; } .dot.idle { background: #e8e6e1; border: 1px solid #ccc; }
+.wg-tl-stats { margin-top: 10px; font-size: .86em; line-height: 1.65; color: #444; background: #fffdf5; border-left: 4px solid #e0b84b; padding: .55em .8em; border-radius: 0 6px 6px 0; min-height: 3.4em; }
+.wgt-tl .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-tl');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const bDelay = document.getElementById('wg-tl-delay');
+  const bMillis = document.getElementById('wg-tl-millis');
+  const lanes = {
+    bt: document.getElementById('wg-tl-bt'),
+    btn: document.getElementById('wg-tl-btn'),
+    hb: document.getElementById('wg-tl-hb'),
+    idle: document.getElementById('wg-tl-idle')
+  };
+  const stats = document.getElementById('wg-tl-stats');
+
+  const N = 40;             // 40 格 ≈ 3 秒
+  const STALL_AT = [8, 9, 10, 11, 12, 13, 14];   // delay 版罚站窗口（按钮按下 300ms×若干）
+  const STALL_AT2 = [24, 25, 26, 27, 28];
+  const MISSES_BT = [10, 11, 12, 13, 14, 26, 27, 28];   // 蓝牙丢包格
+  const MISSES_HB = [13, 28];                            // 心跳错过格
+
+  function cell(cls, extra) {
+    const d = document.createElement('div');
+    d.className = 'wg-tl-cell ' + cls;
+    if (extra) d.title = extra;
+    return d;
+  }
+
+  function render(mode) {
+    Object.values(lanes).forEach(l => l.innerHTML = '');
+    const isDelay = mode === 'delay';
+    for (let i = 0; i < N; i++) {
+      const stall = isDelay && (STALL_AT.includes(i) || STALL_AT2.includes(i));
+      // 蓝牙行
+      if (stall) lanes.bt.appendChild(cell('stall', '罚站中，蓝牙数据堆积'));
+      else if (isDelay && MISSES_BT.includes(i)) lanes.bt.appendChild(cell('miss', '命令丢失/延迟'));
+      else if (i % 6 === 0) lanes.bt.appendChild(cell('bt', '处理收发'));
+      else lanes.bt.appendChild(cell('idle'));
+      // 按钮行
+      if (stall) lanes.btn.appendChild(cell('stall'));
+      else if (isDelay && (i === 7 || i === 23)) lanes.btn.appendChild(cell('btn', '按下：开始 delay(300)'));
+      else if (!isDelay && (i === 7 || i === 23)) lanes.btn.appendChild(cell('btn', '按下：状态机确认'));
+      else lanes.btn.appendChild(cell('idle'));
+      // 心跳行
+      if (stall) lanes.hb.appendChild(cell('stall'));
+      else if (isDelay && MISSES_HB.includes(i)) lanes.hb.appendChild(cell('miss', '心跳错过节拍'));
+      else if (i % 13 === 0) lanes.hb.appendChild(cell('hb', '发送 ST'));
+      else lanes.hb.appendChild(cell('idle'));
+      // loop 行
+      lanes.idle.appendChild(cell('ok'));
+    }
+
+    if (isDelay) {
+      stats.innerHTML = '❌ <b>delay 版 3 秒账单</b>：按钮按了 2 次，产生 <b>2 段共约 600ms 的全线罚站</b>；蓝牙丢失 <b>8 个处理时机</b>（丢命令/回执）；心跳错过 <b>2 次节拍</b>——手机端表现为"卡顿、没反应、状态跳变"。';
+    } else {
+      stats.innerHTML = '✅ <b>millis 版 3 秒账单</b>：按钮事件只让 loop <b>多执行几微秒</b>；蓝牙与心跳的处理格<b>连续无缺口</b>——同样按 2 次按钮，零丢包零卡顿。';
+    }
+  }
+
+  bDelay.onclick = () => {
+    bDelay.classList.add('active'); bMillis.classList.remove('active');
+    render('delay');
+  };
+  bMillis.onclick = () => {
+    bMillis.classList.add('active'); bDelay.classList.remove('active');
+    render('millis');
+  };
+
+  render('millis');
+})();
+</script>
