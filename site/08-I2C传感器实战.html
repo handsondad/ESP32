@@ -1,0 +1,554 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 8 课：I2C 传感器实战——温湿度与姿态</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 8 课：I2C 传感器实战——温湿度与姿态</h1>
+<blockquote>
+<p><strong>阶段三 · 通信</strong> ｜ 难度：★★★★☆ ｜ 预计用时：50–60 分钟</p>
+<p><strong>本课材料</strong>：ESP32 开发板 ×1、USB 线 ×1、面包板、0.96 寸 OLED（SSD1306）×1、<strong>BMP280 气压传感器</strong> ×1、<strong>MPU6050 姿态传感器</strong> ×1、杜邦线若干
+<strong>无硬件替代</strong>：Wokwi 添加 <code>BMP280</code> 与 <code>MPU6050</code> 元件（或 <code>wokwi-bmp280</code>、<code>wokwi-mpu6050</code>），接同一条 I2C 总线</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson08-hero.svg" alt="第 8 课效果预告：传感器数据实时显示在 OLED 上"></p>
+<blockquote>
+<p>你将做出：<strong>一条两线总线上同时挂着 3 个设备——OLED 显示屏 + 气压计 + 姿态传感器。屏幕每秒刷新真实温度、气压换算的海拔、以及你手里板子倾斜时实时跳动的姿态角。</strong></p>
+</blockquote>
+<p>第 7 课的 OLED 只会显示你写死的字。这一课，<strong>屏幕上的数字第一次来自真实世界</strong>——传感器进、屏幕出，一条 I2C 总线承载三个设备全靠地址区分。这是本系列第一课&quot;完整的感知系统&quot;。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 挂多设备上同一总线：一条 SDA/SCL 同时接 OLED + BMP280 + MPU6050</li>
+<li>✅ 读取 BMP280 的温度/气压，做<strong>单位换算与校准数据解读</strong></li>
+<li>✅ 读取 MPU6050 的原始加速度，算出<strong>倾角（姿态角）</strong></li>
+<li>✅ 理解<strong>数据校验</strong>：为什么原始字节不能直接用、怎么检查设备是否在线</li>
+<li>✅ <strong>回收第 1 课伏笔</strong>：&quot;IO21 = I2C SDA（传感器主角）&quot;——本课它真的成了主角</li>
+</ol>
+<hr>
+<h2>🔁 开课先接棒：一条总线，三个设备</h2>
+<p>第 7 课结束时，你的总线上只有一个 OLED。现在往同一条总线上<strong>再并联两个传感器</strong>——不加线、不换引脚，只是把它们的 SDA/SCL 接到同两根母线上：</p>
+<pre><code>   3.3V ──┬──[上拉]──┬──[上拉]──┬──[上拉]──┐
+           │          │          │          │
+          SDA ════════╪══════════╪══════════╪══  ← 同一根数据线
+          SCL ════════╪══════════╪══════════╪══  ← 同一根时钟线
+           │          │          │          │
+        ┌──┴──┐   ┌───┴───┐  ┌───┴───┐  ┌───┴───┐
+        │OLED │   │BMP280 │  │MPU6050│  │ (还能再挂…)│
+        │0x3C │   │ 0x76  │  │ 0x68  │  │ 0x03-0x77 │
+        └─────┘   └───────┘  └───────┘  └───────────┘
+</code></pre>
+<p><strong>这正是 I2C 的威力</strong>：第 7 课学的&quot;寻址&quot;不是理论——<strong>现在总线上 3 个设备，主机每发一帧数据都带地址，只有地址对上的设备接管数据线</strong>。OLED 收到 0x3C 的话，BMP280 和 MPU6050 当没听见。</p>
+<blockquote>
+<p>📌 <strong>接线表（全课唯一一次接线，之后不再动）</strong></p>
+<table>
+<thead>
+<tr>
+<th>设备</th>
+<th>VCC</th>
+<th>GND</th>
+<th>SDA</th>
+<th>SCL</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>OLED</td>
+<td>3V3</td>
+<td>GND</td>
+<td><strong>GPIO21</strong></td>
+<td><strong>GPIO22</strong></td>
+</tr>
+<tr>
+<td>BMP280</td>
+<td>3V3</td>
+<td>GND</td>
+<td><strong>GPIO21</strong></td>
+<td><strong>GPIO22</strong></td>
+</tr>
+<tr>
+<td>MPU6050</td>
+<td>3V3</td>
+<td>GND</td>
+<td><strong>GPIO21</strong></td>
+<td><strong>GPIO22</strong></td>
+</tr>
+</tbody></table>
+<p>三个设备的 SDA 全接 21、SCL 全接 22——<strong>并联，不是串联</strong>。面包板上两根母线横着走，每个模块的四根线往母线上搭即可。</p>
+<p>⚠️ <strong>第 1 课引脚图伏笔正式兑现</strong>：<code>IO21 = I2C SDA（第 8 课传感器主角）</code>——从这课起，21/22 就是你的&quot;传感器专用总线&quot;，直到第 11 课开 Wi-Fi 也不用换（I2C 与 Wi-Fi 不冲突，<strong>只有模拟输入才有 ADC2 问题</strong>——第 6 课清算过）。</p>
+</blockquote>
+<hr>
+<h2>📡 新知识一：传感器数据是怎么&quot;来&quot;的？</h2>
+<p>所有 I2C 传感器的读取流程都是同一个模子：</p>
+<pre><code>① beginTransmission(地址)      点名
+② write(寄存器地址)            说&quot;我要看第 X 号抽屉&quot;
+③ endTransmission(false)       不释放总线（Repeated Start）
+④ requestFrom(地址, 字节数)    说&quot;把数据递给我&quot;
+⑤ read() × N                   一个字节一个字节收
+⑥ 拼装 + 换算                  原始字节 → 有物理意义的数
+</code></pre>
+<p><strong>&quot;寄存器（Register）&quot;是本课第一个新概念</strong>：传感器内部有一排小抽屉，每个抽屉有编号，存着一份数据或一条命令。读传感器 = <strong>按编号开抽屉拿东西</strong>。比如 BMP280 的温度数据存在 0xFA–0xFC 三个抽屉里（3 个字节）。</p>
+<h3>数据校验：设备真的在吗？</h3>
+<p>读之前先做一次&quot;点名体检&quot;——第 7 课的扫描逻辑直接复用：</p>
+<pre><code class="language-cpp">bool deviceOnline(byte addr) {
+  Wire.beginTransmission(addr);
+  return Wire.endTransmission() == 0;   // 0 = ACK = 在线
+}
+</code></pre>
+<p><strong>这是工程习惯</strong>：接线可能松、设备可能坏——<strong>每次读数前确认对方还活着，读到异常数据才有排查方向</strong>（第 7 课挑战里你断过 SDA，知道总线瘫了是什么样）。</p>
+<hr>
+<h2>📡 新知识二：BMP280——温度与气压的单位换算</h2>
+<p>BMP280 给你的<strong>不是温度，是一串原始整数</strong>。从原始值到摄氏度要走三步：</p>
+<pre><code>原始值(16~20位整数) → 补偿公式(用出厂校准系数) → 浮点摄氏度
+</code></pre>
+<p><strong>为什么要校准系数？</strong> 每颗芯片在出厂时都会有微小差异，厂商把差异的补偿参数<strong>烧录在传感器自己的&quot;校准抽屉&quot;里</strong>（0x88–0xA1 共 26 字节）。读出这些参数，代入数据手册的公式，才能得到准确值。</p>
+<blockquote>
+<p>💡 <strong>为什么不直接 <code>温度 = 原始值 × 系数</code>？</strong> 因为传感器的响应不是完美直线——出厂时用高精度设备测了几个点，把修正曲线的参数存进去。<strong>&quot;读校准数据 → 代入公式&quot;是所有传感器的通用套路</strong>，第 8 课先见识，等你用 DHT11、SHT30 时会发现大家都一样。</p>
+<p><strong>懒人方案</strong>：Adafruit 库已经把公式封装好了——<code>readTemperature()</code> 直接给你摄氏度。<strong>本课代码用库，但你要知道库底下在干什么</strong>（上面这段就是）。</p>
+</blockquote>
+<p><strong>气压 → 海拔</strong>：大气压随高度递减，用简化的气压高度公式：</p>
+<pre><code>海拔 ≈ 44330 × (1 - (当前气压/1013.25)^0.1903)   （单位：米）
+</code></pre>
+<p>1013.25 hPa 是海平面标准气压。<strong>你的板子从桌面拿到窗台，气压差能换算出几十厘米的高度变化</strong>——本课挑战里你会亲手验证。</p>
+<hr>
+<h2>📡 新知识三：MPU6050——把加速度变成倾角</h2>
+<p>MPU6050 是六轴姿态传感器（三轴加速度 + 三轴陀螺仪）。本课先用<strong>加速度计</strong>算倾角：</p>
+<blockquote>
+<p><strong>原理</strong>：静止时，加速度计测到的唯一加速度是<strong>重力（1g）</strong>。板子一倾斜，重力分量就分配到三个轴上——<strong>从各轴分量的三角函数就能反推倾角</strong>。</p>
+</blockquote>
+<pre><code>         Z轴
+          ↑   ·  板子倾斜 θ
+          │  /
+          │ /  重力 1g 始终竖直向下
+          │/
+          └──── X轴
+
+  θx = atan2( Ay, Az )     ← Y/Z 分量求反正切
+  θy = atan2( -Ax, sqrt(Ay² + Az²) )
+</code></pre>
+<p><strong>原始加速度值的含义</strong>：MPU6050 默认量程 ±2g，16 位分辨率——<strong>16384 个 LSB = 1g</strong>。所以：</p>
+<pre><code>真实加速度(g) = 原始值 / 16384
+</code></pre>
+<p><strong>单位换算是传感器课的第二母题</strong>（第一是校准）：<strong>永远问自己&quot;这个数字的单位是什么？&quot;</strong>——原始值、g、m/s²、摄氏度、hPa，差一个单位结论就全错。</p>
+<blockquote>
+<p>⚠️ <strong>数据拼装的坑</strong>：MPU6050 的每个数据是<strong>两个字节（高字节在前，大端序）</strong>。<code>Ax = (高&lt;&lt;8) | 低</code>——<strong>位移和或运算是嵌入式的&quot;拼积木&quot;</strong>，第 9 课讲 SPI 数据帧时还会用到。忘了拼、拼反了，读出来的就是雪花点般的乱数。</p>
+</blockquote>
+<hr>
+<h2>💡 完整代码（直接复制）</h2>
+<pre><code class="language-cpp">// ============================================
+// 第 8 课：I2C 传感器实战 —— 温度/气压/姿态上屏
+// ============================================
+#include &lt;Wire.h&gt;
+#include &lt;Adafruit_GFX.h&gt;
+#include &lt;Adafruit_SSD1306.h&gt;
+#include &lt;Adafruit_BMP280.h&gt;        // 气压传感器库
+#include &lt;Adafruit_MPU6050.h&gt;       // 姿态传感器库
+
+const int SDA_PIN = 21;             // I2C SDA（第 1 课伏笔，本课主角）
+const int SCL_PIN = 22;
+
+#define OLED_ADDR 0x3C
+#define MPU_ADDR  0x68
+
+Adafruit_SSD1306 display(128, 64, &amp;Wire, -1);
+Adafruit_BMP280 bmp;
+Adafruit_MPU6050 mpu;
+
+unsigned long lastUpdate = 0;
+
+void setup() {
+  Serial.begin(115200);
+  Wire.begin(SDA_PIN, SCL_PIN);
+
+  // —— 三个设备逐一体检（第 7 课扫描逻辑复用）——
+  checkDevice(0x3C, &quot;OLED&quot;);
+  checkDevice(0x76, &quot;BMP280&quot;);
+  checkDevice(MPU_ADDR, &quot;MPU6050&quot;);
+
+  // —— 初始化 ——
+  display.begin(SSD1306_SWITCHCAPVCC, OLED_ADDR);
+  display.clearDisplay();
+
+  if (!bmp.begin(0x76)) {           // BMP280 地址 0x76（有的板是 0x77）
+    Serial.println(&quot;BMP280 未找到！&quot;);
+    while (true) delay(1000);
+  }
+  if (!mpu.begin(MPU_ADDR)) {
+    Serial.println(&quot;MPU6050 未找到！&quot;);
+    while (true) delay(1000);
+  }
+  mpu.setAccelerometerRange(MPU6050_RANGE_2_G);   // ±2g：16384 LSB = 1g
+  mpu.setGyroRange(MPU6050_RANGE_250_DEG);
+
+  Serial.println(&quot;三设备就绪，开始采样&quot;);
+}
+
+void checkDevice(byte addr, const char* name) {
+  Wire.beginTransmission(addr);
+  byte err = Wire.endTransmission();
+  Serial.print(name); Serial.print(&quot; (0x&quot;);
+  Serial.print(addr, HEX); Serial.print(&quot;): &quot;);
+  Serial.println(err == 0 ? &quot;在线 ✓&quot; : &quot;离线 ✗ 检查接线！&quot;);
+}
+
+void loop() {
+  if (millis() - lastUpdate &gt;= 500) {     // 每 500ms 采样刷新
+    lastUpdate = millis();
+
+    // —— 读 BMP280（库已封装校准换算）——
+    float tempC = bmp.readTemperature();        // 摄氏度
+    float hPa   = bmp.readPressure() / 100.0;   // 帕斯卡 → 百帕
+    float altM  = 44330.0 * (1.0 - pow(hPa / 1013.25, 0.1903));
+
+    // —— 读 MPU6050，原始值 → 倾角 ——
+    sensors_event_t a, g, temp;
+    mpu.getEvent(&amp;a, &amp;g, &amp;temp);
+    float ax = a.acceleration.x;   // 单位已是 m/s²（库换算过）
+    float ay = a.acceleration.y;
+    float az = a.acceleration.z;
+    float roll  = atan2(ay, az) * 180.0 / PI;                  // 横滚角
+    float pitch = atan2(-ax, sqrt(ay*ay + az*az)) * 180.0 / PI; // 俯仰角
+
+    // —— 串口原始输出 ——
+    Serial.print(&quot;温度: &quot;); Serial.print(tempC, 1);
+    Serial.print(&quot; C  气压: &quot;); Serial.print(hPa, 1);
+    Serial.print(&quot; hPa  海拔: &quot;); Serial.print(altM, 1);
+    Serial.print(&quot; m  横滚: &quot;); Serial.print(roll, 0);
+    Serial.print(&quot;  俯仰: &quot;); Serial.println(pitch, 0);
+
+    // —— OLED 局部刷新（第 7 课机制）——
+    display.fillRect(0, 0, 128, 64, SSD1306_BLACK);
+    display.setTextSize(1);
+    display.setCursor(0, 0);
+    display.print(&quot;T=&quot;); display.print(tempC, 1); display.println(&quot; C&quot;);
+    display.print(&quot;P=&quot;); display.print(hPa, 1); display.println(&quot; hPa&quot;);
+    display.print(&quot;Alt=&quot;); display.print(altM, 0); display.println(&quot; m&quot;);
+    display.drawLine(0, 44, 127, 44, SSD1306_WHITE);
+    display.setCursor(0, 50);
+    display.print(&quot;R:&quot;); display.print(roll, 0);
+    display.print(&quot;  P:&quot;); display.print(pitch, 0);
+    display.print(&quot; deg&quot;);
+    display.display();
+  }
+}
+</code></pre>
+<h3>逐段拆解</h3>
+<p><strong><code>checkDevice()</code>——三个设备逐一体检</strong>
+开机先把三个地址全点名一遍，串口直接告诉你<strong>谁在线谁离线</strong>。<strong>排错从&quot;开机自检&quot;开始</strong>——比&quot;屏幕不亮再瞎猜&quot;高效十倍。这段是你以后每个 I2C 项目的模板开头。</p>
+<p><strong><code>bmp.begin(0x76)</code>——地址从哪来？</strong>
+不是猜的——是<strong>第 7 课扫描出来的</strong>（或者传感器数据手册）。BMP280 有 0x76/0x77 两个可能（SDO 引脚决定），扫到哪个用哪个。<strong>地址永远以扫描结果为准</strong>，这是第 7 课教的铁律。</p>
+<p><strong><code>readPressure() / 100.0</code>——单位换算的现场</strong>
+库返回<strong>帕斯卡（Pa）</strong>，而气象习惯用<strong>百帕（hPa）</strong>——差 100 倍。<strong>单位换算必须显式写在代码里</strong>，并加注释（<code>// 帕 → 百帕</code>），三个月后回看才不会懵。</p>
+<p><strong><code>atan2(ay, az) * 180.0 / PI</code>——弧度转角度</strong>
+<code>atan2</code> 返回<strong>弧度</strong>，人眼看的角度是<strong>度</strong>——<code>×180/π</code>。<strong>库给的中间量不一定是你想要的单位</strong>，又一个&quot;单位意识&quot;的现场。</p>
+<p><strong><code>sensors_event_t</code>——库的数据结构</strong>
+Adafruit 库统一用结构体返回数据（x/y/z 三轴 + 温度一起给）。<strong>结构体 = 打包的多个变量</strong>，第 14 课 ESP-IDF 里你会更深入地认识它。</p>
+<p><strong><code>display.fillRect(0, 0, 128, 64, BLACK)</code> 整屏清 + 重画</strong>
+本课数据每 500ms 全部变化，<strong>局部刷新没有意义，整屏重画更简洁</strong>。第 7 课用 <code>fillRect</code> 局部清是因为只有计数在变——<strong>选哪种刷新方式，看变化的范围</strong>。</p>
+<hr>
+<h2>🎯 动手前先看：数据流全景</h2>
+<p><!-- 组件：传感器数据流全景 · 用于第 8 课 -->
+<div class="wgt wgt-flow" id="wg-flow">
+  <div class="wgt-head"><span>🌊 交互演示：一个温度读数的完整旅程</span><span class="wgt-badge">点"采样一次"看数据变形</span></div>
+  <div class="wgt-body">
+    <!-- 六段流水线 -->
+    <div class="wg-flow-track" id="wg-flow-track">
+      <div class="wg-flow-stage" data-s="0">
+        <div class="wg-flow-icon">🌡️</div>
+        <div class="wg-flow-name">物理量</div>
+        <div class="wg-flow-val" id="wg-f-v0">26.4 °C</div>
+        <div class="wg-flow-note">真实世界</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="1">
+        <div class="wg-flow-icon">芯片</div>
+        <div class="wg-flow-name">BMP280 感知</div>
+        <div class="wg-flow-val" id="wg-f-v1">—</div>
+        <div class="wg-flow-note">物理 → 电信号</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="2">
+        <div class="wg-flow-icon">📦</div>
+        <div class="wg-flow-name">原始字节</div>
+        <div class="wg-flow-val" id="wg-f-v2">—</div>
+        <div class="wg-flow-note">I2C 传回 0x6A3F</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="3">
+        <div class="wg-flow-icon">🧮</div>
+        <div class="wg-flow-name">校准+换算</div>
+        <div class="wg-flow-val" id="wg-f-v3">—</div>
+        <div class="wg-flow-note">出厂系数代入公式</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="4">
+        <div class="wg-flow-icon">📐</div>
+        <div class="wg-flow-name">物理单位</div>
+        <div class="wg-flow-val" id="wg-f-v4">—</div>
+        <div class="wg-flow-note">26.4 °C</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="5">
+        <div class="wg-flow-icon">🖥️</div>
+        <div class="wg-flow-name">屏幕像素</div>
+        <div class="wg-flow-val" id="wg-f-v5">—</div>
+        <div class="wg-flow-note">display.display()</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <button id="wg-flow-btn" class="wg-flow-btn">▶ 采样一次</button>
+      <button id="wg-flow-auto" class="wg-flow-btn ghost">⏸ 自动循环</button>
+      <div class="wg-flow-log" id="wg-flow-log">每一环都可能出错——串口打印让你能在任意一环截断排查。</div>
+    </div>
+
+    <div class="wg-flow-explain" id="wg-flow-explain">
+      点击"采样一次"：看一个温度值如何从 <b>真实世界的 26.4°C</b>，变成芯片里的 <b>原始整数</b>，再被 <b>校准公式</b> 还原成 <b>摄氏度</b>，最后画到 <b>OLED 像素</b> 上。任何一环断裂，屏幕就会显示错误答案。
+    </div>
+    <p class="wgt-hint" style="text-align:center">重点看第 ②③ 环：<b>传感器给你的从来不是"温度"，而是原始整数</b>——校准与换算是每个传感器驱动的隐藏工作（Adafruit 库替你做了，但你要知道它存在）。</p>
+  </div>
+</div>
+<style>
+.wg-flow-track { display: flex; align-items: stretch; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+.wg-flow-stage { flex: 1; min-width: 96px; background: #f4f7f5; border: 2px solid var(--border); border-radius: 10px; padding: .6em .4em; text-align: center; transition: all .3s; }
+.wg-flow-stage.lit { border-color: #0b6e4f; background: #e6f3ee; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(11,110,79,.18); }
+.wg-flow-icon { font-size: 1.3em; font-weight: bold; color: #0b6e4f; min-height: 1.5em; }
+.wg-flow-name { font-size: .8em; color: #333; font-weight: bold; margin-top: 2px; }
+.wg-flow-val { font-family: Consolas, monospace; font-size: .85em; color: #c0392b; font-weight: bold; margin-top: 4px; min-height: 1.3em; }
+.wg-flow-note { font-size: .68em; color: #9aa0a6; margin-top: 3px; }
+.wg-flow-arrow { display: flex; align-items: center; color: #b8c4bd; font-size: 1.2em; }
+.wg-flow-btn { font-family: inherit; font-size: .88em; padding: .45em 1em; border-radius: 8px; border: 1px solid #0b6e4f; background: #0b6e4f; color: #fff; cursor: pointer; }
+.wg-flow-btn.ghost { background: #fff; color: #0b6e4f; }
+.wg-flow-btn:disabled { opacity: .5; cursor: default; }
+.wg-flow-log { font-size: .82em; color: #6b6b6b; flex: 1; min-width: 200px; }
+.wg-flow-explain { margin-top: 10px; font-size: .88em; line-height: 1.65; color: #444; background: #fffdf5; border-left: 4px solid #e0b84b; padding: .55em .8em; border-radius: 0 6px 6px 0; }
+.wgt-flow .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 700px) { .wg-flow-arrow { display: none; } .wg-flow-track { flex-wrap: wrap; } .wg-flow-stage { min-width: 44%; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-flow');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const btn = document.getElementById('wg-flow-btn');
+  const autoBtn = document.getElementById('wg-flow-auto');
+  const log = document.getElementById('wg-flow-log');
+  const explain = document.getElementById('wg-flow-explain');
+  const stages = Array.from(root.querySelectorAll('.wg-flow-stage'));
+  const vals = [0,1,2,3,4,5].map(i => document.getElementById('wg-f-v' + i));
+
+  let running = false, auto = false, autoTimer = null;
+
+  const EXPLAINS = [
+    '① <b>物理量</b>：真实世界的温度是连续的，26.4°C 只是它的当前值。',
+    '② <b>芯片感知</b>：BMP280 内部的敏感元件把温度变成电信号——这一步是纯物理，没有代码。',
+    '③ <b>原始字节</b>：ADC 把电信号量化成 16~20 位整数（如 <code>0x6A3F</code>），经 I2C 传回 ESP32。<b>它不是温度，只是温度的影子</b>。',
+    '④ <b>校准+换算</b>：读出出厂校准系数，代入数据手册公式，把影子还原成真值——<b>库替你做了这步</b>。',
+    '⑤ <b>物理单位</b>：得到 26.4°C（浮点数）。注意单位：Pa→hPa 还要 ÷100（本课代码现场）。',
+    '⑥ <b>屏幕像素</b>：<code>display.display()</code> 把缓冲区刷上屏——第 7 课的机制。旅程完成！'
+  ];
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function reset() {
+    stages.forEach(s => s.classList.remove('lit'));
+    vals.forEach(v => v.textContent = '—');
+    vals[0].textContent = '26.4 °C';
+  }
+
+  async function sample() {
+    if (running) return;
+    running = true;
+    btn.disabled = true;
+    reset();
+    const realT = (20 + Math.random() * 12).toFixed(1);
+    const raw = Math.floor(26000 + Math.random() * 4000).toString(16).toUpperCase();
+    const outs = ['26.4 °C', '热 → 电', '0x' + raw, '公式计算', realT + ' °C', '"' + realT + '"'];
+    vals[0].textContent = realT + ' °C';
+    for (let i = 0; i < 6; i++) {
+      stages[i].classList.add('lit');
+      vals[i].textContent = outs[i];
+      explain.innerHTML = EXPLAINS[i];
+      log.textContent = `环节 ${i + 1}/6 ...`;
+      await sleep(620);
+      if (i < 5) stages[i].classList.remove('lit');
+    }
+    log.textContent = `✅ 完成：${realT}°C 上屏。注意第 ③ 环的原始值每次都在变——校准公式把它稳定还原。`;
+    btn.disabled = false;
+    running = false;
+  }
+
+  btn.onclick = sample;
+  autoBtn.onclick = () => {
+    auto = !auto;
+    autoBtn.textContent = auto ? '⏸ 停止循环' : '▶ 自动循环';
+    if (auto) {
+      autoTimer = setInterval(() => { if (!running) sample(); }, 4600);
+      sample();
+    } else {
+      clearInterval(autoTimer);
+    }
+  };
+})();
+</script>
+</p>
+<p>上图是本课的完整数据链：<strong>物理量 → 传感器感知 → 原始字节 → 校准/换算 → 物理单位 → 屏幕像素</strong>。每一环都可能出错，串口打印就是为了让你能<strong>在中间任何一环截断排查</strong>。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> 三个设备全部并联接好（SDA 都在 21、SCL 都在 22），通电无发热</li>
+<li><input disabled="" type="checkbox"> 三个库安装完成：<code>Adafruit SSD1306</code>、<code>Adafruit BMP280</code>、<code>Adafruit MPU6050</code></li>
+<li><input disabled="" type="checkbox"> 串口开机自检：<code>OLED/BMP280/MPU6050</code> 三个都显示&quot;在线 ✓&quot;</li>
+<li><input disabled="" type="checkbox"> OLED 同屏显示温度、气压、海拔、横滚、俯仰五行数据</li>
+<li><input disabled="" type="checkbox"> 温度读数合理（室温 15–35°C，手握传感器会缓慢上升——<strong>证明读的是真的</strong>）</li>
+<li><input disabled="" type="checkbox"> 把板子向左倾：<strong>横滚角变负、向右倾变正</strong>（或相反，方向一致即可）——姿态响应正确</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①三个设备怎么共用两根线 ②为什么原始值要校准/换算 ③倾角是怎么算出来的</li>
+<li><input disabled="" type="checkbox"> 拔掉 BMP280 的 SDA 再开机：自检显示&quot;离线 ✗&quot;，OLED/MPU6050 照常工作——<strong>总线上的故障被隔离到单个设备</strong></li>
+</ul>
+<p><strong>全部打勾 → 你完成了本系列第一个&quot;感知系统&quot;：真实世界的物理量进入了你的程序并显示出来。进入第 9 课。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>海拔测高</strong>：记下桌面海拔读数，把板子举到头顶（或拿到楼上），看海拔变化多少米——和实际高度对比。</li>
+<li><strong>双轴罗盘（选做）</strong>：用横滚/俯仰两个角度，让 OLED 上画一个&quot;水平仪&quot;圆点——板子怎么倾，圆点就往哪偏（<code>drawCircle</code> + 偏移坐标）。</li>
+<li><strong>0x76 扫不出来？</strong>：把 <code>bmp.begin(0x76)</code> 改成 <code>0x77</code> 重试——<strong>用第 7 课的扫描器确认真实地址</strong>，把结果记进笔记。</li>
+<li><strong>证据收集（重点）</strong>：写一个 <code>for</code> 循环，把 MPU6050 静止时的原始 <code>ax</code> 连续采 20 次打印出来——<strong>记录数值抖动的幅度</strong>。这是&quot;传感器噪声&quot;的第一手证据，第 10 课讲 millis 采样节奏时、第 11 课讲软件滤波时，我们都会回来引用它。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>自检三个全&quot;离线&quot;</td>
+<td>① SDA/SCL 接反 ② 没共地 ③ 总线没上拉</td>
+<td>对调 21/22；查 GND；确认模块自带上拉或外加 10kΩ</td>
+</tr>
+<tr>
+<td>只有部分设备离线</td>
+<td>该设备接线松 / 地址不对</td>
+<td>单独跑第 7 课扫描器确认地址；插紧杜邦线</td>
+</tr>
+<tr>
+<td><code>BMP280 未找到</code></td>
+<td>地址是 0x77 不是 0x76</td>
+<td>扫描确认后改 <code>begin()</code> 参数</td>
+</tr>
+<tr>
+<td><code>MPU6050 未找到</code></td>
+<td>地址 0x68/0x69 之一</td>
+<td>扫描确认；AD0 接 GND=0x68、接 VCC=0x69</td>
+</tr>
+<tr>
+<td>温度读数离谱（-40 或 127）</td>
+<td>读取失败的错误码被当数据</td>
+<td>检查接线；库的 <code>readTemperature()</code> 返回 NAN 时打印判断</td>
+</tr>
+<tr>
+<td>倾角数字乱飞不归零</td>
+<td>① 板子在振动 ② 没静止就读 ③ 量程配错</td>
+<td>静置读数；确认 <code>setAccelerometerRange(±2g)</code></td>
+</tr>
+<tr>
+<td>倾角恒为 0 不动</td>
+<td>读的是陀螺仪不是加速度计 / 事件没刷新</td>
+<td>确认用 <code>a.acceleration.*</code>；确认 <code>getEvent</code> 每次都调</td>
+</tr>
+<tr>
+<td>OLED 有字但传感器区空白</td>
+<td>数据是 NaN，<code>print</code> 输出空</td>
+<td>打印原始值排查；多半是 begin 失败但没判断</td>
+</tr>
+<tr>
+<td>三个设备互相干扰、数据错乱</td>
+<td>某设备时钟拉伸过长 / 上拉太弱</td>
+<td>换 4.7kΩ 上拉；短线；逐个断开定位问题设备</td>
+</tr>
+<tr>
+<td>开 Wi-Fi 后（未来课程）数据异常</td>
+<td>不是 I2C 的问题——I2C 与 Wi-Fi 不冲突</td>
+<td>第 6 课：那是 ADC2 的坑，I2C 引脚不受影响</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>你已经让&quot;感知&quot;（传感器）和&quot;显示&quot;（OLED）在一条总线上共存。但 I2C 的 400kHz 就像乡间小路——<strong>当你想刷一块彩色 TFT 屏幕、每秒推几百万像素时，它就堵死了</strong>。<strong>第 9 课：SPI 高速通信</strong>——四根线的&quot;高速公路&quot;（MOSI/MISO/SCK/CS），全双工、几 MHz 起步，你会接一块 TFT 彩屏并亲手对比 <strong>SPI 与 I2C 的速率差距</strong>（同一个动画里看两条路跑车）。同时你会第一次遇到&quot;片选（CS）&quot;这种新的设备区分方式——I2C 用地址点名，SPI 用独立线喊人。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>

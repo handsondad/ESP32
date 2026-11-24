@@ -1,0 +1,143 @@
+<!-- 组件：传感器数据流全景 · 用于第 8 课 -->
+<div class="wgt wgt-flow" id="wg-flow">
+  <div class="wgt-head"><span>🌊 交互演示：一个温度读数的完整旅程</span><span class="wgt-badge">点"采样一次"看数据变形</span></div>
+  <div class="wgt-body">
+    <!-- 六段流水线 -->
+    <div class="wg-flow-track" id="wg-flow-track">
+      <div class="wg-flow-stage" data-s="0">
+        <div class="wg-flow-icon">🌡️</div>
+        <div class="wg-flow-name">物理量</div>
+        <div class="wg-flow-val" id="wg-f-v0">26.4 °C</div>
+        <div class="wg-flow-note">真实世界</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="1">
+        <div class="wg-flow-icon">芯片</div>
+        <div class="wg-flow-name">BMP280 感知</div>
+        <div class="wg-flow-val" id="wg-f-v1">—</div>
+        <div class="wg-flow-note">物理 → 电信号</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="2">
+        <div class="wg-flow-icon">📦</div>
+        <div class="wg-flow-name">原始字节</div>
+        <div class="wg-flow-val" id="wg-f-v2">—</div>
+        <div class="wg-flow-note">I2C 传回 0x6A3F</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="3">
+        <div class="wg-flow-icon">🧮</div>
+        <div class="wg-flow-name">校准+换算</div>
+        <div class="wg-flow-val" id="wg-f-v3">—</div>
+        <div class="wg-flow-note">出厂系数代入公式</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="4">
+        <div class="wg-flow-icon">📐</div>
+        <div class="wg-flow-name">物理单位</div>
+        <div class="wg-flow-val" id="wg-f-v4">—</div>
+        <div class="wg-flow-note">26.4 °C</div>
+      </div>
+      <div class="wg-flow-arrow">→</div>
+      <div class="wg-flow-stage" data-s="5">
+        <div class="wg-flow-icon">🖥️</div>
+        <div class="wg-flow-name">屏幕像素</div>
+        <div class="wg-flow-val" id="wg-f-v5">—</div>
+        <div class="wg-flow-note">display.display()</div>
+      </div>
+    </div>
+
+    <div style="display:flex;gap:10px;align-items:center;margin-top:12px;flex-wrap:wrap">
+      <button id="wg-flow-btn" class="wg-flow-btn">▶ 采样一次</button>
+      <button id="wg-flow-auto" class="wg-flow-btn ghost">⏸ 自动循环</button>
+      <div class="wg-flow-log" id="wg-flow-log">每一环都可能出错——串口打印让你能在任意一环截断排查。</div>
+    </div>
+
+    <div class="wg-flow-explain" id="wg-flow-explain">
+      点击"采样一次"：看一个温度值如何从 <b>真实世界的 26.4°C</b>，变成芯片里的 <b>原始整数</b>，再被 <b>校准公式</b> 还原成 <b>摄氏度</b>，最后画到 <b>OLED 像素</b> 上。任何一环断裂，屏幕就会显示错误答案。
+    </div>
+    <p class="wgt-hint" style="text-align:center">重点看第 ②③ 环：<b>传感器给你的从来不是"温度"，而是原始整数</b>——校准与换算是每个传感器驱动的隐藏工作（Adafruit 库替你做了，但你要知道它存在）。</p>
+  </div>
+</div>
+<style>
+.wg-flow-track { display: flex; align-items: stretch; gap: 4px; overflow-x: auto; padding-bottom: 4px; }
+.wg-flow-stage { flex: 1; min-width: 96px; background: #f4f7f5; border: 2px solid var(--border); border-radius: 10px; padding: .6em .4em; text-align: center; transition: all .3s; }
+.wg-flow-stage.lit { border-color: #0b6e4f; background: #e6f3ee; transform: translateY(-3px); box-shadow: 0 4px 10px rgba(11,110,79,.18); }
+.wg-flow-icon { font-size: 1.3em; font-weight: bold; color: #0b6e4f; min-height: 1.5em; }
+.wg-flow-name { font-size: .8em; color: #333; font-weight: bold; margin-top: 2px; }
+.wg-flow-val { font-family: Consolas, monospace; font-size: .85em; color: #c0392b; font-weight: bold; margin-top: 4px; min-height: 1.3em; }
+.wg-flow-note { font-size: .68em; color: #9aa0a6; margin-top: 3px; }
+.wg-flow-arrow { display: flex; align-items: center; color: #b8c4bd; font-size: 1.2em; }
+.wg-flow-btn { font-family: inherit; font-size: .88em; padding: .45em 1em; border-radius: 8px; border: 1px solid #0b6e4f; background: #0b6e4f; color: #fff; cursor: pointer; }
+.wg-flow-btn.ghost { background: #fff; color: #0b6e4f; }
+.wg-flow-btn:disabled { opacity: .5; cursor: default; }
+.wg-flow-log { font-size: .82em; color: #6b6b6b; flex: 1; min-width: 200px; }
+.wg-flow-explain { margin-top: 10px; font-size: .88em; line-height: 1.65; color: #444; background: #fffdf5; border-left: 4px solid #e0b84b; padding: .55em .8em; border-radius: 0 6px 6px 0; }
+.wgt-flow .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 700px) { .wg-flow-arrow { display: none; } .wg-flow-track { flex-wrap: wrap; } .wg-flow-stage { min-width: 44%; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-flow');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const btn = document.getElementById('wg-flow-btn');
+  const autoBtn = document.getElementById('wg-flow-auto');
+  const log = document.getElementById('wg-flow-log');
+  const explain = document.getElementById('wg-flow-explain');
+  const stages = Array.from(root.querySelectorAll('.wg-flow-stage'));
+  const vals = [0,1,2,3,4,5].map(i => document.getElementById('wg-f-v' + i));
+
+  let running = false, auto = false, autoTimer = null;
+
+  const EXPLAINS = [
+    '① <b>物理量</b>：真实世界的温度是连续的，26.4°C 只是它的当前值。',
+    '② <b>芯片感知</b>：BMP280 内部的敏感元件把温度变成电信号——这一步是纯物理，没有代码。',
+    '③ <b>原始字节</b>：ADC 把电信号量化成 16~20 位整数（如 <code>0x6A3F</code>），经 I2C 传回 ESP32。<b>它不是温度，只是温度的影子</b>。',
+    '④ <b>校准+换算</b>：读出出厂校准系数，代入数据手册公式，把影子还原成真值——<b>库替你做了这步</b>。',
+    '⑤ <b>物理单位</b>：得到 26.4°C（浮点数）。注意单位：Pa→hPa 还要 ÷100（本课代码现场）。',
+    '⑥ <b>屏幕像素</b>：<code>display.display()</code> 把缓冲区刷上屏——第 7 课的机制。旅程完成！'
+  ];
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  function reset() {
+    stages.forEach(s => s.classList.remove('lit'));
+    vals.forEach(v => v.textContent = '—');
+    vals[0].textContent = '26.4 °C';
+  }
+
+  async function sample() {
+    if (running) return;
+    running = true;
+    btn.disabled = true;
+    reset();
+    const realT = (20 + Math.random() * 12).toFixed(1);
+    const raw = Math.floor(26000 + Math.random() * 4000).toString(16).toUpperCase();
+    const outs = ['26.4 °C', '热 → 电', '0x' + raw, '公式计算', realT + ' °C', '"' + realT + '"'];
+    vals[0].textContent = realT + ' °C';
+    for (let i = 0; i < 6; i++) {
+      stages[i].classList.add('lit');
+      vals[i].textContent = outs[i];
+      explain.innerHTML = EXPLAINS[i];
+      log.textContent = `环节 ${i + 1}/6 ...`;
+      await sleep(620);
+      if (i < 5) stages[i].classList.remove('lit');
+    }
+    log.textContent = `✅ 完成：${realT}°C 上屏。注意第 ③ 环的原始值每次都在变——校准公式把它稳定还原。`;
+    btn.disabled = false;
+    running = false;
+  }
+
+  btn.onclick = sample;
+  autoBtn.onclick = () => {
+    auto = !auto;
+    autoBtn.textContent = auto ? '⏸ 停止循环' : '▶ 自动循环';
+    if (auto) {
+      autoTimer = setInterval(() => { if (!running) sample(); }, 4600);
+      sample();
+    } else {
+      clearInterval(autoTimer);
+    }
+  };
+})();
+</script>
