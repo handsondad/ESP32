@@ -1,0 +1,101 @@
+<!-- 组件：Arduino IDE vs PlatformIO 工作流 · 用于第 13 课 -->
+<div class="wgt wgt-pio" id="wg-pio">
+  <div class="wgt-head"><span>⚙️ 交互对照：草稿本 vs 工程台</span><span class="wgt-badge">点两侧按钮，看工作流差异</span></div>
+  <div class="wgt-body">
+    <div class="wg-pio-grid">
+      <!-- 左：Arduino IDE -->
+      <div class="wg-pio-side" id="wg-pio-left">
+        <div class="wg-pio-head arduino">📒 Arduino IDE（草稿本）</div>
+        <div class="wg-pio-steps" id="wg-pio-asteps">
+          <div class="wg-pio-step">1. 文件→开发板，选 ESP32 Dev Module</div>
+          <div class="wg-pio-step">2. 画图或点菜单装库（永远最新版）</div>
+          <div class="wg-pio-step">3. 全部代码塞一个 .ino</div>
+          <div class="wg-pio-step">4. 点上传（成功了？）</div>
+          <div class="wg-pio-step">5. 手动开串口、手选 115200</div>
+          <div class="wg-pio-step warn">换台电脑？从 Step 1 重来，库版本可能已变</div>
+        </div>
+        <button class="wg-pio-btn arduino" id="wg-pio-runA">▶ 模拟一次开发流程</button>
+      </div>
+      <!-- 中：VS -->
+      <div class="wg-pio-vs">VS</div>
+      <!-- 右：PlatformIO -->
+      <div class="wg-pio-side" id="wg-pio-right">
+        <div class="wg-pio-head pio">🐜 PlatformIO（工程台）</div>
+        <div class="wg-pio-steps" id="wg-pio-psteps">
+          <div class="wg-pio-step">1. platformio.ini 写死板型+库版本</div>
+          <div class="wg-pio-step">2. src/ 拆模块（.h/.cpp 各司其职）</div>
+          <div class="wg-pio-step">3. pio run 一条命令编译</div>
+          <div class="wg-pio-step">4. pio run -t upload 烧录</div>
+          <div class="wg-pio-step">5. pio device monitor（波特率已在 ini）</div>
+          <div class="wg-pio-step ok">换台电脑？拉代码 + pio run —— 结果一模一样</div>
+        </div>
+        <button class="wg-pio-btn pio" id="wg-pio-runP">▶ 模拟一次开发流程</button>
+      </div>
+    </div>
+
+    <!-- ini 解剖图 -->
+    <div class="wg-pio-ini">
+      <div class="wg-pio-ini-title">platformio.ini 解剖——7 行顶过去的手动十步</div>
+      <pre id="wg-pio-code"><span class="k">[env:esp32dev]</span>
+<span class="c">platform  = espressif32</span>   <span class="cmt">← 自动下载工具链</span>
+<span class="c">board     = esp32dev</span>      <span class="cmt">← 顶"开发板菜单"</span>
+<span class="c">framework = arduino</span>       <span class="cmt">← 用 Arduino 写法</span>
+<span class="c">monitor_speed = 115200</span>    <span class="cmt">← 顶"手选波特率"</span>
+<span class="c">lib_deps =</span>
+<span class="c">  adafruit/Adafruit SSD1306@^2.5.9</span>  <span class="cmt">← 锁版本，永不翻车</span></pre>
+    </div>
+    <p class="wgt-hint" style="text-align:center">核心差异不在"哪个更快"，而在<b>可复现</b>：Arduino IDE 的环境是"你这台电脑的状态"，PlatformIO 的环境是<b>"platformio.ini 里写明的契约"</b>——后者才能交给团队、写进 CI、留给半年后的自己。</p>
+  </div>
+</div>
+<style>
+.wg-pio-grid { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 12px; align-items: stretch; }
+.wg-pio-side { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+.wg-pio-head { padding: .55em .8em; font-weight: bold; font-size: .92em; color: #fff; }
+.wg-pio-head.arduino { background: #00979d; }
+.wg-pio-head.pio { background: #1a1a2e; }
+.wg-pio-steps { padding: .6em .7em; display: flex; flex-direction: column; gap: 5px; min-height: 178px; }
+.wg-pio-step { font-size: .8em; background: #f6f8f7; border: 1px solid var(--border); border-radius: 6px; padding: .38em .55em; color: #999; transition: all .25s; }
+.wg-pio-step.lit { border-color: #0b6e4f; background: #e6f3ee; color: #0b6e4f; font-weight: bold; }
+.wg-pio-step.warn { color: #c0392b; background: #fdecea; border-color: #f5c6c2; }
+.wg-pio-step.ok { color: #0b6e4f; background: #e6f3ee; border-color: #bfe3d5; }
+.wg-pio-vs { display: flex; align-items: center; justify-content: center; font-weight: bold; color: #9aa0a6; font-size: 1.1em; }
+.wg-pio-btn { display: block; width: calc(100% - 1.4em); margin: 0 .7em .7em; font-family: inherit; font-size: .84em; padding: .5em; border-radius: 8px; border: none; color: #fff; cursor: pointer; }
+.wg-pio-btn.arduino { background: #00979d; }
+.wg-pio-btn.pio { background: #1a1a2e; }
+.wg-pio-btn:disabled { opacity: .55; cursor: default; }
+.wg-pio-ini { margin-top: 14px; background: #1a1a2e; border-radius: 10px; padding: .8em 1em; }
+.wg-pio-ini-title { color: #7fd1c1; font-size: .84em; font-weight: bold; margin-bottom: .5em; }
+.wg-pio-ini pre { margin: 0; font-family: Consolas, monospace; font-size: .8em; line-height: 1.75; color: #e8e8f0; }
+.wg-pio-ini .k { color: #f5b041; font-weight: bold; }
+.wg-pio-ini .c { color: #aed6f1; }
+.wg-pio-ini .cmt { color: #6b7280; }
+.wgt-pio .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 640px) { .wg-pio-grid { grid-template-columns: 1fr; } .wg-pio-vs { display: none; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-pio');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const btnA = document.getElementById('wg-pio-runA');
+  const btnP = document.getElementById('wg-pio-runP');
+  const stepsA = Array.from(document.querySelectorAll('#wg-pio-asteps .wg-pio-step'));
+  const stepsP = Array.from(document.querySelectorAll('#wg-pio-psteps .wg-pio-step'));
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function run(steps, btn, per) {
+    if (btn.disabled) return;
+    steps.forEach(s => s.classList.remove('lit'));
+    btn.disabled = true;
+    for (const s of steps) {
+      s.classList.add('lit');
+      await sleep(per);
+      s.classList.remove('lit');
+    }
+    btn.disabled = false;
+  }
+
+  btnA.onclick = () => run(stepsA, btnA, 700);
+  btnP.onclick = () => run(stepsP, btnP, 450);
+})();
+</script>

@@ -1,0 +1,472 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>第 13 课：PlatformIO 工程化——从写草稿到做工程</title>
+<style>
+:root {
+  --bg: #faf9f7; --fg: #2b2b2b; --muted: #6b6b6b;
+  --accent: #0b6e4f; --accent-soft: #e6f3ee;
+  --border: #e5e2dc; --code-bg: #f4f2ee; --quote-bg: #fffdf5;
+}
+* { box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: "PingFang SC", "Microsoft YaHei", "Noto Sans CJK SC", sans-serif;
+  font-size: 16.5px; line-height: 1.85;
+}
+.wrap { max-width: 860px; margin: 0 auto; padding: 48px 28px 96px; }
+h1 { font-size: 1.9em; line-height: 1.35; border-bottom: 3px solid var(--accent); padding-bottom: .4em; }
+h2 { font-size: 1.4em; margin-top: 2.2em; padding: .35em .7em; background: var(--accent-soft);
+     border-left: 5px solid var(--accent); border-radius: 0 6px 6px 0; }
+h3 { font-size: 1.15em; margin-top: 1.8em; }
+h4 { font-size: 1.05em; }
+a { color: var(--accent); }
+blockquote {
+  margin: 1.2em 0; padding: .8em 1.1em; background: var(--quote-bg);
+  border-left: 4px solid #e0b84b; border-radius: 0 6px 6px 0; color: #4a4a4a;
+}
+blockquote p { margin: .35em 0; }
+code {
+  font-family: "Cascadia Code", Consolas, "Courier New", monospace;
+  font-size: .88em; background: var(--code-bg); padding: .15em .4em; border-radius: 4px;
+}
+pre {
+  background: #282c34; color: #abb2bf; padding: 16px 18px; border-radius: 8px;
+  overflow-x: auto; line-height: 1.6; font-size: .86em;
+}
+pre code { background: none; padding: 0; color: inherit; font-size: 1em; }
+table { border-collapse: collapse; width: 100%; margin: 1.2em 0; font-size: .95em; }
+th, td { border: 1px solid var(--border); padding: .55em .8em; text-align: left; vertical-align: top; }
+th { background: var(--accent-soft); }
+tr:nth-child(even) td { background: #f6f5f2; }
+ul, ol { padding-left: 1.6em; }
+li { margin: .3em 0; }
+li input[type="checkbox"] { margin-right: .5em; transform: scale(1.15); }
+hr { border: none; border-top: 1px dashed var(--border); margin: 2.5em 0; }
+em { color: var(--muted); }
+strong { color: #1a1a1a; }
+figure { margin: 1.6em 0; text-align: center; }
+figure img { max-width: 100%; border-radius: 10px; border: 1px solid var(--border); }
+figcaption { font-size: .88em; color: var(--muted); margin-top: .5em; }
+.img-placeholder .ph-box {
+  border: 2px dashed var(--border); border-radius: 10px; padding: 42px 20px;
+  color: var(--muted); background: #fff; font-size: .95em;
+}
+.widget-missing { border: 1px dashed #d00; padding: 1em; color: #d00; }
+/* ---- 交互动画组件通用外壳 ---- */
+.wgt {
+  margin: 1.8em 0; border: 1px solid var(--border); border-radius: 12px;
+  background: #fff; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,.04);
+}
+.wgt-head {
+  padding: .6em 1em; background: var(--accent-soft); border-bottom: 1px solid var(--border);
+  font-size: .9em; font-weight: 600; color: var(--accent); display: flex;
+  justify-content: space-between; align-items: center; gap: .5em;
+}
+.wgt-body { padding: 1em; }
+.wgt-hint { font-size: .82em; color: var(--muted); margin-top: .6em; }
+.wgt button {
+  font-family: inherit; font-size: .9em; padding: .45em 1em; border-radius: 8px;
+  border: 1px solid var(--border); background: #fff; cursor: pointer; transition: .15s;
+}
+.wgt button:hover { border-color: var(--accent); color: var(--accent); }
+.wgt button.active { background: var(--accent); border-color: var(--accent); color: #fff; }
+@media (max-width: 640px) { .wrap { padding: 28px 16px 64px; } body { font-size: 15.5px; } }
+</style>
+</head>
+<body><div class="wrap"><h1>第 13 课：PlatformIO 工程化——从写草稿到做工程</h1>
+<blockquote>
+<p><strong>阶段五 · 进阶专家</strong> ｜ 难度：★★★★☆ ｜ 预计用时：50–60 分钟</p>
+<p><strong>本课材料</strong>：电脑（Windows/macOS/Linux 均可）、第 2–12 课任意一个能跑的项目代码
+<strong>无硬件替代</strong>：PlatformIO 自带仿真支持；本课重点在&quot;工程结构&quot;，无板也能全程学习</p>
+</blockquote>
+<hr>
+<h2>🎬 先看效果（10 秒演示）</h2>
+<p><img src="assets/lesson13-hero.svg" alt="第 13 课效果预告：PlatformIO 工程结构与一键构建"></p>
+<blockquote>
+<p><strong>你将把一个 300 行的 .ino 草稿，改造成一个&quot;正经工程&quot;</strong>：代码拆成多个文件、依赖库锁死版本、一条命令编译上传、换台电脑（甚至换操作系统）打开照样能跑——<strong>并且你会看到第 1 课承诺的这一刻</strong>：</p>
+</blockquote>
+<pre><code>第 1 课原话：（进阶读者问：PlatformIO 和 ESP-IDF 呢？）
+            ——PlatformIO 在第 12 课之后的进阶篇介绍……
+</code></pre>
+<p><strong>兑现时刻。</strong> 从这一课起，你不再是&quot;Arduino 玩家&quot;，开始成为&quot;嵌入式工程师&quot;。</p>
+<p><strong>本课学习目标（完成后你将拥有）：</strong></p>
+<ol>
+<li>✅ 装好 PlatformIO（VS Code 插件），理解它和 Arduino IDE 的本质区别</li>
+<li>✅ 掌握标准工程结构：<code>src/</code> <code>include/</code> <code>lib/</code> <code>platformio.ini</code></li>
+<li>✅ 把多文件拆分（.h/.cpp）跑通——<strong>告别 2000 行单文件</strong></li>
+<li>✅ 用 <code>platformio.ini</code> 锁定板型与库版本——<strong>&quot;在我电脑上能跑&quot;成为历史</strong></li>
+<li>✅ 用它的杀手锏：<strong>串口绘图器、单元测试、跨平台一致性</strong></li>
+</ol>
+<hr>
+<h2>🔁 开课先接棒：Arduino IDE 到底哪里不够用了？</h2>
+<p>先公道地说：<strong>Arduino IDE 教会了你一切，它没有错</strong>——它就是为&quot;10 分钟点亮 LED&quot;设计的。但项目一大，它的问题逐一浮出：</p>
+<table>
+<thead>
+<tr>
+<th>痛点</th>
+<th>Arduino IDE 的现状</th>
+<th>PlatformIO 的答案</th>
+</tr>
+</thead>
+<tbody><tr>
+<td>代码全堆一个 .ino</td>
+<td>文件一长找不到东西</td>
+<td><strong><code>src/</code> 多文件拆分，<code>.h</code> 声明 + <code>.cpp</code> 实现</strong></td>
+</tr>
+<tr>
+<td>库装了什么版本？</td>
+<td>装最新，<strong>别人复现不了</strong></td>
+<td><strong><code>lib_deps</code> 锁死版本号</strong></td>
+</tr>
+<tr>
+<td>换台电脑能编译吗</td>
+<td>要手动装板卡包、库……</td>
+<td><strong><code>platformio.ini</code> 一行拉起全部依赖</strong></td>
+</tr>
+<tr>
+<td>调试输出</td>
+<td>串口监视器看文本</td>
+<td><strong>Plotter 直接画曲线（第 3 课的梦想）</strong></td>
+</tr>
+<tr>
+<td>测试</td>
+<td>没有</td>
+<td><strong>Unity 单元测试，纯逻辑不用板子</strong></td>
+</tr>
+<tr>
+<td>编辑器</td>
+<td>简易编辑器</td>
+<td><strong>VS Code：跳转、补全、重构、Git</strong></td>
+</tr>
+</tbody></table>
+<blockquote>
+<p>💡 <strong>一句话定位</strong>：
+<strong>Arduino IDE = 草稿本</strong>（验证想法最快）；
+<strong>PlatformIO = 工程台</strong>（管理复杂度的工具）。
+<strong>两者不互斥</strong>——第 3~12 课你在草稿本上验证了所有想法，现在把它们搬上工程台。<strong>先跑通，再工程化</strong>——顺序不能反（直接上 PIO 会让新手卡在环境配置里，这是无数人弃坑的原因）。</p>
+</blockquote>
+<hr>
+<h2>📡 新知识一：标准工程长什么样</h2>
+<p><code>pio init --ide vscode</code> 生成（或手动创建）的骨架：</p>
+<pre><code>my-esp32-project/
+├── platformio.ini        ← 📋 工程的灵魂：板型、库、选项全在这
+├── src/
+│   ├── main.cpp          ← 相当于原来的 .ino（setup/loop）
+│   ├── led.h             ← 模块声明
+│   └── led.cpp           ← 模块实现
+├── include/
+│   └── config.h          ← 全局常量（引脚、Wi-Fi 账号）
+├── lib/                  ← 私有库（自己写的可复用模块放这）
+├── test/                 ← 单元测试
+└── .pio/                 ← 构建产物（自动生成，提交时忽略）
+</code></pre>
+<p><strong>三个目录的分工，背下来</strong>：</p>
+<ul>
+<li><strong><code>src/</code></strong>：你的代码。<strong>拆分原则</strong>：一个功能模块一对 <code>.h/.cpp</code>（led、wifi、mqtt、sensor……）</li>
+<li><strong><code>include/</code></strong>：全局头文件。<strong>所有引脚号、账号密码只在这出现一次</strong>——第 1 课就强调&quot;常量集中管理&quot;，现在有了物理上的专属位置</li>
+<li><strong><code>lib/</code></strong>：你自己写的、想跨项目复用的库（比如把第 10 课防抖状态机打包进去）</li>
+</ul>
+<h3><code>platformio.ini</code>——整个工程的&quot;一句话配置&quot;</h3>
+<pre><code class="language-ini">[env:esp32dev]
+platform = espressif32
+board    = esp32dev
+framework = arduino
+monitor_speed = 115200
+lib_deps =
+    adafruit/Adafruit SSD1306@^2.5.9
+    adafruit/Adafruit BMP280@^2.6.8
+    knolleary/PubSubClient@^2.8
+</code></pre>
+<p>逐行拆解（这 7 行是本课最重要的代码）：</p>
+<pre><code>[env:esp32dev]     环境名——一个文件可以定义多个环境（esp32/esp8266/板A/板B）
+platform           平台包：自动下载 ESP32 工具链（编译器、烧录工具）
+board              板型：等价于 Arduino IDE 的&quot;工具→开发板&quot;
+framework          框架：用 Arduino 写法（第 14 课会加一个 esp-idf 框架对比）
+monitor_speed      串口监视器波特率：115200（不用每次手点）
+lib_deps           📌 库名@版本号——**锁版本的核心**
+</code></pre>
+<p><strong><code>@^2.5.9</code> 的含义</strong>：接受 2.5.9 及以上、但不到 3.0.0 的更新（语义化版本的&quot;兼容补丁&quot;）。<strong>锁版本解决的是&quot;依赖地狱&quot;</strong>：你今天 <code>pio run</code> 成功，半年后换台电脑——<strong>拉到的库版本一模一样，编译结果一模一样</strong>。这是 Arduino IDE 完全做不到的（它永远拉最新，新版本一改 API 你的旧项目就崩了）。</p>
+<blockquote>
+<p>📌 <strong>工程第一铁律</strong>：<strong><code>platformio.ini</code> 必须和代码一起提交进 Git</strong>。它是&quot;这台机器如何复现构建&quot;的唯一说明书。</p>
+</blockquote>
+<hr>
+<h2>📡 新知识二：多文件拆分——.h 与 .cpp 的分工</h2>
+<p>把第 10 课的防抖逻辑拆成模块，这是&quot;从草稿到工程&quot;的核心动作：</p>
+<p><strong><code>include/config.h</code></strong>（全局常量，唯一出处）：</p>
+<pre><code class="language-cpp">#pragma once                    // 防止头文件被重复包含（记住这个咒语）
+const int LED_PIN = 4;
+const int BTN_PIN = 23;
+const unsigned long DEBOUNCE_MS = 25;
+</code></pre>
+<p><strong><code>src/button.h</code></strong>（声明：有什么）：</p>
+<pre><code class="language-cpp">#pragma once
+void pollButton();              // 只报函数名，不写实现
+</code></pre>
+<p><strong><code>src/button.cpp</code></strong>（实现：怎么做）：</p>
+<pre><code class="language-cpp">#include &quot;button.h&quot;
+#include &lt;Arduino.h&gt;
+#include &quot;config.h&quot;
+
+static int lastRaw = HIGH;      // static = 模块私有，别人看不见
+static int stableState = HIGH;
+static unsigned long lastChange = 0;
+
+void pollButton() {
+  int raw = digitalRead(BTN_PIN);
+  if (raw != lastRaw) { lastRaw = raw; lastChange = millis(); }
+  if (millis() - lastChange &gt;= DEBOUNCE_MS &amp;&amp; raw != stableState) {
+    stableState = raw;
+    if (stableState == LOW) digitalWrite(LED_PIN, !digitalRead(LED_PIN));
+  }
+}
+</code></pre>
+<p><strong><code>src/main.cpp</code></strong>（主程序瘦成骨架）：</p>
+<pre><code class="language-cpp">#include &lt;Arduino.h&gt;
+#include &quot;config.h&quot;
+#include &quot;button.h&quot;
+
+void setup() {
+  pinMode(LED_PIN, OUTPUT);
+  pinMode(BTN_PIN, INPUT_PULLUP);
+  Serial.begin(115200);
+}
+
+void loop() {
+  pollButton();        // 防抖模块
+  // mqtt.loop();      // 以后：每个模块一行，主循环永远清爽
+}
+</code></pre>
+<p><strong>拆分的三条规矩</strong>（新手最常问的&quot;什么时候拆&quot;）：</p>
+<ol>
+<li><strong>一个职责一个模块</strong>：按钮、LED、Wi-Fi、MQTT、传感器各管各的——<strong>改 Wi-Fi 不会碰坏按钮</strong>（第 10 课&quot;任务并行&quot;思想在文件结构上的映射）。</li>
+<li><strong><code>.h</code> 只放&quot;别人需要知道的&quot;</strong>：函数原型、常量、结构体；<strong>变量实现藏进 <code>.cpp</code> 加 <code>static</code></strong>——<strong>接口与实现分离</strong>，这就是封装。</li>
+<li><strong><code>#pragma once</code> 放头文件第一行</strong>——防止重复包含的编译错误（<code>redefinition</code> 报错的解药）。</li>
+</ol>
+<p><strong>注意一个坑</strong>：PlatformIO 里<strong>主文件必须叫 <code>main.cpp</code> 且 <code>#include &lt;Arduino.h&gt;</code></strong>（.ino 的自动 include 特性没有了）——这是从 IDE 迁移的第一大报错来源（见报错表）。</p>
+<hr>
+<h2>🛠️ 动手：三步迁移你的第 10 课代码</h2>
+<p><strong>Step 1：装环境</strong></p>
+<ol>
+<li>VS Code → 扩展市场搜 <strong>PlatformIO IDE</strong> → 安装（它会自动下载工具链）</li>
+<li>左侧虫子图标 → <strong>New Project</strong> → Board 选 <code>Espressif ESP32 Dev Module</code> → Framework 选 <code>Arduino</code> → 创建</li>
+</ol>
+<p><strong>Step 2：迁移代码</strong></p>
+<ol>
+<li>把第 10 课代码粘进 <code>src/main.cpp</code>，<strong>第一行加 <code>#include &lt;Arduino.h&gt;</code></strong></li>
+<li>按上面的拆分规矩，拆出 <code>config.h</code> / <code>button.cpp</code> / <code>bt.cpp</code>（蓝牙模块）</li>
+<li><code>lib_deps</code> 里加上你用的库（第 10 课只有自带 BluetoothSerial，<strong>lib_deps 可以为空</strong>——自带库不用写）</li>
+</ol>
+<p><strong>Step 3：构建上传</strong></p>
+<pre><code>底部状态栏：✓ Build（编译）  →  ✓ Upload（烧录）  →  🖥 Monitor（串口）
+</code></pre>
+<p>或者终端敲（<strong>这三个命令背下来，以后全靠它们</strong>）：</p>
+<pre><code class="language-bash">pio run              # 编译
+pio run -t upload    # 编译并上传
+pio device monitor   # 串口监视器（115200 来自 ini）
+</code></pre>
+<p><strong>看到绿色 <code>SUCCESS</code> + 监视器里熟悉的蓝牙启动日志——迁移完成。</strong> 同样的代码、同样的行为，但它现在是一个<strong>工程</strong>了。</p>
+<hr>
+<h2>🎯 杀手锏演示：串口绘图器</h2>
+<p>第 3 课你用 Arduino IDE 的绘图器看过呼吸曲线——<strong>PlatformIO 的绘图器更强大</strong>（能同时画多条、能导出 CSV）：</p>
+<pre><code class="language-cpp">// 在 loop 里打印 CSV 格式（逗号分隔 = 多条曲线）
+Serial.print(analogRead(34));   // 电位器原始值
+Serial.print(&quot;,&quot;);
+Serial.println(millis() % 1000); // 附加一条参考线
+</code></pre>
+<p><code>pio device monitor</code> 打开 → 点右上角<strong>波形图标</strong> → 实时曲线。<strong>第 8 课挑战 4 收集的&quot;传感器噪声证据&quot;，现在可以直接画出来看抖动幅度</strong>——把数据变成图，是工程师和玩家的分水岭。</p>
+<p><!-- 组件：Arduino IDE vs PlatformIO 工作流 · 用于第 13 课 -->
+<div class="wgt wgt-pio" id="wg-pio">
+  <div class="wgt-head"><span>⚙️ 交互对照：草稿本 vs 工程台</span><span class="wgt-badge">点两侧按钮，看工作流差异</span></div>
+  <div class="wgt-body">
+    <div class="wg-pio-grid">
+      <!-- 左：Arduino IDE -->
+      <div class="wg-pio-side" id="wg-pio-left">
+        <div class="wg-pio-head arduino">📒 Arduino IDE（草稿本）</div>
+        <div class="wg-pio-steps" id="wg-pio-asteps">
+          <div class="wg-pio-step">1. 文件→开发板，选 ESP32 Dev Module</div>
+          <div class="wg-pio-step">2. 画图或点菜单装库（永远最新版）</div>
+          <div class="wg-pio-step">3. 全部代码塞一个 .ino</div>
+          <div class="wg-pio-step">4. 点上传（成功了？）</div>
+          <div class="wg-pio-step">5. 手动开串口、手选 115200</div>
+          <div class="wg-pio-step warn">换台电脑？从 Step 1 重来，库版本可能已变</div>
+        </div>
+        <button class="wg-pio-btn arduino" id="wg-pio-runA">▶ 模拟一次开发流程</button>
+      </div>
+      <!-- 中：VS -->
+      <div class="wg-pio-vs">VS</div>
+      <!-- 右：PlatformIO -->
+      <div class="wg-pio-side" id="wg-pio-right">
+        <div class="wg-pio-head pio">🐜 PlatformIO（工程台）</div>
+        <div class="wg-pio-steps" id="wg-pio-psteps">
+          <div class="wg-pio-step">1. platformio.ini 写死板型+库版本</div>
+          <div class="wg-pio-step">2. src/ 拆模块（.h/.cpp 各司其职）</div>
+          <div class="wg-pio-step">3. pio run 一条命令编译</div>
+          <div class="wg-pio-step">4. pio run -t upload 烧录</div>
+          <div class="wg-pio-step">5. pio device monitor（波特率已在 ini）</div>
+          <div class="wg-pio-step ok">换台电脑？拉代码 + pio run —— 结果一模一样</div>
+        </div>
+        <button class="wg-pio-btn pio" id="wg-pio-runP">▶ 模拟一次开发流程</button>
+      </div>
+    </div>
+
+    <!-- ini 解剖图 -->
+    <div class="wg-pio-ini">
+      <div class="wg-pio-ini-title">platformio.ini 解剖——7 行顶过去的手动十步</div>
+      <pre id="wg-pio-code"><span class="k">[env:esp32dev]</span>
+<span class="c">platform  = espressif32</span>   <span class="cmt">← 自动下载工具链</span>
+<span class="c">board     = esp32dev</span>      <span class="cmt">← 顶"开发板菜单"</span>
+<span class="c">framework = arduino</span>       <span class="cmt">← 用 Arduino 写法</span>
+<span class="c">monitor_speed = 115200</span>    <span class="cmt">← 顶"手选波特率"</span>
+<span class="c">lib_deps =</span>
+<span class="c">  adafruit/Adafruit SSD1306@^2.5.9</span>  <span class="cmt">← 锁版本，永不翻车</span></pre>
+    </div>
+    <p class="wgt-hint" style="text-align:center">核心差异不在"哪个更快"，而在<b>可复现</b>：Arduino IDE 的环境是"你这台电脑的状态"，PlatformIO 的环境是<b>"platformio.ini 里写明的契约"</b>——后者才能交给团队、写进 CI、留给半年后的自己。</p>
+  </div>
+</div>
+<style>
+.wg-pio-grid { display: grid; grid-template-columns: 1fr 44px 1fr; gap: 12px; align-items: stretch; }
+.wg-pio-side { border: 1px solid var(--border); border-radius: 10px; overflow: hidden; background: #fff; }
+.wg-pio-head { padding: .55em .8em; font-weight: bold; font-size: .92em; color: #fff; }
+.wg-pio-head.arduino { background: #00979d; }
+.wg-pio-head.pio { background: #1a1a2e; }
+.wg-pio-steps { padding: .6em .7em; display: flex; flex-direction: column; gap: 5px; min-height: 178px; }
+.wg-pio-step { font-size: .8em; background: #f6f8f7; border: 1px solid var(--border); border-radius: 6px; padding: .38em .55em; color: #999; transition: all .25s; }
+.wg-pio-step.lit { border-color: #0b6e4f; background: #e6f3ee; color: #0b6e4f; font-weight: bold; }
+.wg-pio-step.warn { color: #c0392b; background: #fdecea; border-color: #f5c6c2; }
+.wg-pio-step.ok { color: #0b6e4f; background: #e6f3ee; border-color: #bfe3d5; }
+.wg-pio-vs { display: flex; align-items: center; justify-content: center; font-weight: bold; color: #9aa0a6; font-size: 1.1em; }
+.wg-pio-btn { display: block; width: calc(100% - 1.4em); margin: 0 .7em .7em; font-family: inherit; font-size: .84em; padding: .5em; border-radius: 8px; border: none; color: #fff; cursor: pointer; }
+.wg-pio-btn.arduino { background: #00979d; }
+.wg-pio-btn.pio { background: #1a1a2e; }
+.wg-pio-btn:disabled { opacity: .55; cursor: default; }
+.wg-pio-ini { margin-top: 14px; background: #1a1a2e; border-radius: 10px; padding: .8em 1em; }
+.wg-pio-ini-title { color: #7fd1c1; font-size: .84em; font-weight: bold; margin-bottom: .5em; }
+.wg-pio-ini pre { margin: 0; font-family: Consolas, monospace; font-size: .8em; line-height: 1.75; color: #e8e8f0; }
+.wg-pio-ini .k { color: #f5b041; font-weight: bold; }
+.wg-pio-ini .c { color: #aed6f1; }
+.wg-pio-ini .cmt { color: #6b7280; }
+.wgt-pio .wgt-badge { font-weight: 400; font-size: .8em; color: var(--muted); }
+@media (max-width: 640px) { .wg-pio-grid { grid-template-columns: 1fr; } .wg-pio-vs { display: none; } }
+</style>
+<script>
+(function () {
+  const root = document.getElementById('wg-pio');
+  if (!root || root.dataset.bound) return; root.dataset.bound = '1';
+  const btnA = document.getElementById('wg-pio-runA');
+  const btnP = document.getElementById('wg-pio-runP');
+  const stepsA = Array.from(document.querySelectorAll('#wg-pio-asteps .wg-pio-step'));
+  const stepsP = Array.from(document.querySelectorAll('#wg-pio-psteps .wg-pio-step'));
+
+  function sleep(ms) { return new Promise(r => setTimeout(r, ms)); }
+
+  async function run(steps, btn, per) {
+    if (btn.disabled) return;
+    steps.forEach(s => s.classList.remove('lit'));
+    btn.disabled = true;
+    for (const s of steps) {
+      s.classList.add('lit');
+      await sleep(per);
+      s.classList.remove('lit');
+    }
+    btn.disabled = false;
+  }
+
+  btnA.onclick = () => run(stepsA, btnA, 700);
+  btnP.onclick = () => run(stepsP, btnP, 450);
+})();
+</script>
+</p>
+<p>上图是完整工作流与 Arduino IDE 的对照：<strong>写 → build → upload → monitor</strong> 四步在 PlatformIO 里如何对应，以及 <code>platformio.ini</code> 如何&quot;一行顶十步&quot;。</p>
+<hr>
+<h2>✅ 验收 Checklist（全部打勾才算过关）</h2>
+<ul>
+<li><input disabled="" type="checkbox"> VS Code + PlatformIO 扩展安装成功，左侧出现蚂蚁图标</li>
+<li><input disabled="" type="checkbox"> New Project 创建成功，目录结构符合标准骨架</li>
+<li><input disabled="" type="checkbox"> 第 10 课代码迁移进 <code>src/main.cpp</code>，<strong>第一行有 <code>#include &lt;Arduino.h&gt;</code></strong></li>
+<li><input disabled="" type="checkbox"> 至少拆出 2 个模块（如 <code>config.h</code> + <code>button.cpp</code>），编译通过</li>
+<li><input disabled="" type="checkbox"> <code>platformio.ini</code> 里 <code>monitor_speed = 115200</code> 生效，<code>pio device monitor</code> 直接出日志（不用手选波特率）</li>
+<li><input disabled="" type="checkbox"> <code>lib_deps</code> 至少实践一次：加一个第三方库（如 <code>PubSubClient@^2.8</code>）并锁版本</li>
+<li><input disabled="" type="checkbox"> 能向外行解释三句话：①PIO 和 Arduino IDE 的本质区别 ②<code>.h</code> 和 <code>.cpp</code> 分别放什么 ③为什么要锁库版本</li>
+<li><input disabled="" type="checkbox"> <strong>Git 检查</strong>：<code>platformio.ini</code> 已提交，<code>.pio/</code> 已加入 <code>.gitignore</code></li>
+</ul>
+<p><strong>全部打勾 → 你拥有了管理任意规模项目的能力。下一课，深入它下面的那一层。</strong></p>
+<hr>
+<h2>🏆 课后挑战（10 分钟，做完再进下一课）</h2>
+<ol>
+<li><strong>完整迁移</strong>：把第 12 课 MQTT 项目整体搬进 PIO，拆成 <code>wifi.cpp</code> / <code>mqtt.cpp</code> / <code>button.cpp</code> 三个模块——<strong>体会&quot;每个模块一行调用&quot;的主循环</strong>。</li>
+<li><strong>双环境（选做）</strong>：在 <code>platformio.ini</code> 再加一个 <code>[env:esp32s3]</code>，同一份代码切换编译到另一块板——<strong>体验&quot;一份代码，多块板&quot;</strong>。</li>
+<li><strong>单元测试（进阶）</strong>：把&quot;气压→海拔&quot;公式抽成纯函数放 <code>lib/</code>，在 <code>test/</code> 写 <code>test_main.cpp</code> 断言 <code>1013.25 hPa → ≈0 米</code>，跑 <code>pio test</code>——<strong>不用板子也能测逻辑</strong>，这是工程化的标志性能力。</li>
+<li><strong>版本考古（选做）</strong>：把 <code>lib_deps</code> 的 <code>^</code> 去掉改成 <code>@2.5.9</code>（精确锁死），对比两种写法——理解&quot;兼容更新&quot;与&quot;完全冻结&quot;的取舍。</li>
+<li><strong>复现性实验（重点）</strong>：把工程文件夹拷到 U 盘/另一台电脑，只靠 <code>platformio.ini</code> 从零构建——<strong>记录哪些东西是&quot;ini 自动搞定的&quot;</strong>（工具链、板卡包、库），哪些还要手动（VS Code、PIO 插件本身）。<strong>这份&quot;复现清单&quot;就是工程化的意义</strong>。</li>
+</ol>
+<hr>
+<h2>🐛 常见报错诊断（遇到怪现象先查这里）</h2>
+<table>
+<thead>
+<tr>
+<th>现象 / 报错关键词</th>
+<th>原因</th>
+<th>解决办法</th>
+</tr>
+</thead>
+<tbody><tr>
+<td><code>&#39;Arduino.h&#39; file not found</code></td>
+<td>main.cpp 忘了 include（.ino 时代的自动习惯）</td>
+<td>文件第一行加 <code>#include &lt;Arduino.h&gt;</code></td>
+</tr>
+<tr>
+<td><code>setup/loop was not declared</code></td>
+<td>函数写在了 .cpp 但没声明 / 写错文件</td>
+<td>确认 <code>setup()</code> <code>loop()</code> 在 <code>src/main.cpp</code> 里</td>
+</tr>
+<tr>
+<td><code>redefinition of ...</code></td>
+<td>头文件没加 include guard</td>
+<td>头文件第一行 <code>#pragma once</code></td>
+</tr>
+<tr>
+<td>首次构建疯狂下载工具链卡住</td>
+<td>首次要下载数 GB 工具链（正常）</td>
+<td>等待；或配置国内镜像（见社区教程）</td>
+</tr>
+<tr>
+<td><code>Unable to find device</code> 上传失败</td>
+<td>COM 口被占用 / 驱动问题</td>
+<td>关掉串口监视器再上传；重插 USB；装 CH340/CP2102 驱动</td>
+</tr>
+<tr>
+<td><code>LDF: library not found</code></td>
+<td><code>lib_deps</code> 库名写错</td>
+<td>名字从库管理器页复制，含作者名 <code>author/Name@ver</code></td>
+</tr>
+<tr>
+<td>编译器报奇怪的模板错误</td>
+<td>库版本和 framework 不匹配</td>
+<td><strong>锁版本后重装</strong>：删 <code>.pio/libdeps</code> 重新构建</td>
+</tr>
+<tr>
+<td><code>.pio</code> 文件夹巨大被误提交</td>
+<td>没忽略构建产物</td>
+<td><code>.gitignore</code> 加 <code>.pio/</code></td>
+</tr>
+<tr>
+<td>monitor 打开是乱码</td>
+<td>波特率不是 115200</td>
+<td><code>monitor_speed = 115200</code> 写进 ini（别手动选）</td>
+</tr>
+<tr>
+<td>从 .ino 迁移后中文注释乱码</td>
+<td>文件编码不是 UTF-8</td>
+<td>VS Code 右下角编码 → Save with Encoding → UTF-8</td>
+</tr>
+</tbody></table>
+<hr>
+<h2>🔜 下一课预告</h2>
+<p>PlatformIO 让你&quot;更舒服地写 Arduino&quot;——但 Arduino 框架本身是一层<strong>翻译</strong>：它把你的 <code>digitalWrite</code> 翻译成真正的寄存器操作。<strong>第 14 课：ESP-IDF——官方工业级框架</strong>：你会掀开 Arduino 的盖子，看 Espressif 官方 SDK 长什么样——<strong><code>gpio_set_level()</code> 直接操作硬件、FreeRTOS 任务取代 loop、组件化构建</strong>。同一颗灯，两种世界观各写一遍；你会明白<strong>什么项目该用 Arduino（快速验证），什么该上 ESP-IDF（产品量产）</strong>——第 1 课埋的&quot;工业级框架&quot;伏笔，届时正式回收。</p>
+<hr>
+<p><em>本课程系列：从点亮一盏灯，到设计一台会自己思考的机器。</em></p>
+</div></body>
+</html>
