@@ -83,18 +83,18 @@
     <animate attributeName="x" values="700;916" dur="1.2s" begin="1s" repeatCount="indefinite"/>
   </rect>
   <!-- 手机 → broker → ESP32 控制回路 -->
-  <path d="M940 300 C 820 340, 720 340, 620 330" stroke="#8e44ad" stroke-width="3.5" fill="none" stroke-dasharray="9 6"/>
-  <text x="790" y="360" fill="#8e44ad" font-size="13" font-weight="bold" text-anchor="middle">PUBLISH light/set: ON（QoS1 回执）</text>
+  <path d="M940 292 C 820 332, 720 332, 620 318" stroke="#8e44ad" stroke-width="3.5" fill="none" stroke-dasharray="9 6"/>
+  <text x="790" y="352" fill="#8e44ad" font-size="13" font-weight="bold" text-anchor="middle">PUBLISH light/set: ON（QoS1 回执）</text>
   <path d="M430 300 C 360 300, 320 310, 250 320" stroke="#3fa67a" stroke-width="3.5" fill="none" stroke-dasharray="9 6"/>
   <text x="335" y="338" fill="#3fa67a" font-size="13" font-weight="bold" text-anchor="middle">回调执行 → 回发 state</text>
 
   <!-- ===== QoS 对照小卡 ===== -->
   <g transform="translate(430 360)">
-    <rect width="470" height="56" rx="10" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
+    <rect width="640" height="56" rx="10" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
     <text x="16" y="24" fill="#0b6e4f" font-size="14" font-weight="bold">QoS0 发出即忘（=L5 裸数据流）</text>
     <text x="16" y="45" fill="#333" font-size="13">QoS1 必有回执（= L10 的 OK 回执）　·　Retain = 新订阅者立刻拿状态</text>
-    <text x="455" y="24" fill="#c0392b" font-size="13" font-weight="bold" text-anchor="end">心跳 PINGREQ</text>
-    <text x="455" y="45" fill="#6b6b6b" font-size="12" text-anchor="end">= L10 reportStatus()</text>
+    <text x="624" y="24" fill="#c0392b" font-size="13" font-weight="bold" text-anchor="end">心跳 PINGREQ</text>
+    <text x="624" y="45" fill="#6b6b6b" font-size="12" text-anchor="end">= L10 reportStatus()</text>
   </g>
 
   <!-- 底部标语 -->

@@ -340,9 +340,63 @@ function buildLessonEnhancementScript(lessonKey, totalChecks) {
 </script>`;
 }
 
+// 生成 32×32 favicon.ico（BMP-in-ICO + Alpha 通道，纯本地零依赖、离线可用）
+function buildFaviconIco() {
+  const S = 32;
+  const rgba = Buffer.alloc(S * S * 4); // 顶行起：R,G,B,A
+  const put = (x, y, c, a = 255) => {
+    if (x < 0 || y < 0 || x >= S || y >= S) return;
+    const i = (y * S + x) * 4;
+    rgba[i] = c[0]; rgba[i + 1] = c[1]; rgba[i + 2] = c[2]; rgba[i + 3] = a;
+  };
+  const BG = [15, 61, 46], CHIP = [201, 204, 209], EDGE = [122, 130, 138], PAD = [240, 192, 74];
+  const R = 7;
+  // 圆角深绿底板
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const cx = x < R ? R - 0.5 : x > S - 1 - R ? x - (S - 1 - R) : 0;
+      const cy = y < R ? R - 0.5 : y > S - 1 - R ? y - (S - 1 - R) : 0;
+      if (!(cx && cy && cx * cx + cy * cy > R * R)) put(x, y, BG);
+    }
+  }
+  // 银色芯片
+  for (let y = 7; y <= 24; y++) {
+    for (let x = 7; x <= 24; x++) {
+      put(x, y, (x === 7 || y === 7 || x === 24 || y === 24) ? EDGE : CHIP);
+    }
+  }
+  // 两侧金色焊盘
+  for (const ry of [11, 16, 21]) {
+    for (let y = ry; y < ry + 2; y++) {
+      for (let x = 3; x <= 6; x++) put(x, y, PAD);
+      for (let x = 25; x <= 28; x++) put(x, y, PAD);
+    }
+  }
+  // 组装 ICO：目录 + 信息头 + 32bpp 自底向上位图 + AND 掩码（全 0，透明度走 Alpha）
+  const xor = Buffer.alloc(S * S * 4);
+  for (let y = 0; y < S; y++) {
+    for (let x = 0; x < S; x++) {
+      const src = ((S - 1 - y) * S + x) * 4, dst = (y * S + x) * 4;
+      xor[dst] = rgba[src + 2]; xor[dst + 1] = rgba[src + 1];
+      xor[dst + 2] = rgba[src]; xor[dst + 3] = rgba[src + 3];
+    }
+  }
+  const mask = Buffer.alloc(((S + 31) >> 5) * 4 * S);
+  const info = Buffer.alloc(40);
+  info.writeUInt32LE(40, 0); info.writeInt32LE(S, 4); info.writeInt32LE(S * 2, 8);
+  info.writeUInt16LE(1, 12); info.writeUInt16LE(32, 14); info.writeUInt32LE(0, 16);
+  info.writeUInt32LE(xor.length, 20);
+  const dir = Buffer.alloc(6 + 16);
+  dir.writeUInt16LE(1, 2); dir.writeUInt16LE(1, 4);
+  dir[6] = S; dir[7] = S; dir.writeUInt16LE(1, 10); dir.writeUInt16LE(32, 12);
+  dir.writeUInt32LE(40 + xor.length + mask.length, 14); dir.writeUInt32LE(22, 18);
+  return Buffer.concat([dir, info, xor, mask]);
+}
+
 function render() {
   fs.mkdirSync(OUT_DIR, { recursive: true });
   fs.writeFileSync(path.join(OUT_DIR, '.nojekyll'), '', 'utf8');
+  fs.writeFileSync(path.join(OUT_DIR, 'favicon.ico'), buildFaviconIco());
   const files = fs.readdirSync(LESSONS_DIR).filter(f => f.endsWith('.md')).sort();
 
   // 复制 assets 到 site/assets
@@ -394,6 +448,8 @@ function render() {
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>${escapeHtml(p.title)} · ESP32 从零到专家</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="favicon.ico" sizes="32x32">
 <style>${CSS}</style>
 </head>
 <body>
@@ -456,6 +512,8 @@ ${buildLessonEnhancementScript(p.key, p.totalChecks)}
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>ESP32 从零到专家 · 15 课交互式实战教程</title>
+<link rel="icon" href="assets/favicon.svg" type="image/svg+xml">
+<link rel="alternate icon" href="favicon.ico" sizes="32x32">
 <style>${CSS}
 .hero-sub { color: var(--muted); margin-top: -.4em; margin-bottom: 1.4em; font-size: .98em; }
 .highlights {

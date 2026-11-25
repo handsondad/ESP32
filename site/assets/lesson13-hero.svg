@@ -71,14 +71,14 @@
 
     <!-- 右侧：一键命令 -->
     <g transform="translate(360 70)">
-      <rect width="200" height="36" rx="8" fill="#1a1a2e"/>
-      <text x="100" y="23" fill="#7fd1c1" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">pio run</text>
-      <rect y="46" width="200" height="36" rx="8" fill="#1a1a2e"/>
-      <text x="100" y="69" fill="#7fd1c1" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">pio run -t upload</text>
-      <rect y="92" width="200" height="36" rx="8" fill="#1a1a2e"/>
-      <text x="100" y="115" fill="#7fd1c1" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">pio device monitor</text>
-      <rect y="138" width="200" height="36" rx="8" fill="#0b6e4f"/>
-      <text x="100" y="161" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">✓ 可复现 · 可协作</text>
+      <rect width="200" height="30" rx="8" fill="#1a1a2e"/>
+      <text x="100" y="19" fill="#7fd1c1" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">pio run</text>
+      <rect y="38" width="200" height="30" rx="8" fill="#1a1a2e"/>
+      <text x="100" y="57" fill="#7fd1c1" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">pio run -t upload</text>
+      <rect y="76" width="200" height="30" rx="8" fill="#1a1a2e"/>
+      <text x="100" y="95" fill="#7fd1c1" font-size="13" font-weight="bold" text-anchor="middle" font-family="Consolas, monospace">pio device monitor</text>
+      <rect y="114" width="200" height="30" rx="8" fill="#0b6e4f"/>
+      <text x="100" y="133" fill="#fff" font-size="13" font-weight="bold" text-anchor="middle">✓ 可复现 · 可协作</text>
     </g>
     <text x="290" y="238" fill="#0b6e4f" font-size="13" font-weight="bold" text-anchor="middle">换电脑 → 拉代码 → pio run → 结果一模一样</text>
   </g>
@@ -88,7 +88,7 @@
     <rect width="1080" height="54" rx="10" fill="#fff" stroke="#0b6e4f" stroke-width="3"/>
     <text x="20" y="24" fill="#0b6e4f" font-size="15" font-weight="bold">锁版本的意义：</text>
     <text x="20" y="44" fill="#333" font-size="13" font-family="Consolas, monospace">lib_deps = adafruit/Adafruit SSD1306@^2.5.9</text>
-    <text x="470" y="36" fill="#6b6b6b" font-size="13">→ 今天能编译，半年后换台电脑，拉到的库一模一样——"在我电脑上能跑"成为历史</text>
-    <text x="1060" y="34" fill="#c0392b" font-size="14" font-weight="bold" text-anchor="end">Arduino IDE：永远最新 ✗</text>
+    <text x="470" y="44" fill="#6b6b6b" font-size="13">→ 今天能编译，半年后换台电脑，拉到的库一模一样——"在我电脑上能跑"成为历史</text>
+    <text x="1060" y="24" fill="#c0392b" font-size="14" font-weight="bold" text-anchor="end">Arduino IDE：永远最新 ✗</text>
   </g>
 </svg>
