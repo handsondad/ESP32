@@ -9,6 +9,7 @@ permissions:
   contents: read
   pages: write
   id-token: write
+  actions: write
 
 concurrency:
   group: pages
@@ -37,6 +38,20 @@ jobs:
 
       - name: Configure GitHub Pages
         uses: actions/configure-pages@v5
+
+      # 重跑旧 job 时，上一次尝试上传的 github-pages artifact 不会自动删除，
+      # 会导致 deploy-pages 报 "Multiple artifacts named github-pages" 而失败。
+      # 这里在上传前清掉本 workflow run 内的历史同名 artifact，保证重跑安全。
+      - name: Clean stale Pages artifacts from previous attempts
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          ids=$(gh api "repos/${{ github.repository }}/actions/runs/${{ github.run_id }}/artifacts?per_page=100" \
+            --jq '.artifacts[] | select(.name == "github-pages") | .id')
+          for id in $ids; do
+            echo "Deleting stale github-pages artifact: $id"
+            gh api -X DELETE "repos/${{ github.repository }}/actions/artifacts/$id" || true
+          done
 
       - name: Upload site artifact
         uses: actions/upload-pages-artifact@v3
